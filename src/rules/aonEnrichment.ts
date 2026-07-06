@@ -399,7 +399,7 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
 
   const rules = { ...card.rules };
   const source = { ...card.source };
-  let subtitle = card.subtitle;
+  const subtitle = card.subtitle;
   let writableFields = card.writableFields;
 
   // For basic/skill actions the template provides a short one-liner; always
