@@ -1,1 +1,269 @@
-{"success":true,"build":{"name":"Hanae Kisaragi","class":"Sorcerer","dualClass":null,"level":11,"xp":0,"ancestry":"Kitsune","heritage":"Palace Echoes Kitsune","background":"Second Chance Champion","alignment":"N","gender":"F/she/her","age":"83","deity":"Daikitsu","size":2,"sizeName":"Medium","keyability":"cha","languages":["Common","Kitsune","Tian"],"rituals":[],"resistances":[],"inventorMods":[],"abilities":{"str":10,"dex":19,"con":16,"int":10,"wis":16,"cha":20,"breakdown":{"ancestryFree":["Dex"],"ancestryBoosts":["Cha"],"ancestryFlaws":[],"backgroundBoosts":["Dex","Cha"],"classBoosts":["Cha"],"mapLevelledBoosts":{"1":["Cha","Dex","Con","Wis"],"2":["Dex"],"3":["Con"],"4":["Wis"],"5":["Cha"],"7":["Cha"],"8":["Con"],"9":["Wis"],"10":["Dex"]}}},"attributes":{"ancestryhp":8,"classhp":6,"bonushp":0,"bonushpPerLevel":0,"speed":25,"speedBonus":0},"proficiencies":{"classDC":2,"perception":4,"fortitude":4,"reflex":4,"will":4,"heavy":0,"medium":0,"light":0,"unarmored":2,"advanced":0,"martial":0,"simple":4,"unarmed":4,"castingArcane":4,"castingDivine":0,"castingOccult":0,"castingPrimal":0,"acrobatics":2,"arcana":6,"athletics":0,"crafting":0,"deception":2,"diplomacy":6,"intimidation":0,"medicine":0,"nature":0,"occultism":2,"performance":4,"religion":0,"society":2,"stealth":2,"survival":0,"thievery":0,"piloting":0,"computers":0},"mods":{"Arcana":{"Item Bonus":1}},"feats":[["Cat Fall",null,"Awarded Feat",1],["Palace Echoes Kitsune",null,"Heritage",1,"Heritage Feat","standardChoice",null],["Kitsune Lore",null,"Ancestry Feat",1,"Kitsune Feat 1","standardChoice",null],["Bon Mot",null,"Skill Feat",2,"Skill Feat 2","standardChoice",null],["Propelling Sorcery",null,"Class Feat",2,"Sorcerer Feat 2","standardChoice",null],["Celebrity Dedication",null,"Archetype Feat",2,"Free Archetype 2","standardChoice",null],["Untrained Improvisation",null,"General Feat",3,"General Feat 3","standardChoice",null],["Glad-Hand",null,"Skill Feat",4,"Skill Feat 4","standardChoice",null],["Arcane Evolution",null,"Class Feat",4,"Sorcerer Feat 4","standardChoice",null],["You're An Embarrassment!",null,"Archetype Feat",4,"Free Archetype 4","standardChoice",null],["Hybrid Form",null,"Ancestry Feat",5,"Kitsune Feat 5","standardChoice",null],["Recognize Spell",null,"Skill Feat",6,"Skill Feat 6","standardChoice",null],["Safeguard Spell",null,"Class Feat",6,"Sorcerer Feat 6","standardChoice",null],["Mesmerizing Gaze",null,"Archetype Feat",6,"Free Archetype 6","standardChoice",null],["Incredible Initiative",null,"General Feat",7,"General Feat 7","standardChoice",null],["Grudging Compliment",null,"Skill Feat",8,"Skill Feat 8","standardChoice",null],["Explosion of Power",null,"Class Feat",8,"Sorcerer Feat 8","standardChoice",null],["Statement Strut",null,"Archetype Feat",8,"Free Archetype 8","standardChoice",null],["Fox Trick",null,"Ancestry Feat",9,"Kitsune Feat 9","standardChoice",null],["Shameless Request",null,"Skill Feat",10,"Skill Feat 10","standardChoice",null],["Quickened Casting",null,"Class Feat",10,"Sorcerer Feat 10","standardChoice",null],["Big Debut",null,"Archetype Feat",10,"Free Archetype 10","standardChoice",null],["Quick Recognition",null,"General Feat",11,"General Feat 11","standardChoice",null]],"specials":["Bloodline: Imperial","Sorcerous Potency","Blood Magic","Low-Light Vision","Change Shape (Kitsune)","Nudging Whisper","Upstage","Signature Spells","Occultism","Magical Fortitude","Expert Spellcaster","Reflex Expertise","Perception Expertise","Weapon Expertise","Palace Echoes Kitsune"],"lores":[["Gladiatorial",2],["Kitsune",2]],"equipmentContainers":{"97c6f0a9-353d-4661-92b9-ae0592b92a6a":{"containerName":"Sleeves","bagOfHolding":true,"backpack":false,"augmentations":false}},"equipment":[["Shadow Signet",1,"Invested"],["Wand of Shardstorm (3rd-Rank Spell)",1,"Invested"],["Shapespeak Mask",1,"Invested"],["Ring of Wizardry (Type I)",1,"Invested"],["Sleeves of Storage",1,"Invested"],["Staff of Fire (Greater)",1,"Invested"]],"specificProficiencies":{"trained":[],"expert":[],"master":[],"legendary":[]},"weapons":[{"name":"Corset Knife","qty":1,"prof":"simple","die":"d4","pot":0,"str":"","mat":null,"display":"Corset Knife","runes":[],"damageType":"P","attack":19,"damageBonus":0,"extraDamage":[],"increasedDice":false,"isInventor":false,"grade":""}],"money":{"cp":0,"sp":0,"gp":320,"pp":0},"armor":[{"name":"Library Robes","qty":1,"prof":"unarmored","pot":1,"res":"","mat":null,"display":"Library Robes","worn":true,"runes":[],"grade":""}],"spellCasters":[{"name":"Sorcerer","magicTradition":"arcane","spellcastingType":"spontaneous","ability":"cha","proficiency":4,"focusPoints":0,"innate":false,"perDay":[5,6,4,4,4,4,3,0,0,0,0],"spells":[{"spellLevel":0,"list":["Shield","Prestidigitation","Electric Arc","Illuminate","Detect Magic"]},{"spellLevel":1,"list":["Sure Strike","Fear","Grease","Force Barrage"]},{"spellLevel":2,"list":["Invisibility","Blur","Knock","Dispel Magic"]},{"spellLevel":3,"list":["Fireball","Slow","Hypnotize","Haste"]},{"spellLevel":4,"list":["Fly","Wall of Fire","Vision of Death","Translocate"]},{"spellLevel":5,"list":["Sending","Howling Blizzard","Wall of Stone","Scouting Eye"]},{"spellLevel":6,"list":["Dragon Form","Chain Lightning","Disintegrate"]}],"prepared":[],"blendedSpells":[]}],"focusPoints":1,"focus":{"arcane":{"cha":{"abilityBonus":5,"proficiency":4,"itemBonus":0,"focusCantrips":[],"focusSpells":["Ancestral Memories"]}}},"formula":[],"acTotal":{"acProfBonus":13,"acAbilityBonus":4,"acItemBonus":1,"acTotal":28,"shieldBonus":null},"pets":[],"familiars":[]}}
+{
+  "success": true,
+  "build": {
+    "name": "Hanae Kisaragi",
+    "class": "Sorcerer",
+    "dualClass": null,
+    "level": 11,
+    "xp": 0,
+    "ancestry": "Kitsune",
+    "heritage": "Palace Echoes Kitsune",
+    "background": "Second Chance Champion",
+    "alignment": "N",
+    "gender": "F/she/her",
+    "age": "83",
+    "deity": "Daikitsu",
+    "size": 2,
+    "sizeName": "Medium",
+    "keyability": "cha",
+    "languages": ["Common", "Kitsune", "Tian"],
+    "rituals": [],
+    "resistances": [],
+    "inventorMods": [],
+    "abilities": {
+      "str": 10,
+      "dex": 19,
+      "con": 16,
+      "int": 10,
+      "wis": 16,
+      "cha": 20,
+      "breakdown": {
+        "ancestryFree": ["Dex"],
+        "ancestryBoosts": ["Cha"],
+        "ancestryFlaws": [],
+        "backgroundBoosts": ["Dex", "Cha"],
+        "classBoosts": ["Cha"],
+        "mapLevelledBoosts": {
+          "1": ["Cha", "Dex", "Con", "Wis"],
+          "2": ["Dex"],
+          "3": ["Con"],
+          "4": ["Wis"],
+          "5": ["Cha"],
+          "7": ["Cha"],
+          "8": ["Con"],
+          "9": ["Wis"],
+          "10": ["Dex"]
+        }
+      }
+    },
+    "attributes": {
+      "ancestryhp": 8,
+      "classhp": 6,
+      "bonushp": 0,
+      "bonushpPerLevel": 0,
+      "speed": 25,
+      "speedBonus": 0
+    },
+    "proficiencies": {
+      "classDC": 2,
+      "perception": 4,
+      "fortitude": 4,
+      "reflex": 4,
+      "will": 4,
+      "heavy": 0,
+      "medium": 0,
+      "light": 0,
+      "unarmored": 2,
+      "advanced": 0,
+      "martial": 0,
+      "simple": 4,
+      "unarmed": 4,
+      "castingArcane": 4,
+      "castingDivine": 0,
+      "castingOccult": 0,
+      "castingPrimal": 0,
+      "acrobatics": 2,
+      "arcana": 6,
+      "athletics": 0,
+      "crafting": 0,
+      "deception": 2,
+      "diplomacy": 6,
+      "intimidation": 0,
+      "medicine": 0,
+      "nature": 0,
+      "occultism": 2,
+      "performance": 4,
+      "religion": 0,
+      "society": 2,
+      "stealth": 2,
+      "survival": 0,
+      "thievery": 0,
+      "piloting": 0,
+      "computers": 0
+    },
+    "mods": { "Arcana": { "Item Bonus": 1 } },
+    "feats": [
+      ["Cat Fall", null, "Awarded Feat", 1],
+      ["Palace Echoes Kitsune", null, "Heritage", 1, "Heritage Feat", "standardChoice", null],
+      ["Kitsune Lore", null, "Ancestry Feat", 1, "Kitsune Feat 1", "standardChoice", null],
+      ["Bon Mot", null, "Skill Feat", 2, "Skill Feat 2", "standardChoice", null],
+      ["Propelling Sorcery", null, "Class Feat", 2, "Sorcerer Feat 2", "standardChoice", null],
+      [
+        "Celebrity Dedication",
+        null,
+        "Archetype Feat",
+        2,
+        "Free Archetype 2",
+        "standardChoice",
+        null
+      ],
+      [
+        "Untrained Improvisation",
+        null,
+        "General Feat",
+        3,
+        "General Feat 3",
+        "standardChoice",
+        null
+      ],
+      ["Glad-Hand", null, "Skill Feat", 4, "Skill Feat 4", "standardChoice", null],
+      ["Arcane Evolution", null, "Class Feat", 4, "Sorcerer Feat 4", "standardChoice", null],
+      [
+        "You're An Embarrassment!",
+        null,
+        "Archetype Feat",
+        4,
+        "Free Archetype 4",
+        "standardChoice",
+        null
+      ],
+      ["Hybrid Form", null, "Ancestry Feat", 5, "Kitsune Feat 5", "standardChoice", null],
+      ["Recognize Spell", null, "Skill Feat", 6, "Skill Feat 6", "standardChoice", null],
+      ["Safeguard Spell", null, "Class Feat", 6, "Sorcerer Feat 6", "standardChoice", null],
+      ["Mesmerizing Gaze", null, "Archetype Feat", 6, "Free Archetype 6", "standardChoice", null],
+      ["Incredible Initiative", null, "General Feat", 7, "General Feat 7", "standardChoice", null],
+      ["Grudging Compliment", null, "Skill Feat", 8, "Skill Feat 8", "standardChoice", null],
+      ["Explosion of Power", null, "Class Feat", 8, "Sorcerer Feat 8", "standardChoice", null],
+      ["Statement Strut", null, "Archetype Feat", 8, "Free Archetype 8", "standardChoice", null],
+      ["Fox Trick", null, "Ancestry Feat", 9, "Kitsune Feat 9", "standardChoice", null],
+      ["Shameless Request", null, "Skill Feat", 10, "Skill Feat 10", "standardChoice", null],
+      ["Quickened Casting", null, "Class Feat", 10, "Sorcerer Feat 10", "standardChoice", null],
+      ["Big Debut", null, "Archetype Feat", 10, "Free Archetype 10", "standardChoice", null],
+      ["Quick Recognition", null, "General Feat", 11, "General Feat 11", "standardChoice", null]
+    ],
+    "specials": [
+      "Bloodline: Imperial",
+      "Sorcerous Potency",
+      "Blood Magic",
+      "Low-Light Vision",
+      "Change Shape (Kitsune)",
+      "Nudging Whisper",
+      "Upstage",
+      "Signature Spells",
+      "Occultism",
+      "Magical Fortitude",
+      "Expert Spellcaster",
+      "Reflex Expertise",
+      "Perception Expertise",
+      "Weapon Expertise",
+      "Palace Echoes Kitsune"
+    ],
+    "lores": [
+      ["Gladiatorial", 2],
+      ["Kitsune", 2]
+    ],
+    "equipmentContainers": {
+      "97c6f0a9-353d-4661-92b9-ae0592b92a6a": {
+        "containerName": "Sleeves",
+        "bagOfHolding": true,
+        "backpack": false,
+        "augmentations": false
+      }
+    },
+    "equipment": [
+      ["Shadow Signet", 1, "Invested"],
+      ["Wand of Shardstorm (3rd-Rank Spell)", 1, "Invested"],
+      ["Shapespeak Mask", 1, "Invested"],
+      ["Ring of Wizardry (Type I)", 1, "Invested"],
+      ["Sleeves of Storage", 1, "Invested"],
+      ["Staff of Fire (Greater)", 1, "Invested"]
+    ],
+    "specificProficiencies": { "trained": [], "expert": [], "master": [], "legendary": [] },
+    "weapons": [
+      {
+        "name": "Corset Knife",
+        "qty": 1,
+        "prof": "simple",
+        "die": "d4",
+        "pot": 0,
+        "str": "",
+        "mat": null,
+        "display": "Corset Knife",
+        "runes": [],
+        "damageType": "P",
+        "attack": 19,
+        "damageBonus": 0,
+        "extraDamage": [],
+        "increasedDice": false,
+        "isInventor": false,
+        "grade": ""
+      }
+    ],
+    "money": { "cp": 0, "sp": 0, "gp": 320, "pp": 0 },
+    "armor": [
+      {
+        "name": "Library Robes",
+        "qty": 1,
+        "prof": "unarmored",
+        "pot": 1,
+        "res": "",
+        "mat": null,
+        "display": "Library Robes",
+        "worn": true,
+        "runes": [],
+        "grade": ""
+      }
+    ],
+    "spellCasters": [
+      {
+        "name": "Sorcerer",
+        "magicTradition": "arcane",
+        "spellcastingType": "spontaneous",
+        "ability": "cha",
+        "proficiency": 4,
+        "focusPoints": 0,
+        "innate": false,
+        "perDay": [5, 6, 4, 4, 4, 4, 3, 0, 0, 0, 0],
+        "spells": [
+          {
+            "spellLevel": 0,
+            "list": ["Shield", "Prestidigitation", "Electric Arc", "Illuminate", "Detect Magic"]
+          },
+          { "spellLevel": 1, "list": ["Sure Strike", "Fear", "Grease", "Force Barrage"] },
+          { "spellLevel": 2, "list": ["Invisibility", "Blur", "Knock", "Dispel Magic"] },
+          { "spellLevel": 3, "list": ["Fireball", "Slow", "Hypnotize", "Haste"] },
+          { "spellLevel": 4, "list": ["Fly", "Wall of Fire", "Vision of Death", "Translocate"] },
+          {
+            "spellLevel": 5,
+            "list": ["Sending", "Howling Blizzard", "Wall of Stone", "Scouting Eye"]
+          },
+          { "spellLevel": 6, "list": ["Dragon Form", "Chain Lightning", "Disintegrate"] }
+        ],
+        "prepared": [],
+        "blendedSpells": []
+      }
+    ],
+    "focusPoints": 1,
+    "focus": {
+      "arcane": {
+        "cha": {
+          "abilityBonus": 5,
+          "proficiency": 4,
+          "itemBonus": 0,
+          "focusCantrips": [],
+          "focusSpells": ["Ancestral Memories"]
+        }
+      }
+    },
+    "formula": [],
+    "acTotal": {
+      "acProfBonus": 13,
+      "acAbilityBonus": 4,
+      "acItemBonus": 1,
+      "acTotal": 28,
+      "shieldBonus": null
+    },
+    "pets": [],
+    "familiars": []
+  }
+}

@@ -1,7 +1,7 @@
 name: Feature request
 description: Suggest a new feature or improvement.
-title: "[Feature]: "
-labels: ["enhancement"]
+title: '[Feature]: '
+labels: ['enhancement']
 body:
   - type: markdown
     attributes:
@@ -15,7 +15,7 @@ body:
     attributes:
       label: Problem or use case
       description: What problem would this solve?
-      placeholder: "Example: When a character levels up, I want to know which cards need reprinting."
+      placeholder: 'Example: When a character levels up, I want to know which cards need reprinting.'
     validations:
       required: true
 
@@ -24,7 +24,7 @@ body:
     attributes:
       label: Proposed solution
       description: What would you like the app to do?
-      placeholder: "Example: Compare the new Pathbuilder JSON against the previous import and show added, removed, and changed cards."
+      placeholder: 'Example: Compare the new Pathbuilder JSON against the previous import and show added, removed, and changed cards.'
     validations:
       required: true
 
@@ -51,7 +51,7 @@ body:
     attributes:
       label: Alternatives considered
       description: Are there other ways this could be handled?
-      placeholder: "Example: This could also be done manually by exporting a print list."
+      placeholder: 'Example: This could also be done manually by exporting a print list.'
     validations:
       required: false
 

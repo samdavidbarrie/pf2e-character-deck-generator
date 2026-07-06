@@ -1,7 +1,7 @@
 name: Pathbuilder import problem
 description: Report a problem importing or interpreting a Pathbuilder 2e JSON export.
-title: "[Import]: "
-labels: ["import", "pathbuilder"]
+title: '[Import]: '
+labels: ['import', 'pathbuilder']
 body:
   - type: markdown
     attributes:
@@ -15,7 +15,7 @@ body:
     attributes:
       label: Summary
       description: What is wrong with the import?
-      placeholder: "Example: My character imports, but none of the archetype feats generate cards."
+      placeholder: 'Example: My character imports, but none of the archetype feats generate cards.'
     validations:
       required: true
 
@@ -23,7 +23,7 @@ body:
     id: character-level
     attributes:
       label: Character level
-      placeholder: "Example: 7"
+      placeholder: 'Example: 7'
     validations:
       required: true
 
@@ -31,7 +31,7 @@ body:
     id: character-class
     attributes:
       label: Class
-      placeholder: "Example: Fighter, Sorcerer, Thaumaturge"
+      placeholder: 'Example: Fighter, Sorcerer, Thaumaturge'
     validations:
       required: true
 
@@ -39,7 +39,7 @@ body:
     id: ancestry
     attributes:
       label: Ancestry and heritage
-      placeholder: "Example: Kitsune, Ancient-Blooded Dwarf, Human Nephilim"
+      placeholder: 'Example: Kitsune, Ancient-Blooded Dwarf, Human Nephilim'
     validations:
       required: false
 
@@ -91,7 +91,7 @@ body:
     attributes:
       label: Expected result
       description: What should the app have generated or shown?
-      placeholder: "Example: It should have generated cards for my archetype feats and focus spell."
+      placeholder: 'Example: It should have generated cards for my archetype feats and focus spell.'
     validations:
       required: true
 
@@ -100,7 +100,7 @@ body:
     attributes:
       label: Pathbuilder JSON
       description: Attach the affected JSON export or a smaller example that reproduces the same issue.
-      placeholder: "Drag a JSON file here, or explain why one cannot be shared."
+      placeholder: 'Drag a JSON file here, or explain why one cannot be shared.'
     validations:
       required: false
 
@@ -108,7 +108,7 @@ body:
     id: pathbuilder-version
     attributes:
       label: Pathbuilder version or export source
-      placeholder: "Example: Pathbuilder web, Android app, iOS app, unknown"
+      placeholder: 'Example: Pathbuilder web, Android app, iOS app, unknown'
     validations:
       required: false
 

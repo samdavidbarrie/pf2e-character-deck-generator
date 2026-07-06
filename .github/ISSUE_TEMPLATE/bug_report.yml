@@ -1,7 +1,7 @@
 name: Bug report
 description: Report something that is broken or behaving unexpectedly.
-title: "[Bug]: "
-labels: ["bug"]
+title: '[Bug]: '
+labels: ['bug']
 body:
   - type: markdown
     attributes:
@@ -15,7 +15,7 @@ body:
     attributes:
       label: Summary
       description: What went wrong?
-      placeholder: "Example: The print preview overlaps cards on the second page."
+      placeholder: 'Example: The print preview overlaps cards on the second page.'
     validations:
       required: true
 
@@ -37,7 +37,7 @@ body:
     attributes:
       label: Expected behaviour
       description: What did you expect to happen?
-      placeholder: "Example: Cards should fit cleanly within the A4 page boundaries."
+      placeholder: 'Example: Cards should fit cleanly within the A4 page boundaries.'
     validations:
       required: true
 
@@ -46,7 +46,7 @@ body:
     attributes:
       label: Actual behaviour
       description: What actually happened?
-      placeholder: "Example: The bottom row of cards is clipped."
+      placeholder: 'Example: The bottom row of cards is clipped.'
     validations:
       required: true
 
@@ -69,7 +69,7 @@ body:
     id: browser
     attributes:
       label: Browser
-      placeholder: "Example: Firefox 128, Chrome 126, Safari 17"
+      placeholder: 'Example: Firefox 128, Chrome 126, Safari 17'
     validations:
       required: false
 
@@ -77,7 +77,7 @@ body:
     id: os
     attributes:
       label: Operating system
-      placeholder: "Example: Windows 11, macOS, Linux, iOS, Android"
+      placeholder: 'Example: Windows 11, macOS, Linux, iOS, Android'
     validations:
       required: false
 
@@ -86,7 +86,7 @@ body:
     attributes:
       label: Screenshots or files
       description: Add screenshots or example files if useful.
-      placeholder: "Drag screenshots or files here."
+      placeholder: 'Drag screenshots or files here.'
     validations:
       required: false
 

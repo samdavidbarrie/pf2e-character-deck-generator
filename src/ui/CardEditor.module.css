@@ -35,8 +35,13 @@
   justify-content: center;
 }
 
-.iconBtn:hover { background: #eee; }
-.iconBtn.active { border-color: #0066cc; color: #0066cc; }
+.iconBtn:hover {
+  background: #eee;
+}
+.iconBtn.active {
+  border-color: #0066cc;
+  color: #0066cc;
+}
 
 .fields {
   display: flex;

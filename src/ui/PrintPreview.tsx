@@ -1,7 +1,7 @@
-import { useAppStore } from "../app/store";
-import { CardPreview } from "./CardPreview";
-import { exportProjectJson } from "../storage/exportProject";
-import styles from "./PrintPreview.module.css";
+import { useAppStore } from '../app/store';
+import { exportProjectJson } from '../storage/exportProject';
+import { CardPreview } from './CardPreview';
+import styles from './PrintPreview.module.css';
 
 const CARDS_PER_SHEET = 9;
 
@@ -29,7 +29,7 @@ export function PrintPreview() {
     <div className={styles.wrapper}>
       {/* Controls — hidden on print */}
       <div className={styles.controls}>
-        <button className={styles.backBtn} onClick={() => goTo("deck-builder")}>
+        <button className={styles.backBtn} onClick={() => goTo('deck-builder')}>
           ← Back to editor
         </button>
 
@@ -38,34 +38,27 @@ export function PrintPreview() {
             <input
               type="checkbox"
               checked={settings.showCutGuides}
-              onChange={(e) =>
-                updatePrintSettings({ showCutGuides: e.target.checked })
-              }
-            />{" "}
+              onChange={(e) => updatePrintSettings({ showCutGuides: e.target.checked })}
+            />{' '}
             Cut guides
           </label>
           <label>
             <input
               type="checkbox"
               checked={settings.includeHidden}
-              onChange={(e) =>
-                updatePrintSettings({ includeHidden: e.target.checked })
-              }
-            />{" "}
+              onChange={(e) => updatePrintSettings({ includeHidden: e.target.checked })}
+            />{' '}
             Include hidden cards
           </label>
         </div>
 
         <div className={styles.cardCount}>
           {printCards.length} cards · {sheets.length} sheet
-          {sheets.length !== 1 ? "s" : ""}
+          {sheets.length !== 1 ? 's' : ''}
         </div>
 
         <div className={styles.actions}>
-          <button
-            className={styles.secondaryBtn}
-            onClick={() => exportProjectJson(project)}
-          >
+          <button className={styles.secondaryBtn} onClick={() => exportProjectJson(project)}>
             Export deck project
           </button>
           <button className={styles.printBtn} onClick={handlePrint}>
@@ -79,7 +72,7 @@ export function PrintPreview() {
         {sheets.map((sheet, si) => (
           <div
             key={si}
-            className={`${styles.sheet} ${settings.showCutGuides ? styles.withGuides : ""}`}
+            className={`${styles.sheet} ${settings.showCutGuides ? styles.withGuides : ''}`}
           >
             {sheet.map((card) => (
               <div key={card.id} className={styles.cardSlot}>
@@ -87,14 +80,9 @@ export function PrintPreview() {
               </div>
             ))}
             {/* Fill empty slots */}
-            {Array.from({ length: CARDS_PER_SHEET - sheet.length }).map(
-              (_, i) => (
-                <div
-                  key={`empty-${i}`}
-                  className={`${styles.cardSlot} ${styles.emptySlot}`}
-                />
-              ),
-            )}
+            {Array.from({ length: CARDS_PER_SHEET - sheet.length }).map((_, i) => (
+              <div key={`empty-${i}`} className={`${styles.cardSlot} ${styles.emptySlot}`} />
+            ))}
           </div>
         ))}
         {printCards.length === 0 && (

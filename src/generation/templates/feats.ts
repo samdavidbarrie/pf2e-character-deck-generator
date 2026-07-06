@@ -1,18 +1,18 @@
-import type { CharacterModel, CharacterFeat } from "../../model/character";
-import type { CardModel, CardCategory, ActionCost } from "../../model/cards";
-import { buildStableKey } from "../../rules/nameNormalization";
-import { blankField, notesField, defaultCard } from "./_helpers";
-import { parseActionCost } from "../../import/pathbuilderAdapter";
-import { aonSearchUrl } from "../../rules/aonUrlResolver";
+import { parseActionCost } from '../../import/pathbuilderAdapter';
+import type { CardCategory, CardModel } from '../../model/cards';
+import type { CharacterFeat, CharacterModel } from '../../model/character';
+import { aonSearchUrl } from '../../rules/aonUrlResolver';
+import { buildStableKey } from '../../rules/nameNormalization';
+import { defaultCard, notesField } from './_helpers';
 
 function featCategory(feat: CharacterFeat): CardCategory {
   if (feat.actionCost) {
     const cost = parseActionCost(feat.actionCost);
-    if (cost === "reaction") return "reaction";
-    if (cost === "free") return "free-action";
-    return "feat-action";
+    if (cost === 'reaction') return 'reaction';
+    if (cost === 'free') return 'free-action';
+    return 'feat-action';
   }
-  return "feat-passive";
+  return 'feat-passive';
 }
 
 function defaultInclude(feat: CharacterFeat): boolean {
@@ -21,8 +21,8 @@ function defaultInclude(feat: CharacterFeat): boolean {
     feat.actionCost ||
     feat.trigger ||
     feat.frequency ||
-    feat.type === "class" ||
-    feat.type === "ancestry"
+    feat.type === 'class' ||
+    feat.type === 'ancestry'
   );
 }
 
@@ -34,11 +34,11 @@ export function generateFeatCards(char: CharacterModel): CardModel[] {
 
     return defaultCard({
       title: feat.name,
-      subtitle: `${feat.type.charAt(0).toUpperCase() + feat.type.slice(1)} Feat ${feat.level > 0 ? `· Level ${feat.level}` : ""}`,
+      subtitle: `${feat.type.charAt(0).toUpperCase() + feat.type.slice(1)} Feat ${feat.level > 0 ? `· Level ${feat.level}` : ''}`,
       category,
       stableKey,
       source: {
-        system: "generated",
+        system: 'generated',
         originalName: feat.name,
         aonUrl: feat.sourceUrl ?? aonSearchUrl(feat.name),
         pathbuilderPath: `build.feats`,
@@ -50,9 +50,11 @@ export function generateFeatCards(char: CharacterModel): CardModel[] {
         trigger: feat.trigger,
         requirements: feat.requirements,
         frequency: feat.frequency,
-        summary: feat.summary ?? "Rules summary not imported. Add a short table-facing summary or use the source link.",
+        summary:
+          feat.summary ??
+          'Rules summary not imported. Add a short table-facing summary or use the source link.',
       },
-      print: { include: defaultInclude(feat), priority: 30, size: "standard" },
+      print: { include: defaultInclude(feat), priority: 30, size: 'standard' },
       writableFields: feat.actionCost ? [notesField()] : [],
     });
   });

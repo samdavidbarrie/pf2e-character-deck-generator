@@ -3,13 +3,13 @@
  * For personal use only — do not redistribute bulk AoN content.
  */
 
-import type { CardModel, CardCategory, ActionCost } from "../model/cards";
+import type { ActionCost, CardCategory, CardModel } from '../model/cards';
 
-const AON_ES = "https://elasticsearch.aonprd.com/aon/_search";
-const AON_BASE = "https://2e.aonprd.com";
+const AON_ES = 'https://elasticsearch.aonprd.com/aon/_search';
+const AON_BASE = 'https://2e.aonprd.com';
 const BATCH_SIZE = 50;
 
-export const SUMMARY_PLACEHOLDER = "Rules summary not imported.";
+export const SUMMARY_PLACEHOLDER = 'Rules summary not imported.';
 
 // ---------------------------------------------------------------------------
 // AoN data shape
@@ -51,7 +51,7 @@ export interface AonData {
  */
 function parseFullRulesHtml(
   text: string | undefined,
-  fallback: string | undefined
+  fallback: string | undefined,
 ): {
   summary?: string;
   criticalSuccess?: string;
@@ -61,15 +61,13 @@ function parseFullRulesHtml(
 } {
   if (!text) return { summary: fallback?.trim() || undefined };
 
-  const parts = text.split(" --- ");
-  const html = parts.length > 1 ? parts.slice(1).join(" --- ") : text;
+  const parts = text.split(' --- ');
+  const html = parts.length > 1 ? parts.slice(1).join(' --- ') : text;
   const plain = stripHtml(html).trim();
 
   // Split on outcome keyword boundaries. Critical variants must come before
   // plain Success/Failure in the alternation to avoid partial matching.
-  const segments = plain.split(
-    /\b(Critical Failure|Critical Success|Success|Failure)\b/,
-  );
+  const segments = plain.split(/\b(Critical Failure|Critical Success|Success|Failure)\b/);
 
   // segments: [preamble, label, content, label, content, ...]
   const result: {
@@ -86,10 +84,10 @@ function parseFullRulesHtml(
     const label = segments[i];
     const content = segments[i + 1]?.trim() || undefined;
     if (!content) continue;
-    if (label === "Critical Success") result.criticalSuccess = content;
-    else if (label === "Critical Failure") result.criticalFailure = content;
-    else if (label === "Success") result.success = content;
-    else if (label === "Failure") result.failure = content;
+    if (label === 'Critical Success') result.criticalSuccess = content;
+    else if (label === 'Critical Failure') result.criticalFailure = content;
+    else if (label === 'Success') result.success = content;
+    else if (label === 'Failure') result.failure = content;
   }
 
   return result;
@@ -97,47 +95,47 @@ function parseFullRulesHtml(
 
 function stripHtml(html: string): string {
   return html
-    .replace(/<\/(p|li|div|h[1-6])>/gi, "\n")
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<[^>]+>/g, "")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&mdash;/g, "—")
-    .replace(/&ndash;/g, "–")
-    .replace(/\n{3,}/g, "\n\n")
+    .replace(/<\/(p|li|div|h[1-6])>/gi, '\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&mdash;/g, '—')
+    .replace(/&ndash;/g, '–')
+    .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
 
 function mapActionCost(raw: string | undefined): ActionCost | undefined {
   if (!raw) return undefined;
   const s = raw.toLowerCase().trim();
-  if (s.includes("free")) return "free";
-  if (s.includes("reaction")) return "reaction";
-  if (s === "1" || s === "one action") return "1";
-  if (s === "2" || s === "two actions") return "2";
-  if (s === "3" || s === "three actions") return "3";
-  if (s.includes(" to ") || s.includes("varies") || s.includes("variable")) return "variable";
-  if (s === "passive" || s === "none" || s === "") return "passive";
+  if (s.includes('free')) return 'free';
+  if (s.includes('reaction')) return 'reaction';
+  if (s === '1' || s === 'one action') return '1';
+  if (s === '2' || s === 'two actions') return '2';
+  if (s === '3' || s === 'three actions') return '3';
+  if (s.includes(' to ') || s.includes('varies') || s.includes('variable')) return 'variable';
+  if (s === 'passive' || s === 'none' || s === '') return 'passive';
   return undefined;
 }
 
 // Prefer certain AoN document types per card category (AoN returns capitalized types)
 function preferredTypesFor(category: CardCategory): string[] {
   switch (category) {
-    case "spell":
-      return ["Spell", "Cantrip"];
-    case "focus-spell":
-      return ["Focus", "Spell"];
-    case "feat-action":
-    case "feat-passive":
-    case "reaction":
-    case "free-action":
-      return ["Feat", "Action"];
-    case "basic-action":
-    case "skill-action":
-      return ["Action", "Feat"];
+    case 'spell':
+      return ['Spell', 'Cantrip'];
+    case 'focus-spell':
+      return ['Focus', 'Spell'];
+    case 'feat-action':
+    case 'feat-passive':
+    case 'reaction':
+    case 'free-action':
+      return ['Feat', 'Action'];
+    case 'basic-action':
+    case 'skill-action':
+      return ['Action', 'Feat'];
     default:
       return [];
   }
@@ -151,58 +149,71 @@ async function fetchBatch(names: string[]): Promise<AonData[]> {
   const body = {
     query: {
       bool: {
-        should: names.map((name) => ({ term: { "name.keyword": name } })),
+        should: names.map((name) => ({ term: { 'name.keyword': name } })),
         minimum_should_match: 1,
       },
     },
     _source: [
-      "name", "type", "text", "summary", "trait", "actions",
-      "range", "area", "target", "saving_throw", "duration",
-      "trigger", "requirement", "frequency", "level",
-      "prerequisite", "url",
+      'name',
+      'type',
+      'text',
+      'summary',
+      'trait',
+      'actions',
+      'range',
+      'area',
+      'target',
+      'saving_throw',
+      'duration',
+      'trigger',
+      'requirement',
+      'frequency',
+      'level',
+      'prerequisite',
+      'url',
     ],
     size: Math.min(names.length * 3, 200),
   };
 
   const res = await fetch(AON_ES, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
 
   if (!res.ok) throw new Error(`AoN API responded with ${res.status}`);
 
-  const json = await res.json() as {
+  const json = (await res.json()) as {
     hits?: { hits?: Array<{ _source: Record<string, unknown> }> };
   };
 
   return (json.hits?.hits ?? []).map((hit) => {
     const s = hit._source;
-    const rawUrl = s["url"] as string | undefined;
+    const rawUrl = s['url'] as string | undefined;
     const parsed = parseFullRulesHtml(
-      s["text"] as string | undefined,
-      s["summary"] as string | undefined,
+      s['text'] as string | undefined,
+      s['summary'] as string | undefined,
     );
     return {
-      name: s["name"] as string,
-      aonType: (s["type"] as string) ?? "",
+      name: s['name'] as string,
+      aonType: (s['type'] as string) ?? '',
       description: parsed.summary,
       criticalSuccess: parsed.criticalSuccess,
       success: parsed.success,
       failure: parsed.failure,
       criticalFailure: parsed.criticalFailure,
-      traits: (s["trait"] as string[]) ?? [],
-      actionCost: mapActionCost(s["actions"] as string | undefined),
-      range: s["range"] as string | undefined,
-      area: s["area"] as string | undefined,
-      targets: s["target"] as string | undefined,
-      savingThrow: s["saving_throw"] as string | undefined,
-      duration: s["duration"] as string | undefined,
-      trigger: s["trigger"] as string | undefined,
-      requirements: s["requirement"] as string | undefined,
-      frequency: s["frequency"] as string | undefined,
-      level: s["level"] as number | undefined,
-      prerequisite: s["prerequisite"] as string | undefined,
+      traits: (s['trait'] as string[]) ?? [],
+      actionCost: mapActionCost(s['actions'] as string | undefined),
+      range: s['range'] as string | undefined,
+      area: s['area'] as string | undefined,
+      targets: s['target'] as string | undefined,
+      savingThrow: s['saving_throw'] as string | undefined,
+      duration: s['duration'] as string | undefined,
+      trigger: s['trigger'] as string | undefined,
+      requirements: s['requirement'] as string | undefined,
+      frequency: s['frequency'] as string | undefined,
+      level: s['level'] as number | undefined,
+      prerequisite: s['prerequisite'] as string | undefined,
       url: rawUrl ? `${AON_BASE}${rawUrl}` : undefined,
     };
   });
@@ -214,7 +225,7 @@ async function fetchBatch(names: string[]): Promise<AonData[]> {
  * multiple hits for the same name (e.g. "Shield" is both a spell and an action).
  */
 export async function fetchAonData(
-  cards: Array<{ title: string; category: CardCategory }>
+  cards: Array<{ title: string; category: CardCategory }>,
 ): Promise<Map<string, AonData>> {
   const names = [...new Set(cards.map((c) => c.title).filter(Boolean))];
   const allResults: AonData[] = [];
@@ -240,8 +251,7 @@ export async function fetchAonData(
     if (!candidates || candidates.length === 0) continue;
 
     const preferred = preferredTypesFor(card.category);
-    const best =
-      candidates.find((c) => preferred.includes(c.aonType)) ?? candidates[0];
+    const best = candidates.find((c) => preferred.includes(c.aonType)) ?? candidates[0];
     result.set(card.title, best);
   }
 
@@ -260,7 +270,7 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
 
   // For basic/skill actions the template provides a short one-liner; always
   // replace it with the fuller AoN description so roll/DC text is visible.
-  const alwaysReplace = card.category === "basic-action" || card.category === "skill-action";
+  const alwaysReplace = card.category === 'basic-action' || card.category === 'skill-action';
 
   if (data.description && (rules.summary.startsWith(SUMMARY_PLACEHOLDER) || alwaysReplace)) {
     rules.summary = data.description;
@@ -304,14 +314,12 @@ export interface FeatMerge {
  */
 export function detectFeatMerges(
   cards: CardModel[],
-  aonDataMap: Map<string, AonData>
+  aonDataMap: Map<string, AonData>,
 ): FeatMerge[] {
   // Build index of active-ability card titles → id
   const activeTitleToId = new Map<string, string>();
   for (const card of cards) {
-    const isActive =
-      card.rules.actionCost !== undefined &&
-      card.rules.actionCost !== "passive";
+    const isActive = card.rules.actionCost !== undefined && card.rules.actionCost !== 'passive';
     if (isActive) {
       activeTitleToId.set(card.title.toLowerCase(), card.id);
     }
@@ -320,7 +328,7 @@ export function detectFeatMerges(
   const merges: FeatMerge[] = [];
 
   for (const card of cards) {
-    if (card.category !== "feat-passive") continue;
+    if (card.category !== 'feat-passive') continue;
     const aon = aonDataMap.get(card.title);
     if (!aon?.prerequisite) continue;
 

@@ -23,15 +23,15 @@
   opacity: 0.45;
 }
 
-.card[role="button"] {
+.card[role='button'] {
   cursor: pointer;
 }
 
-.card[role="button"]:hover {
+.card[role='button']:hover {
   border-color: #0066cc;
 }
 
-.card[role="button"]:focus-visible {
+.card[role='button']:focus-visible {
   outline: 2px solid #0066cc;
 }
 
@@ -176,9 +176,16 @@
   font-size: 9pt;
 }
 
-.size-sm { flex: 0 0 auto; }
-.size-md { flex: 0 0 auto; min-width: 80px; }
-.size-lg { flex: 1 1 100%; }
+.size-sm {
+  flex: 0 0 auto;
+}
+.size-md {
+  flex: 0 0 auto;
+  min-width: 80px;
+}
+.size-lg {
+  flex: 1 1 100%;
+}
 
 .sourceFooter {
   margin-top: auto;

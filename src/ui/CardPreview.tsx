@@ -1,6 +1,6 @@
-import type { CardModel } from "../model/cards";
-import { ACTION_COST_LABEL, CATEGORY_LABEL, TEML_RANKS } from "../model/cards";
-import styles from "./CardPreview.module.css";
+import type { CardModel } from '../model/cards';
+import { ACTION_COST_LABEL, CATEGORY_LABEL, TEML_RANKS } from '../model/cards';
+import styles from './CardPreview.module.css';
 
 interface Props {
   card: CardModel;
@@ -10,27 +10,23 @@ interface Props {
 }
 
 export function CardPreview({ card, selected, onClick, forPrint }: Props) {
-  const actionLabel = card.rules.actionCost
-    ? ACTION_COST_LABEL[card.rules.actionCost]
-    : "";
+  const actionLabel = card.rules.actionCost ? ACTION_COST_LABEL[card.rules.actionCost] : '';
   const categoryLabel = CATEGORY_LABEL[card.category];
 
   return (
     <div
-      className={`${styles.card} ${selected ? styles.selected : ""} ${forPrint ? styles.forPrint : ""} ${!card.print.include && !forPrint ? styles.hidden : ""}`}
+      className={`${styles.card} ${selected ? styles.selected : ''} ${forPrint ? styles.forPrint : ''} ${!card.print.include && !forPrint ? styles.hidden : ''}`}
       onClick={onClick}
-      role={onClick ? "button" : undefined}
+      role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
-      onKeyDown={onClick ? (e) => e.key === "Enter" && onClick() : undefined}
+      onKeyDown={onClick ? (e) => e.key === 'Enter' && onClick() : undefined}
       aria-pressed={selected}
     >
       <div className={styles.topBand}>
         <span className={styles.title}>{card.title}</span>
         <span className={styles.meta}>
           <span className={styles.category}>{categoryLabel}</span>
-          {actionLabel && (
-            <span className={styles.actionCost}>{actionLabel}</span>
-          )}
+          {actionLabel && <span className={styles.actionCost}>{actionLabel}</span>}
         </span>
       </div>
 
@@ -48,20 +44,17 @@ export function CardPreview({ card, selected, onClick, forPrint }: Props) {
 
       {card.rules.trigger && (
         <div className={styles.field}>
-          <span className={styles.fieldLabel}>Trigger</span>{" "}
-          {card.rules.trigger}
+          <span className={styles.fieldLabel}>Trigger</span> {card.rules.trigger}
         </div>
       )}
       {card.rules.requirements && (
         <div className={styles.field}>
-          <span className={styles.fieldLabel}>Requirements</span>{" "}
-          {card.rules.requirements}
+          <span className={styles.fieldLabel}>Requirements</span> {card.rules.requirements}
         </div>
       )}
       {card.rules.frequency && (
         <div className={styles.field}>
-          <span className={styles.fieldLabel}>Frequency</span>{" "}
-          {card.rules.frequency}
+          <span className={styles.fieldLabel}>Frequency</span> {card.rules.frequency}
         </div>
       )}
 
@@ -100,53 +93,34 @@ export function CardPreview({ card, selected, onClick, forPrint }: Props) {
               <span className={styles.mergedChildName}>
                 {child.name}
                 {child.level !== undefined && (
-                  <span className={styles.mergedChildLevel}>
-                    {" "}
-                    (lv{child.level})
-                  </span>
+                  <span className={styles.mergedChildLevel}> (lv{child.level})</span>
                 )}
               </span>
-              {child.summary && (
-                <span className={styles.mergedChildSummary}>
-                  {child.summary}
-                </span>
-              )}
+              {child.summary && <span className={styles.mergedChildSummary}>{child.summary}</span>}
             </div>
           ))}
         </div>
       )}
 
       {card.mergedInto && !forPrint && (
-        <div className={styles.mergedIntoBadge}>
-          ↗ Merged into: {card.mergedInto}
-        </div>
+        <div className={styles.mergedIntoBadge}>↗ Merged into: {card.mergedInto}</div>
       )}
 
       {(() => {
-        const skillRows = card.writableFields.filter(
-          (f) => f.type === "skill-row",
-        );
-        const otherFields = card.writableFields.filter(
-          (f) => f.type !== "skill-row",
-        );
+        const skillRows = card.writableFields.filter((f) => f.type === 'skill-row');
+        const otherFields = card.writableFields.filter((f) => f.type !== 'skill-row');
         return (
           <>
             {skillRows.length > 0 && (
               <div className={styles.skillTable}>
                 <div className={styles.skillColumnHeader}>
                   <span className={styles.skillName} />
-                  <span className={styles.skillTeml}>
-                    T&nbsp;E&nbsp;M&nbsp;L
-                  </span>
+                  <span className={styles.skillTeml}>T&nbsp;E&nbsp;M&nbsp;L</span>
                   <span className={styles.skillTotal}>Bonus</span>
                 </div>
                 {skillRows.map((f) => {
-                  const rankIndex = TEML_RANKS.indexOf(
-                    f.rank as (typeof TEML_RANKS)[number],
-                  );
-                  const circles = TEML_RANKS.map((_, i) =>
-                    i <= rankIndex ? "●" : "○",
-                  ).join("");
+                  const rankIndex = TEML_RANKS.indexOf(f.rank as (typeof TEML_RANKS)[number]);
+                  const circles = TEML_RANKS.map((_, i) => (i <= rankIndex ? '●' : '○')).join('');
                   return (
                     <div key={f.id} className={styles.skillRow}>
                       <span className={styles.skillName}>{f.label}</span>
@@ -161,7 +135,7 @@ export function CardPreview({ card, selected, onClick, forPrint }: Props) {
             {otherFields.length > 0 && (
               <div className={styles.writableFields}>
                 {otherFields.map((f) => {
-                  if (f.type === "section") {
+                  if (f.type === 'section') {
                     return (
                       <div key={f.id} className={styles.sectionDivider}>
                         {f.label}
@@ -171,10 +145,10 @@ export function CardPreview({ card, selected, onClick, forPrint }: Props) {
                   return (
                     <div
                       key={f.id}
-                      className={`${styles.writableField} ${styles[`size-${f.size ?? "md"}`]}`}
+                      className={`${styles.writableField} ${styles[`size-${f.size ?? 'md'}`]}`}
                     >
                       <span className={styles.writableLabel}>{f.label}:</span>
-                      {f.type === "checkboxes" && f.boxes ? (
+                      {f.type === 'checkboxes' && f.boxes ? (
                         <span className={styles.checkboxes}>
                           {Array.from({ length: f.boxes }).map((_, i) => (
                             <span key={i} className={styles.checkbox}>
@@ -182,17 +156,11 @@ export function CardPreview({ card, selected, onClick, forPrint }: Props) {
                             </span>
                           ))}
                         </span>
-                      ) : f.type === "notes" ? (
-                        <span className={styles.notesLine}>
-                          ______________________
-                        </span>
+                      ) : f.type === 'notes' ? (
+                        <span className={styles.notesLine}>______________________</span>
                       ) : (
                         <span className={styles.blankBox}>
-                          [
-                          {" ".repeat(
-                            f.size === "lg" ? 20 : f.size === "md" ? 12 : 6,
-                          )}
-                          ]
+                          [{' '.repeat(f.size === 'lg' ? 20 : f.size === 'md' ? 12 : 6)}]
                         </span>
                       )}
                     </div>
@@ -206,12 +174,7 @@ export function CardPreview({ card, selected, onClick, forPrint }: Props) {
 
       {card.source.aonUrl && !forPrint && (
         <div className={styles.sourceFooter}>
-          <a
-            href={card.source.aonUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            tabIndex={-1}
-          >
+          <a href={card.source.aonUrl} target="_blank" rel="noopener noreferrer" tabIndex={-1}>
             AoN ↗
           </a>
         </div>

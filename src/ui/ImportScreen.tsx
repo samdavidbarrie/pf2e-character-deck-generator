@@ -1,22 +1,22 @@
-import { useState, useCallback } from "react";
-import { useAppStore } from "../app/store";
-import { validateImport } from "../import/validateImport";
-import { importProjectJson } from "../storage/exportProject";
-import styles from "./ImportScreen.module.css";
+import { useCallback, useState } from 'react';
+import { useAppStore } from '../app/store';
+import { validateImport } from '../import/validateImport';
+import { importProjectJson } from '../storage/exportProject';
+import styles from './ImportScreen.module.css';
 
-import hikariJson from "../fixtures/hikari.json";
-import hanaeJson from "../fixtures/hanae.json";
+import hanaeJson from '../fixtures/hanae.json';
+import hikariJson from '../fixtures/hikari.json';
 
 const DEV_FIXTURES = [
-  { label: "Hikari — Monk lv11 (no spellcaster)", json: hikariJson },
-  { label: "Hanae — Sorcerer lv11 (arcane + focus)", json: hanaeJson },
+  { label: 'Hikari — Monk lv11 (no spellcaster)', json: hikariJson },
+  { label: 'Hanae — Sorcerer lv11 (arcane + focus)', json: hanaeJson },
 ];
 
 export function ImportScreen() {
   const { importJson, loadProject, setImportValidation } = useAppStore();
   const importValidation = useAppStore((s) => s.importValidation);
 
-  const [pasteText, setPasteText] = useState("");
+  const [pasteText, setPasteText] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const [debugText, setDebugText] = useState<string | null>(null);
@@ -42,7 +42,7 @@ export function ImportScreen() {
 
   const handleFileUpload = useCallback(
     (file: File) => {
-      if (file.name.endsWith(".json")) {
+      if (file.name.endsWith('.json')) {
         // Could be a deck project or a character export
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -57,12 +57,12 @@ export function ImportScreen() {
               handleJson(json);
             }
           } catch {
-            setErrors(["Could not parse file as JSON."]);
+            setErrors(['Could not parse file as JSON.']);
           }
         };
         reader.readAsText(file);
       } else {
-        setErrors(["Please upload a .json file."]);
+        setErrors(['Please upload a .json file.']);
       }
     },
     [handleJson, loadProject],
@@ -71,7 +71,7 @@ export function ImportScreen() {
   const handleFilePicker = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) handleFileUpload(file);
-    e.target.value = "";
+    e.target.value = '';
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -86,7 +86,7 @@ export function ImportScreen() {
       const json = JSON.parse(pasteText);
       handleJson(json);
     } catch {
-      setErrors(["Could not parse pasted text as JSON."]);
+      setErrors(['Could not parse pasted text as JSON.']);
     }
   };
 
@@ -105,7 +105,7 @@ export function ImportScreen() {
           <p>Upload a Pathbuilder 2e JSON export, or paste the JSON below.</p>
 
           <div
-            className={`${styles.dropZone} ${isDragging ? styles.dragging : ""}`}
+            className={`${styles.dropZone} ${isDragging ? styles.dragging : ''}`}
             onDragOver={(e) => {
               e.preventDefault();
               setIsDragging(true);
@@ -136,11 +136,7 @@ export function ImportScreen() {
               rows={10}
               aria-label="Paste character JSON"
             />
-            <button
-              className={styles.button}
-              onClick={handlePaste}
-              disabled={!pasteText.trim()}
-            >
+            <button className={styles.button} onClick={handlePaste} disabled={!pasteText.trim()}>
               Import from paste
             </button>
           </details>
@@ -157,9 +153,7 @@ export function ImportScreen() {
                 <details>
                   <summary>Copy debug details</summary>
                   <pre className={styles.debugPre}>{debugText}</pre>
-                  <button
-                    onClick={() => navigator.clipboard.writeText(debugText)}
-                  >
+                  <button onClick={() => navigator.clipboard.writeText(debugText)}>
                     Copy to clipboard
                   </button>
                 </details>

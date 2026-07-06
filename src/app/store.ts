@@ -1,19 +1,14 @@
-import { create } from "zustand";
-import type { DeckProject, PrintSettings } from "../model/deckProject";
-import type { CardModel } from "../model/cards";
-import type { CharacterModel } from "../model/character";
-import { DEFAULT_PRINT_SETTINGS } from "../model/deckProject";
-import { generateDeck, type GenerationWarning } from "../generation/generateDeck";
-import { validateImport, type ValidationResult } from "../import/validateImport";
-import { parsePathbuilder } from "../import/pathbuilderAdapter";
-import { detectSource } from "../import/detectSource";
-import {
-  fetchAonData,
-  applyAonDataToCard,
-  detectFeatMerges,
-} from "../rules/aonEnrichment";
+import { create } from 'zustand';
+import { generateDeck, type GenerationWarning } from '../generation/generateDeck';
+import { detectSource } from '../import/detectSource';
+import { parsePathbuilder } from '../import/pathbuilderAdapter';
+import { validateImport, type ValidationResult } from '../import/validateImport';
+import type { CardModel } from '../model/cards';
+import type { DeckProject, PrintSettings } from '../model/deckProject';
+import { DEFAULT_PRINT_SETTINGS } from '../model/deckProject';
+import { applyAonDataToCard, detectFeatMerges, fetchAonData } from '../rules/aonEnrichment';
 
-export type AppScreen = "import" | "deck-builder" | "print-preview";
+export type AppScreen = 'import' | 'deck-builder' | 'print-preview';
 
 interface AppState {
   screen: AppScreen;
@@ -56,10 +51,10 @@ interface AppState {
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
-  screen: "import",
+  screen: 'import',
   project: null,
   selectedCardId: null,
-  searchQuery: "",
+  searchQuery: '',
   categoryFilter: null,
   importValidation: null,
   generationWarnings: [],
@@ -80,8 +75,8 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     try {
       const source = detectSource(json);
-      if (source !== "pathbuilder") {
-        return { success: false, errors: ["Unsupported source format."] };
+      if (source !== 'pathbuilder') {
+        return { success: false, errors: ['Unsupported source format.'] };
       }
 
       const character = parsePathbuilder(json);
@@ -89,7 +84,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
       const now = new Date().toISOString();
       const project: DeckProject = {
-        appVersion: "0.1.0",
+        appVersion: '0.1.0',
         createdAt: now,
         updatedAt: now,
         character,
@@ -98,10 +93,10 @@ export const useAppStore = create<AppState>((set, get) => ({
         importHistory: [],
       };
 
-      set({ project, generationWarnings: warnings, screen: "deck-builder", selectedCardId: null });
+      set({ project, generationWarnings: warnings, screen: 'deck-builder', selectedCardId: null });
       return { success: true, errors: [] };
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Unknown error during import.";
+      const msg = err instanceof Error ? err.message : 'Unknown error during import.';
       return { success: false, errors: [msg] };
     }
   },
@@ -112,7 +107,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     set((state) => {
       if (!state.project) return {};
       const cards = state.project.cards.map((c) =>
-        c.id === id ? { ...c, ...patch, userEdits: { ...c.userEdits, edited: true } } : c
+        c.id === id ? { ...c, ...patch, userEdits: { ...c.userEdits, edited: true } } : c,
       );
       return { project: { ...state.project, cards, updatedAt: new Date().toISOString() } };
     }),
@@ -121,7 +116,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     set((state) => {
       if (!state.project) return {};
       const cards = state.project.cards.map((c) =>
-        c.id === id ? { ...c, print: { ...c.print, include: !c.print.include } } : c
+        c.id === id ? { ...c, print: { ...c.print, include: !c.print.include } } : c,
       );
       return { project: { ...state.project, cards, updatedAt: new Date().toISOString() } };
     }),
@@ -136,10 +131,14 @@ export const useAppStore = create<AppState>((set, get) => ({
         ...original,
         id: `copy-${crypto.randomUUID()}`,
         stableKey: `manual:copy-of-${original.stableKey}`,
-        source: { ...original.source, system: "manual" },
+        source: { ...original.source, system: 'manual' },
         userEdits: { edited: false },
       };
-      const cards = [...state.project.cards.slice(0, idx + 1), copy, ...state.project.cards.slice(idx + 1)];
+      const cards = [
+        ...state.project.cards.slice(0, idx + 1),
+        copy,
+        ...state.project.cards.slice(idx + 1),
+      ];
       return { project: { ...state.project, cards, updatedAt: new Date().toISOString() } };
     }),
 
@@ -150,12 +149,12 @@ export const useAppStore = create<AppState>((set, get) => ({
       const card: CardModel = {
         id,
         stableKey: `manual:${id}`,
-        title: "New Card",
-        category: "manual",
-        source: { system: "manual" },
-        rules: { traits: [], summary: "" },
+        title: 'New Card',
+        category: 'manual',
+        source: { system: 'manual' },
+        rules: { traits: [], summary: '' },
         writableFields: [],
-        print: { include: true, priority: 50, size: "standard" },
+        print: { include: true, priority: 50, size: 'standard' },
         userEdits: { edited: false },
       };
       return {
@@ -186,9 +185,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       const { cards: fresh } = generateDeck(state.project.character);
       const freshCard = fresh.find((c) => c.stableKey === existing.stableKey);
       if (!freshCard) return {};
-      const cards = state.project.cards.map((c) =>
-        c.id === id ? { ...freshCard, id: c.id } : c
-      );
+      const cards = state.project.cards.map((c) => (c.id === id ? { ...freshCard, id: c.id } : c));
       return { project: { ...state.project, cards, updatedAt: new Date().toISOString() } };
     }),
 
@@ -247,7 +244,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         enriching: false,
       });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "AoN enrichment failed.";
+      const msg = err instanceof Error ? err.message : 'AoN enrichment failed.';
       set({ enriching: false, enrichError: msg });
     }
   },
@@ -265,7 +262,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     }),
 
   loadProject: (project) =>
-    set({ project, screen: "deck-builder", selectedCardId: null, generationWarnings: [] }),
+    set({ project, screen: 'deck-builder', selectedCardId: null, generationWarnings: [] }),
 
-  clearProject: () => set({ project: null, screen: "import", selectedCardId: null }),
+  clearProject: () => set({ project: null, screen: 'import', selectedCardId: null }),
 }));
