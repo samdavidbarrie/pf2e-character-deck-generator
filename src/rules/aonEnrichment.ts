@@ -36,6 +36,10 @@ export interface AonData {
   level?: number;
   prerequisite?: string;
   url?: string;
+  /** Equipment-specific fields populated from AoN. */
+  usage?: string; // e.g. "held in 1 hand; Bulk L"
+  priceRaw?: string; // e.g. "50 gp"
+  activateTag?: string; // activation trait, e.g. "manipulate"
   // Degree-of-success outcomes
   criticalSuccess?: string;
   success?: string;
@@ -241,6 +245,9 @@ async function fetchBatch(names: string[]): Promise<AonData[]> {
       'level',
       'prerequisite',
       'url',
+      'usage',
+      'bulk',
+      'price_raw',
     ],
     size: Math.min(names.length * 3, 200),
   };
@@ -264,6 +271,28 @@ async function fetchBatch(names: string[]): Promise<AonData[]> {
       s['text'] as string | undefined,
       s['summary'] as string | undefined,
     );
+
+    // Equipment-specific: parse activation tag from the metadata section (parts[0] of text).
+    // AoN stores "Activate Single Action (manipulate)" there; the tag is in parentheses.
+    const rawText = s['text'] as string | undefined;
+    const metaSection = rawText ? stripHtml(rawText.split(' --- ')[0]) : '';
+    const activateTagMatch = /\bActivate\b[^(]*\(([^)]+)\)/i.exec(metaSection);
+
+    // Combine AoN 'usage' and 'bulk' fields into a single display string.
+    const usageRaw = s['usage'] as string | undefined;
+    const bulkRaw = s['bulk'] as number | undefined;
+    const bulkStr =
+      bulkRaw === undefined || bulkRaw === null
+        ? undefined
+        : bulkRaw === 0.1
+          ? 'L'
+          : bulkRaw === 0
+            ? '\u2014'
+            : String(bulkRaw);
+    const usage =
+      [usageRaw, bulkStr != null ? `Bulk ${bulkStr}` : undefined].filter(Boolean).join('; ') ||
+      undefined;
+
     return {
       name: s['name'] as string,
       aonType: (s['type'] as string) ?? '',
@@ -286,6 +315,9 @@ async function fetchBatch(names: string[]): Promise<AonData[]> {
       level: s['level'] as number | undefined,
       prerequisite: s['prerequisite'] as string | undefined,
       url: rawUrl ? `${AON_BASE}${rawUrl}` : undefined,
+      usage,
+      priceRaw: (s['price_raw'] as string | undefined) || undefined,
+      activateTag: activateTagMatch?.[1]?.trim() || undefined,
     };
   });
 }
@@ -341,25 +373,51 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
 
   const rules = { ...card.rules };
   const source = { ...card.source };
+  let subtitle = card.subtitle;
+  let writableFields = card.writableFields;
 
   // For basic/skill actions the template provides a short one-liner; always
   // replace it with the fuller AoN description so roll/DC text is visible.
   const alwaysReplace = card.category === 'basic-action' || card.category === 'skill-action';
 
   if (data.description && (rules.summary.startsWith(SUMMARY_PLACEHOLDER) || alwaysReplace)) {
-    const isItem = card.category === 'equipment' || card.category === 'weapon';
-    let desc = isItem ? stripSourceMetadata(data.description) : data.description;
     if (card.category === 'equipment') {
+      // Run variant filtering on the raw description BEFORE stripSourceMetadata so that
+      // price information embedded in variant text is still available for extraction.
       const enriched = filterEquipmentDescription(
-        desc,
+        data.description,
         card.title,
         data.level,
         undefined,
         undefined,
       );
-      desc = buildEquipmentDescription(enriched);
+      // Apply stripSourceMetadata to the assembled (shared + variant) text.
+      rules.summary = stripSourceMetadata(buildEquipmentDescription(enriched));
+      // Set equipment-specific metadata fields from AoN.
+      if (data.usage && !rules.usage) rules.usage = data.usage;
+      // Price: prefer the matched variant's extracted price, fall back to the AoN field.
+      const resolvedPrice = enriched.matchedVariant?.price ?? data.priceRaw;
+      if (resolvedPrice && !rules.price) rules.price = resolvedPrice;
+      if (data.activateTag && !rules.activateTag) rules.activateTag = data.activateTag;
+
+      // Split "Activate—AbilityName" sections out of the summary into extraSections.
+      // Each activation ability then overflows to a back card via splitOverflowCards
+      // when the combined text is too long to fit on a single card.
+      if (!rules.extraSections?.length) {
+        const activateParts = rules.summary.split(/(?=\bActivate—)/);
+        if (activateParts.length > 1) {
+          rules.summary = activateParts[0].trim();
+          rules.extraSections = activateParts.slice(1).map((body) => ({
+            heading: undefined as string | undefined,
+            body: body.trim(),
+          }));
+        }
+      }
+    } else {
+      const isItem = card.category === 'weapon';
+      const desc = isItem ? stripSourceMetadata(data.description) : data.description;
+      rules.summary = desc;
     }
-    rules.summary = desc;
   }
 
   // For spells: attach Heightened text as an extraSection (parsed separately by fetchBatch)
@@ -382,6 +440,15 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
 
   if (data.traits.length > 0 && rules.traits.length === 0) {
     rules.traits = data.traits;
+  }
+
+  // Consumable equipment cards have a single use (the card IS the physical item).
+  // Remove the Uses checkbox added by the generator — copies handle quantity instead.
+  if (card.category === 'equipment') {
+    const isConsumable = rules.traits.some((t) => t.toLowerCase() === 'consumable');
+    if (isConsumable) {
+      writableFields = writableFields.filter((f) => f.label !== 'Uses');
+    }
   }
 
   if (data.actionCost && !rules.actionCost) {
@@ -418,7 +485,7 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
 
   if (data.url) source.aonUrl = data.url;
 
-  return { ...card, rules, source };
+  return { ...card, rules, source, subtitle, writableFields };
 }
 
 // ---------------------------------------------------------------------------

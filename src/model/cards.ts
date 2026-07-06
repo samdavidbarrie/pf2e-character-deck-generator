@@ -72,6 +72,10 @@ export interface CardModel {
     duration?: string;
     /** True if the spell requires a spell attack roll (targets AC). Set by AoN enrichment. */
     spellAttack?: boolean;
+    /** Equipment item metadata set by AoN enrichment. */
+    usage?: string; // e.g. "held in 1 hand; Bulk L"
+    price?: string; // e.g. "50 gp"
+    activateTag?: string; // activation trait(s), e.g. "manipulate"
   };
 
   writableFields: WritableField[];
@@ -81,6 +85,8 @@ export interface CardModel {
     priority: number;
     size: 'standard' | 'double' | 'mini';
     pageBreakBefore?: boolean;
+    /** Number of physical copies to print. Defaults to 1. Used for consumable equipment. */
+    copies?: number;
   };
 
   userEdits: {

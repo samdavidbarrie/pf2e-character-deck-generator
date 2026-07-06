@@ -12,9 +12,11 @@ export function PrintPreview() {
   if (!project) return null;
 
   const settings = project.printSettings;
-  const printCards = splitOverflowCards(
-    settings.includeHidden ? project.cards : project.cards.filter((c) => c.print.include),
-  );
+  const includedCards = settings.includeHidden
+    ? project.cards
+    : project.cards.filter((c) => c.print.include);
+
+  const printCards = splitOverflowCards(includedCards);
 
   // Paginate into sheets of 9
   const sheets: (typeof printCards)[] = [];

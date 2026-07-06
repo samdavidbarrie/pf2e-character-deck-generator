@@ -230,6 +230,27 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
         </div>
       )}
 
+      {(card.rules.usage || card.rules.activateTag || card.rules.price) && (
+        <div className={styles.spellMeta}>
+          {card.rules.usage && (
+            <span>
+              <span className={styles.spellMetaLabel}>Usage</span> {card.rules.usage}
+            </span>
+          )}
+          {card.rules.activateTag && card.rules.actionCost && (
+            <span>
+              <span className={styles.spellMetaLabel}>Activate</span>{' '}
+              <ActionCostDisplay cost={card.rules.actionCost} /> {card.rules.activateTag}
+            </span>
+          )}
+          {card.rules.price && (
+            <span>
+              <span className={styles.spellMetaLabel}>Price</span> {card.rules.price}
+            </span>
+          )}
+        </div>
+      )}
+
       {card.rules.trigger && (
         <div className={styles.field}>
           <span className={styles.fieldLabel}>Trigger</span> {card.rules.trigger}

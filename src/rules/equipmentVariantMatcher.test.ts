@@ -12,45 +12,36 @@ import {
 // ---------------------------------------------------------------------------
 
 /**
- * Representative AoN text for a multi-variant item (Healing Potion).
- * Mirrors the structure described in issue #17:
- *   - Parent header "Healing Potion Item 1+" (range entry, no variant)
- *   - Shared activation text
- *   - Per-variant headers each followed by their specific text
+ * Represents data.description as produced by parseFullRulesHtml for Healing Potion.
+ *
+ * In the real AoN Elasticsearch text field, variant level info lives in a
+ * <title right="Item N"> HTML attribute that is stripped during parsing.
+ * What remains is: shared activation text, then per-variant sections in the form:
+ *
+ *   "Name (Variant) Source <Book> pg. N Price X gp --- Variant text"
+ *
+ * This fixture is constructed from the live AoN response for
+ * 'Healing Potion (Minor)' / 'Healing Potion (Lesser)' (both return identical text).
  */
-const HEALING_POTION_TEXT = `Healing Potion Item 1+
-When you drink a healing potion, you regain the listed number of Hit Points.
+const HEALING_POTION_TEXT =
+  'A healing potion is a vial of a ruby-red liquid that imparts a tingling sensation as the ' +
+  "drinker's wounds heal rapidly. When you drink a healing potion , you regain the listed " +
+  'number of Hit Points.  ' +
+  'Healing Potion (Minor) Source GM Core pg. 259, Core Rulebook pg. 563 Price 4 gp --- ' +
+  'The potion restores 1d8 Hit Points.  ' +
+  'Healing Potion (Lesser) Source GM Core pg. 259, Core Rulebook pg. 563 Price 12 gp --- ' +
+  'The potion restores 2d8+5 Hit Points.  ' +
+  'Healing Potion (Moderate) Source GM Core pg. 259, Core Rulebook pg. 563 Price 50 gp --- ' +
+  'The potion restores 3d8+10 Hit Points.  ' +
+  'Healing Potion (Greater) Source GM Core pg. 259, Core Rulebook pg. 563 Price 400 gp --- ' +
+  'The potion restores 6d8+20 Hit Points.  ' +
+  'Healing Potion (Major) Source GM Core pg. 259, Core Rulebook pg. 563 Price 5,000 gp --- ' +
+  'The potion restores 8d8+30 Hit Points.';
 
-Healing Potion (Minor) Item 1
-The potion restores 1d8 Hit Points.
-
-Healing Potion (Lesser) Item 3
-The potion restores 2d8+5 Hit Points.
-
-Healing Potion (Moderate) Item 6
-The potion restores 3d8+10 Hit Points.
-
-Healing Potion (Greater) Item 12
-The potion restores 6d8+20 Hit Points.
-
-Healing Potion (Major) Item 18
-The potion restores 8d8+30 Hit Points.`;
-
-/**
- * Same content but with bold markers (**) as produced by stripHtml for
- * items whose AoN page uses <b>/<strong> tags for variant headings.
- */
-const HEALING_POTION_TEXT_BOLD = `**Healing Potion** **Item 1+**
-When you drink a healing potion, you regain the listed number of Hit Points.
-
-**Healing Potion (Minor)** **Item 1**
-The potion restores 1d8 Hit Points.
-
-**Healing Potion (Lesser)** **Item 3**
-The potion restores 2d8+5 Hit Points.
-
-**Healing Potion (Moderate)** **Item 6**
-The potion restores 3d8+10 Hit Points.`;
+/** Single-variant version: only the Minor entry appears on the page. */
+const HEALING_POTION_SINGLE_TEXT =
+  'Healing Potion (Minor) Source GM Core pg. 259 Price 4 gp --- ' +
+  'The potion restores 1d8 Hit Points.';
 
 // ---------------------------------------------------------------------------
 // splitItemName
@@ -114,9 +105,9 @@ describe('parseEquipmentVariants', () => {
     ]);
   });
 
-  it('extracts the correct level for each variant', () => {
+  it('level is undefined (was in a stripped HTML attribute, not recoverable)', () => {
     const { variants } = parseEquipmentVariants(HEALING_POTION_TEXT, 'Healing Potion');
-    expect(variants.map((v) => v.level)).toEqual([1, 3, 6, 12, 18]);
+    expect(variants.every((v) => v.level === undefined)).toBe(true);
   });
 
   it('extracts variant-specific text for each entry', () => {
@@ -134,27 +125,64 @@ describe('parseEquipmentVariants', () => {
     expect(variants[1].text).not.toContain('1d8 Hit Points');
   });
 
-  it('extracts shared text between parent header and first variant', () => {
+  it('extracts shared text before the first variant header', () => {
     const { sharedText } = parseEquipmentVariants(HEALING_POTION_TEXT, 'Healing Potion');
     expect(sharedText).toContain('you regain the listed number of Hit Points');
-    // Must not include the parent header line itself
-    expect(sharedText).not.toContain('Item 1+');
-    // Must not include variant-specific content
+    // Must not include source metadata or variant-specific content
+    expect(sharedText).not.toContain('Source');
     expect(sharedText).not.toContain('1d8 Hit Points');
   });
 
-  it('returns no variants for a single-item description', () => {
+  it('returns no variants for a description with no item headers', () => {
     const text = 'This shadow signet increases your ability to hide in shadows.';
     const { variants, sharedText } = parseEquipmentVariants(text, 'Shadow Signet');
     expect(variants).toHaveLength(0);
     expect(sharedText).toContain('hide in shadows');
   });
 
-  it('strips bold markers (**) before parsing', () => {
-    const { variants } = parseEquipmentVariants(HEALING_POTION_TEXT_BOLD, 'Healing Potion');
-    expect(variants).toHaveLength(3);
+  it('extracts a single variant from a single-variant page (header stripped from body)', () => {
+    const { sharedText, variants } = parseEquipmentVariants(
+      HEALING_POTION_SINGLE_TEXT,
+      'Healing Potion',
+    );
+    expect(variants).toHaveLength(1);
     expect(variants[0].name).toBe('Healing Potion (Minor)');
-    expect(variants[0].text).toContain('1d8 Hit Points');
+    expect(variants[0].text).toBe('The potion restores 1d8 Hit Points.');
+    // Source/price metadata and header must not appear in body text
+    expect(variants[0].text).not.toContain('Source');
+    expect(variants[0].text).not.toContain('Price');
+    expect(sharedText).toBe('');
+  });
+
+  it('strips bold markers (**) before parsing', () => {
+    // Bold markers on the variant name should not prevent matching.
+    const textWithBold =
+      '**Healing Potion (Minor)** Source GM Core pg. 259 Price 4 gp --- ' +
+      'The potion restores 1d8 Hit Points.  ' +
+      '**Healing Potion (Lesser)** Source GM Core pg. 259 Price 12 gp --- ' +
+      'The potion restores 2d8+5 Hit Points.';
+    const { variants } = parseEquipmentVariants(textWithBold, 'Healing Potion');
+    expect(variants).toHaveLength(2);
+    expect(variants[0].name).toBe('Healing Potion (Minor)');
+    expect(variants[0].text).toBe('The potion restores 1d8 Hit Points.');
+  });
+
+  it('strips base-tier citation before first variant header', () => {
+    // Items like "Bands of Force" embed "Bands of Force Source ... Price 500 gp" in
+    // the shared section (no '---' body separator for the base tier). This should be
+    // stripped so it does not bleed into sharedText.
+    const text =
+      'Decorated with gemstones, these bands grant +1 to AC. Activate—Return Force Reaction. ' +
+      'Bands of Force Source GM Core pg. 286 Price 500 gp  ' +
+      'Bands of Force (Greater) Source GM Core pg. 286 Price 4,500 gp --- ' +
+      'The item bonus to AC and saves is +2.';
+    const { sharedText, variants } = parseEquipmentVariants(text, 'Bands of Force');
+    expect(variants).toHaveLength(1);
+    expect(variants[0].name).toBe('Bands of Force (Greater)');
+    // sharedText must not contain the base-tier citation or item name artifact
+    expect(sharedText).not.toContain('Source');
+    expect(sharedText).not.toContain('Price');
+    expect(sharedText).toContain('Activate—Return Force Reaction');
   });
 
   it('populates variantName correctly', () => {
@@ -168,16 +196,20 @@ describe('parseEquipmentVariants', () => {
     ]);
   });
 
-  it('handles description with no parent header (variants only)', () => {
-    const text = `Healing Potion (Minor) Item 1
-The potion restores 1d8 Hit Points.
+  it('extracts price from the source metadata section', () => {
+    const { variants } = parseEquipmentVariants(HEALING_POTION_TEXT, 'Healing Potion');
+    expect(variants[0].price).toBe('4 gp');
+    expect(variants[1].price).toBe('12 gp');
+    expect(variants[2].price).toBe('50 gp');
+    expect(variants[4].price).toBe('5,000 gp');
+  });
 
-Healing Potion (Lesser) Item 3
-The potion restores 2d8+5 Hit Points.`;
-
-    const { sharedText, variants } = parseEquipmentVariants(text, 'Healing Potion');
-    expect(variants).toHaveLength(2);
-    expect(sharedText).toBe('');
+  it('leaves price undefined when no Price field is present', () => {
+    const text =
+      'X (A) Source Some Book pg. 1 --- A text.  ' + 'X (B) Source Some Book pg. 1 --- B text.';
+    const { variants } = parseEquipmentVariants(text, 'X');
+    expect(variants[0].price).toBeUndefined();
+    expect(variants[1].price).toBeUndefined();
   });
 });
 
@@ -217,15 +249,31 @@ describe('matchEquipmentVariant', () => {
     }
   });
 
-  it('falls back to level match when name does not match', () => {
-    // Searching the base name only — no exact/normalised match
-    const result = matchEquipmentVariant('Healing Potion', 6, undefined, variants);
+  it('falls back to level match when name does not match (using variants with levels set)', () => {
+    // Level is not parsed from the AoN description (was in a stripped HTML attribute),
+    // but callers can provide variant objects with levels from other sources.
+    const variantsWithLevels = [
+      {
+        name: 'Healing Potion (Minor)',
+        baseName: 'Healing Potion',
+        variantName: 'Minor',
+        level: 1,
+        text: 'restores 1d8.',
+      },
+      {
+        name: 'Healing Potion (Moderate)',
+        baseName: 'Healing Potion',
+        variantName: 'Moderate',
+        level: 6,
+        text: 'restores 3d8+10.',
+      },
+    ];
+    const result = matchEquipmentVariant('Healing Potion', 6, undefined, variantsWithLevels);
     expect(result?.variant.name).toBe('Healing Potion (Moderate)');
     expect(result?.confidence).toBe('level');
   });
 
   it('does not level-match when multiple variants share the same level', () => {
-    // Construct a fake scenario with two variants at level 1
     const dupeVariants = [
       { name: 'X (A)', baseName: 'X', variantName: 'A', level: 1, text: 'A text' },
       { name: 'X (B)', baseName: 'X', variantName: 'B', level: 1, text: 'B text' },
@@ -315,6 +363,47 @@ describe('filterEquipmentDescription', () => {
     expect(result.confidence).toBe('exact');
     expect(result.sharedText).toBe(desc);
     expect(result.matchedVariant).toBeUndefined();
+  });
+
+  it('strips the variant header when AoN returns a single-variant page', () => {
+    // Simulates AoN returning the Minor entry on its own page (no siblings).
+    const result = filterEquipmentDescription(
+      HEALING_POTION_SINGLE_TEXT,
+      'Healing Potion (Minor)',
+      1,
+      undefined,
+      undefined,
+    );
+    expect(result.confidence).toBe('exact');
+    expect(result.matchedVariant?.name).toBe('Healing Potion (Minor)');
+    const built = buildEquipmentDescription(result);
+    // Source metadata and header must not appear in the card text
+    expect(built).not.toContain('Source');
+    expect(built).not.toContain('Price');
+    expect(built).toContain('1d8 Hit Points');
+  });
+
+  it('selects Lesser variant from the real AoN description format without sibling bleed', () => {
+    // Core acceptance test: character has Healing Potion (Lesser).
+    // AoN returns the full page (all 5 variants in one text block).
+    // The card should contain ONLY the shared text + the Lesser body.
+    const result = filterEquipmentDescription(
+      HEALING_POTION_TEXT,
+      'Healing Potion (Lesser)',
+      3,
+      undefined,
+      undefined,
+    );
+    expect(result.confidence).toBe('exact');
+    const desc = buildEquipmentDescription(result);
+    expect(desc).toContain('you regain the listed number of Hit Points');
+    expect(desc).toContain('2d8+5 Hit Points');
+    expect(desc).not.toContain('Healing Potion (Minor)');
+    expect(desc).not.toContain('Healing Potion (Moderate)');
+    expect(desc).not.toContain('1d8 Hit Points');
+    expect(desc).not.toContain('3d8+10');
+    expect(desc).not.toContain('Source');
+    expect(desc).not.toContain('Price');
   });
 });
 

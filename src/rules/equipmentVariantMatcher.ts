@@ -63,76 +63,78 @@ export function splitItemName(fullName: string): { baseName: string; variantName
 /**
  * Parse variant sections from an AoN item description.
  *
- * Looks for repeated "ItemName (Variant) Item N" headers within the text,
- * where ItemName starts with `baseName`. Splits those headers into separate
- * variant entries.
+ * Looks for repeated "ItemName (Variant) Source ..." headers within the text,
+ * where ItemName starts with `baseName`. In AoN descriptions the level info
+ * (e.g. "Item 1") lives in an HTML attribute that is stripped during parsing;
+ * variant headers are therefore identified by the variant-in-parens followed by
+ * an AoN source citation ("Source <BookName> pg. N").
  *
- * Returns `{ sharedText: fullDescription, variants: [] }` when fewer than two
- * variant headers are detected — i.e. the description is a single item with no
- * siblings to filter out.
+ * Returns `{ sharedText: fullDescription, variants: [] }` when no variant
+ * headers are detected — i.e. a single-item page with no sibling sections.
  */
 export function parseEquipmentVariants(
   description: string,
   baseName: string,
 ): { sharedText: string; variants: EquipmentVariant[] } {
-  // Normalise the text: strip Markdown bold markers added by stripHtml and
-  // collapse excessive blank lines.
-  const plain = description.replace(/\*\*/g, '').replace(/\n{3,}/g, '\n\n');
+  // Strip Markdown bold markers added by stripHtml, collapse excessive blank lines.
+  let plain = description.replace(/\*\*/g, '').replace(/\n{3,}/g, '\n\n');
 
   const escapedBase = escapeRegex(baseName);
 
-  // Matches both the plain parent header ("Healing Potion Item 1+") and
-  // variant headers ("Healing Potion (Minor) Item 1").
-  const headerRe = new RegExp(`(${escapedBase}(?:\\s*\\([^)]+\\))?)\\s*Item\\s+(\\d+)\\+?`, 'gi');
+  // Some multi-tier items embed a base-tier citation in the shared text section,
+  // e.g. "Bands of Force Source GM Core pg. 286 Price 500 gp" (no variant qualifier,
+  // no '---' body separator). Strip these so they don't bleed into sharedText.
+  // The pattern stops at the optional "Price X gp" to avoid eating the next variant header.
+  const baseTierCitationRe = new RegExp(
+    `\\s+${escapedBase}\\s+Source\\s+[A-Z][\\w ',]+pg\\.\\s*\\d+` +
+      `(?:\\s+Price\\s+[\\d,]+\\s*(?:gp|sp|cp)(?:\\s*,\\s*\\d+\\s*(?:sp|cp))*)?`,
+    'gi',
+  );
+  plain = plain.replace(baseTierCitationRe, '').trim();
 
-  const allMatches: Array<{
-    index: number;
-    name: string;
-    level: number;
-    isParent: boolean;
-  }> = [];
+  // Variant headers in AoN descriptions appear as:
+  //   "BaseName (Variant) Source <BookName> pg. N ..."
+  // The level ("Item N") was in the HTML 'right' attribute and is lost after parsing.
+  // We use the Source citation as the reliable delimiter.
+  const variantHeaderRe = new RegExp(`(${escapedBase}\\s*\\([^)]+\\))\\s+Source\\s+[A-Z]`, 'gi');
 
+  const headerMatches: Array<{ index: number; name: string }> = [];
   let m: RegExpExecArray | null;
-  while ((m = headerRe.exec(plain)) !== null) {
-    const name = m[1].trim();
-    // A header without parentheses is the parent/range entry, not a specific variant.
-    const isParent = !name.includes('(');
-    allMatches.push({ index: m.index, name, level: parseInt(m[2], 10), isParent });
+  while ((m = variantHeaderRe.exec(plain)) !== null) {
+    headerMatches.push({ index: m.index, name: m[1].trim() });
   }
 
-  const variantMatches = allMatches.filter((match) => !match.isParent);
-
-  // Need at least two variant headers to have something worth splitting.
-  if (variantMatches.length < 2) {
+  // No variant headers — description is for a single item, no filtering needed.
+  if (headerMatches.length === 0) {
     return { sharedText: plain.trim(), variants: [] };
   }
 
-  // Shared text = content between end of parent header (if any) and the first
-  // variant header.  When there is no parent header, it's everything before
-  // the first variant.
-  const parentMatch = allMatches.find((match) => match.isParent);
-  let sharedStart = 0;
-  if (parentMatch) {
-    const newlineAfterParent = plain.indexOf('\n', parentMatch.index);
-    sharedStart = newlineAfterParent > -1 ? newlineAfterParent + 1 : plain.length;
-  }
-  const sharedText = plain.slice(sharedStart, variantMatches[0].index).trim();
+  // Shared text: everything before the first variant header.
+  const sharedText = plain.slice(0, headerMatches[0].index).trim();
 
-  const variants: EquipmentVariant[] = variantMatches.map((match, i) => {
-    const start = match.index;
-    const end = i + 1 < variantMatches.length ? variantMatches[i + 1].index : plain.length;
-    const block = plain.slice(start, end).trim();
-    // First line is the header; the body follows.
-    const firstNewline = block.indexOf('\n');
-    const text = firstNewline > -1 ? block.slice(firstNewline + 1).trim() : '';
+  const variants: EquipmentVariant[] = headerMatches.map((header, i) => {
+    const blockEnd = i + 1 < headerMatches.length ? headerMatches[i + 1].index : plain.length;
+    const block = plain.slice(header.index, blockEnd);
 
-    const { baseName: bn, variantName } = splitItemName(match.name);
+    // The ' --- ' separator divides the variant's source/price metadata from its body text.
+    const sepIdx = block.indexOf(' --- ');
+    const metaSection = sepIdx > -1 ? block.slice(0, sepIdx) : block;
+    const bodyText = sepIdx > -1 ? block.slice(sepIdx + 5).trim() : '';
+
+    // Extract price from the metadata section (e.g. "Price 4 gp").
+    const priceMatch = /Price\s+([\d,]+\s*(?:gp|sp|cp)(?:\s*,\s*\d+\s*(?:sp|cp))*)/i.exec(
+      metaSection,
+    );
+
+    const { baseName: bn, variantName } = splitItemName(header.name);
     return {
-      name: match.name,
+      name: header.name,
       baseName: bn,
       variantName,
-      level: match.level,
-      text,
+      // Level was in the HTML 'right' attribute; not recoverable from plain text.
+      level: undefined,
+      price: priceMatch?.[1]?.trim(),
+      text: bodyText,
     };
   });
 
@@ -154,7 +156,8 @@ export function parseEquipmentVariants(
 export function matchEquipmentVariant(
   itemName: string,
   itemLevel: number | undefined,
-  itemPrice: string | undefined,
+  /** Reserved: character's own item price for matching. Not yet imported from Pathbuilder. */
+  _itemPrice: string | undefined,
   variants: EquipmentVariant[],
 ): { variant: EquipmentVariant; confidence: EnrichedEquipmentResult['confidence'] } | null {
   if (variants.length === 0) return null;
@@ -202,7 +205,8 @@ export function filterEquipmentDescription(
   description: string,
   itemName: string,
   itemLevel: number | undefined,
-  itemPrice: string | undefined,
+  /** Reserved: character's own item price for matching. Not yet imported from Pathbuilder. */
+  _itemPrice: string | undefined,
   sourceUrl: string | undefined,
 ): EnrichedEquipmentResult {
   const { baseName } = splitItemName(itemName);
@@ -217,7 +221,7 @@ export function filterEquipmentDescription(
     };
   }
 
-  const match = matchEquipmentVariant(itemName, itemLevel, itemPrice, variants);
+  const match = matchEquipmentVariant(itemName, itemLevel, _itemPrice, variants);
 
   if (!match) {
     return {
