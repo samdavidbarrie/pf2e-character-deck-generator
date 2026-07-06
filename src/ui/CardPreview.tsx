@@ -189,7 +189,7 @@ export function CardPreview({ card, selected, onClick, forPrint }: Props) {
                         <span className={styles.notesLine}>______________________</span>
                       ) : (
                         <span className={styles.blankBox}>
-                          [{' '.repeat(f.size === 'lg' ? 20 : f.size === 'md' ? 12 : 6)}]
+                          {' '.repeat(f.size === 'lg' ? 20 : f.size === 'md' ? 12 : 6)}
                         </span>
                       )}
                     </div>

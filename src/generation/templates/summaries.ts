@@ -7,12 +7,7 @@ export function generateSummaryCards(char: CharacterModel): CardModel[] {
   const cards: CardModel[] = [];
 
   // --- Combat Status ---
-  const abilityMods = (['str', 'dex', 'con', 'int', 'wis', 'cha'] as const)
-    .map((k) => `${k.toUpperCase()} ${char.abilityMods[k] >= 0 ? '+' : ''}${char.abilityMods[k]}`)
-    .join('  ');
-
   const combatSubtitle = [
-    `Level ${char.level}`,
     [char.ancestry, char.className].filter(Boolean).join(' '),
     char.background,
   ]
@@ -25,7 +20,7 @@ export function generateSummaryCards(char: CharacterModel): CardModel[] {
       subtitle: combatSubtitle,
       category: 'summary',
       stableKey: buildStableKey('summary', 'combat-status'),
-      rules: { traits: [], summary: abilityMods },
+      rules: { traits: [], summary: '' },
       print: { include: true, priority: 10, size: 'standard' },
       writableFields: [
         sectionField('HP'),
@@ -60,24 +55,28 @@ export function generateSummaryCards(char: CharacterModel): CardModel[] {
     detailLines.push(`Languages: ${char.languages.join(', ')}`);
   }
 
-  const halfMods = (['str', 'dex', 'con'] as const)
-    .map((k) => `${k.toUpperCase()} ${char.abilityMods[k] >= 0 ? '+' : ''}${char.abilityMods[k]}`)
-    .join('  ');
-  const halfMods2 = (['int', 'wis', 'cha'] as const)
-    .map((k) => `${k.toUpperCase()} ${char.abilityMods[k] >= 0 ? '+' : ''}${char.abilityMods[k]}`)
-    .join('  ');
-  detailLines.push(halfMods);
-  detailLines.push(halfMods2);
+  if (char.senses && char.senses.length > 0) {
+    detailLines.push(`Senses: ${char.senses.join(', ')}`);
+  }
 
   cards.push(
     defaultCard({
       title: 'Character Details',
-      subtitle: `${char.name} — Level ${char.level}`,
+      subtitle: char.name,
       category: 'summary',
       stableKey: buildStableKey('summary', 'character-details'),
       rules: { traits: [], summary: detailLines.join('\n') },
       print: { include: true, priority: 11, size: 'standard' },
-      writableFields: [],
+      writableFields: [
+        blankField('Level', 'sm'),
+        sectionField('Ability Modifiers'),
+        blankField('STR', 'sm'),
+        blankField('DEX', 'sm'),
+        blankField('CON', 'sm'),
+        blankField('INT', 'sm'),
+        blankField('WIS', 'sm'),
+        blankField('CHA', 'sm'),
+      ],
     }),
   );
 

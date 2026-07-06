@@ -162,7 +162,7 @@
 .writableField {
   font-size: 7pt;
   display: flex;
-  align-items: baseline;
+  align-items: flex-end;
   gap: 3px;
 }
 
@@ -174,10 +174,12 @@
 
 .blankBox {
   font-family: monospace;
-  border-bottom: 1px solid #333;
+  border-bottom: 1pt solid #555;
   min-width: 30px;
-  color: #fff;
+  height: 11pt;
+  color: transparent;
   display: inline-block;
+  vertical-align: bottom;
 }
 
 .notesLine {

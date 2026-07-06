@@ -348,6 +348,20 @@ export function parsePathbuilder(json: unknown): CharacterModel {
   // --- Languages ---
   const languages = arr<string>(get(build, 'languages'));
 
+  // --- Senses ---
+  const SENSE_KEYWORDS = [
+    'darkvision',
+    'low-light vision',
+    'scent',
+    'tremorsense',
+    'blindsight',
+    'lifesense',
+    'echolocation',
+    'infrared vision',
+  ];
+  const specialsArr = arr<string>(get(build, 'specials'));
+  const senses = specialsArr.filter((s) => SENSE_KEYWORDS.some((k) => s.toLowerCase().includes(k)));
+
   // --- Speeds ---
   const speedsRaw = get<Record<string, unknown>>(build, 'specials') ?? {};
   const speeds = {
@@ -378,6 +392,7 @@ export function parsePathbuilder(json: unknown): CharacterModel {
     defenses: { ac, hp, perception, saves },
     speeds,
     languages,
+    senses,
     proficiencies: {
       skills: [...skills, ...loreSkills],
       classDC,
