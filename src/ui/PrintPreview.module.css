@@ -25,7 +25,9 @@
   font-size: 0.88rem;
 }
 
-.backBtn:hover { background: #f0f0f0; }
+.backBtn:hover {
+  background: #f0f0f0;
+}
 
 .controlGroup {
   display: flex;
@@ -60,7 +62,9 @@
   cursor: pointer;
 }
 
-.secondaryBtn:hover { background: #eee; }
+.secondaryBtn:hover {
+  background: #eee;
+}
 
 .printBtn {
   background: #0066cc;
@@ -73,7 +77,9 @@
   cursor: pointer;
 }
 
-.printBtn:hover { background: #0052a3; }
+.printBtn:hover {
+  background: #0052a3;
+}
 
 /* Print area */
 .printArea {
@@ -96,7 +102,7 @@
   width: 210mm;
   height: 297mm;
   background: #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
   display: grid;
   grid-template-columns: repeat(3, 63mm);
   grid-template-rows: repeat(3, 88mm);

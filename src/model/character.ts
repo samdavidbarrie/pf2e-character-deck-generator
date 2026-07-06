@@ -1,6 +1,6 @@
-export type AbilityKey = "str" | "dex" | "con" | "int" | "wis" | "cha";
+export type AbilityKey = 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha';
 
-export type ProficiencyRank = "untrained" | "trained" | "expert" | "master" | "legendary";
+export type ProficiencyRank = 'untrained' | 'trained' | 'expert' | 'master' | 'legendary';
 
 export interface SkillProficiency {
   skill: string;
@@ -22,7 +22,7 @@ export interface SpellcastingBlock {
 
 export interface CharacterFeat {
   name: string;
-  type: "ancestry" | "class" | "skill" | "general" | "archetype" | "bonus" | "other";
+  type: 'ancestry' | 'class' | 'skill' | 'general' | 'archetype' | 'bonus' | 'other';
   level: number;
   traits: string[];
   actionCost?: string;
@@ -85,7 +85,7 @@ export interface CharacterAction {
 }
 
 export interface CharacterModel {
-  source: "pathbuilder" | "manual";
+  source: 'pathbuilder' | 'manual';
   sourceVersion?: string;
   importedAt: string;
 

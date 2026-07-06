@@ -1,26 +1,29 @@
-import type { CharacterModel, CharacterSpell } from "../../model/character";
-import type { CardModel } from "../../model/cards";
-import { buildStableKey } from "../../rules/nameNormalization";
-import { blankField, notesField, defaultCard } from "./_helpers";
-import { aonSearchUrl } from "../../rules/aonUrlResolver";
+import type { CardModel } from '../../model/cards';
+import type { CharacterModel, CharacterSpell } from '../../model/character';
+import { aonSearchUrl } from '../../rules/aonUrlResolver';
+import { buildStableKey } from '../../rules/nameNormalization';
+import { blankField, defaultCard, notesField } from './_helpers';
 
 function buildSpellCard(spell: CharacterSpell, isFocus: boolean): CardModel {
-  const category = isFocus ? "focus-spell" : "spell";
+  const category = isFocus ? 'focus-spell' : 'spell';
   const stableKey = isFocus
-    ? buildStableKey("focus-spell", spell.name)
-    : buildStableKey("spell", spell.tradition ?? "unknown", `rank-${spell.rank}`, spell.name);
+    ? buildStableKey('focus-spell', spell.name)
+    : buildStableKey('spell', spell.tradition ?? 'unknown', `rank-${spell.rank}`, spell.name);
 
   const subtitle = isFocus
-    ? `Focus Spell · ${spell.tradition ?? ""}`
-    : `Rank ${spell.rank} · ${spell.tradition ?? ""}`;
+    ? `Focus Spell · ${spell.tradition ?? ''}`
+    : `Rank ${spell.rank} · ${spell.tradition ?? ''}`;
 
   return defaultCard({
     title: spell.name,
-    subtitle: subtitle.trim().replace(/^·\s*|·\s*$/g, "").trim(),
+    subtitle: subtitle
+      .trim()
+      .replace(/^·\s*|·\s*$/g, '')
+      .trim(),
     category,
     stableKey,
     source: {
-      system: "generated",
+      system: 'generated',
       originalName: spell.name,
       aonUrl: aonSearchUrl(spell.name),
     },
@@ -28,14 +31,16 @@ function buildSpellCard(spell: CharacterSpell, isFocus: boolean): CardModel {
       actionCost: undefined,
       traits: spell.traits,
       rank: spell.rank,
-      summary: spell.summary ?? "Rules summary not imported. Add a short table-facing summary or use the source link.",
+      summary:
+        spell.summary ??
+        'Rules summary not imported. Add a short table-facing summary or use the source link.',
     },
-    print: { include: true, priority: isFocus ? 42 : 40, size: "standard" },
+    print: { include: true, priority: isFocus ? 42 : 40, size: 'standard' },
     writableFields: [
-      blankField("Spell DC", "sm"),
-      blankField("Spell Attack", "sm"),
-      ...(isFocus ? [blankField("Focus Points", "sm")] : []),
-      notesField("Heightened"),
+      blankField('Spell DC', 'sm'),
+      blankField('Spell Attack', 'sm'),
+      ...(isFocus ? [blankField('Focus Points', 'sm')] : []),
+      notesField('Heightened'),
     ],
   });
 }
@@ -51,18 +56,19 @@ export function generateFocusSpellCards(char: CharacterModel): CardModel[] {
     // Refocus reminder card
     cards.push(
       defaultCard({
-        title: "Refocus",
-        subtitle: "Restore Focus Points",
-        category: "reminder",
-        stableKey: buildStableKey("reminder", "refocus"),
+        title: 'Refocus',
+        subtitle: 'Restore Focus Points',
+        category: 'reminder',
+        stableKey: buildStableKey('reminder', 'refocus'),
         rules: {
-          actionCost: "variable",
-          traits: ["concentrate"],
-          summary: "Spend 10 minutes performing activities intrinsic to your magical tradition to regain 1 Focus Point (up to your max).",
+          actionCost: 'variable',
+          traits: ['concentrate'],
+          summary:
+            'Spend 10 minutes performing activities intrinsic to your magical tradition to regain 1 Focus Point (up to your max).',
         },
-        print: { include: true, priority: 43, size: "standard" },
-        writableFields: [blankField(`Focus Pool (max ${char.focusPoints ?? 1})`, "sm")],
-      })
+        print: { include: true, priority: 43, size: 'standard' },
+        writableFields: [blankField(`Focus Pool (max ${char.focusPoints ?? 1})`, 'sm')],
+      }),
     );
   }
 

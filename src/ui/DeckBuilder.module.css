@@ -80,7 +80,9 @@
   cursor: pointer;
 }
 
-.primaryBtn:hover { background: #0052a3; }
+.primaryBtn:hover {
+  background: #0052a3;
+}
 
 .secondaryBtn {
   background: none;
@@ -91,7 +93,9 @@
   cursor: pointer;
 }
 
-.secondaryBtn:hover { background: #eee; }
+.secondaryBtn:hover {
+  background: #eee;
+}
 
 .enrichBtn {
   background: none;
@@ -103,8 +107,13 @@
   cursor: pointer;
 }
 
-.enrichBtn:hover:not(:disabled) { background: #f0f6e8; }
-.enrichBtn:disabled { opacity: 0.55; cursor: default; }
+.enrichBtn:hover:not(:disabled) {
+  background: #f0f6e8;
+}
+.enrichBtn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
 
 .enrichError {
   font-size: 0.8rem;

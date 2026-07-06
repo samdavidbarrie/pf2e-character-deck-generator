@@ -1,24 +1,24 @@
-import { useAppStore } from "../app/store";
-import { CardPreview } from "./CardPreview";
-import { CardEditor } from "./CardEditor";
-import styles from "./DeckBuilder.module.css";
+import { useAppStore } from '../app/store';
+import { CardEditor } from './CardEditor';
+import { CardPreview } from './CardPreview';
+import styles from './DeckBuilder.module.css';
 
 const CATEGORY_FILTERS: Array<{ value: string; label: string }> = [
-  { value: "all", label: "All" },
-  { value: "summary", label: "Summaries" },
-  { value: "basic-action", label: "Basic Actions" },
-  { value: "skill-action", label: "Skill Actions" },
-  { value: "reaction", label: "Reactions" },
-  { value: "free-action", label: "Free Actions" },
-  { value: "feat-action", label: "Feat Actions" },
-  { value: "feat-passive", label: "Feats (Passive)" },
-  { value: "spell", label: "Spells" },
-  { value: "focus-spell", label: "Focus Spells" },
-  { value: "weapon", label: "Weapons" },
-  { value: "equipment", label: "Equipment" },
-  { value: "reminder", label: "Reminders" },
-  { value: "manual", label: "Custom" },
-  { value: "hidden", label: "Hidden" },
+  { value: 'all', label: 'All' },
+  { value: 'summary', label: 'Summaries' },
+  { value: 'basic-action', label: 'Basic Actions' },
+  { value: 'skill-action', label: 'Skill Actions' },
+  { value: 'reaction', label: 'Reactions' },
+  { value: 'free-action', label: 'Free Actions' },
+  { value: 'feat-action', label: 'Feat Actions' },
+  { value: 'feat-passive', label: 'Feats (Passive)' },
+  { value: 'spell', label: 'Spells' },
+  { value: 'focus-spell', label: 'Focus Spells' },
+  { value: 'weapon', label: 'Weapons' },
+  { value: 'equipment', label: 'Equipment' },
+  { value: 'reminder', label: 'Reminders' },
+  { value: 'manual', label: 'Custom' },
+  { value: 'hidden', label: 'Hidden' },
 ];
 
 export function DeckBuilder() {
@@ -45,19 +45,12 @@ export function DeckBuilder() {
   const selectedCard = cards.find((c) => c.id === selectedCardId) ?? null;
 
   const filtered = cards.filter((card) => {
-    if (categoryFilter === "hidden") return !card.print.include;
-    if (
-      categoryFilter &&
-      categoryFilter !== "all" &&
-      card.category !== categoryFilter
-    )
+    if (categoryFilter === 'hidden') return !card.print.include;
+    if (categoryFilter && categoryFilter !== 'all' && card.category !== categoryFilter)
       return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      if (
-        !card.title.toLowerCase().includes(q) &&
-        !card.rules.summary.toLowerCase().includes(q)
-      ) {
+      if (!card.title.toLowerCase().includes(q) && !card.rules.summary.toLowerCase().includes(q)) {
         return false;
       }
     }
@@ -72,7 +65,7 @@ export function DeckBuilder() {
       <aside className={styles.sidebar}>
         <h2 className={styles.charName}>{project.character.name}</h2>
         <div className={styles.charMeta}>
-          Level {project.character.level} · {project.character.className ?? ""}
+          Level {project.character.level} · {project.character.className ?? ''}
         </div>
         <div className={styles.cardCount}>{includedCount} cards included</div>
 
@@ -80,10 +73,8 @@ export function DeckBuilder() {
           {CATEGORY_FILTERS.map((f) => (
             <button
               key={f.value}
-              className={`${styles.filterBtn} ${(categoryFilter ?? "all") === f.value ? styles.active : ""}`}
-              onClick={() =>
-                setCategoryFilter(f.value === "all" ? null : f.value)
-              }
+              className={`${styles.filterBtn} ${(categoryFilter ?? 'all') === f.value ? styles.active : ''}`}
+              onClick={() => setCategoryFilter(f.value === 'all' ? null : f.value)}
             >
               {f.label}
             </button>
@@ -100,15 +91,10 @@ export function DeckBuilder() {
             disabled={enriching}
             title="Fetch rules text, traits, and action costs from Archives of Nethys"
           >
-            {enriching ? "Enriching…" : "⬇ Enrich from AoN"}
+            {enriching ? 'Enriching…' : '⬇ Enrich from AoN'}
           </button>
-          {enrichError && (
-            <div className={styles.enrichError}>{enrichError}</div>
-          )}
-          <button
-            className={styles.primaryBtn}
-            onClick={() => goTo("print-preview")}
-          >
+          {enrichError && <div className={styles.enrichError}>{enrichError}</div>}
+          <button className={styles.primaryBtn} onClick={() => goTo('print-preview')}>
             Print preview →
           </button>
         </div>
@@ -144,29 +130,19 @@ export function DeckBuilder() {
               <CardPreview
                 card={card}
                 selected={card.id === selectedCardId}
-                onClick={() =>
-                  selectCard(card.id === selectedCardId ? null : card.id)
-                }
+                onClick={() => selectCard(card.id === selectedCardId ? null : card.id)}
               />
               <button
                 className={`${styles.includeToggle} ${card.print.include ? styles.included : styles.excluded}`}
                 onClick={() => toggleCardInclude(card.id)}
-                aria-label={
-                  card.print.include
-                    ? "Hide card from print"
-                    : "Include card in print"
-                }
-                title={
-                  card.print.include ? "Hide from print" : "Include in print"
-                }
+                aria-label={card.print.include ? 'Hide card from print' : 'Include card in print'}
+                title={card.print.include ? 'Hide from print' : 'Include in print'}
               >
-                {card.print.include ? "✓" : "–"}
+                {card.print.include ? '✓' : '–'}
               </button>
             </div>
           ))}
-          {filtered.length === 0 && (
-            <p className={styles.empty}>No cards match this filter.</p>
-          )}
+          {filtered.length === 0 && <p className={styles.empty}>No cards match this filter.</p>}
         </div>
       </main>
 

@@ -1,16 +1,16 @@
-import { useAppStore } from "../app/store";
-import type { CardModel, CardCategory, ActionCost } from "../model/cards";
-import { CATEGORY_LABEL } from "../model/cards";
-import styles from "./CardEditor.module.css";
+import { useAppStore } from '../app/store';
+import type { ActionCost, CardCategory, CardModel } from '../model/cards';
+import { CATEGORY_LABEL } from '../model/cards';
+import styles from './CardEditor.module.css';
 
-const ACTION_COST_OPTIONS: Array<{ value: ActionCost | ""; label: string }> = [
-  { value: "", label: "None / passive" },
-  { value: "1", label: "1 action" },
-  { value: "2", label: "2 actions" },
-  { value: "3", label: "3 actions" },
-  { value: "free", label: "Free action" },
-  { value: "reaction", label: "Reaction" },
-  { value: "variable", label: "Variable" },
+const ACTION_COST_OPTIONS: Array<{ value: ActionCost | ''; label: string }> = [
+  { value: '', label: 'None / passive' },
+  { value: '1', label: '1 action' },
+  { value: '2', label: '2 actions' },
+  { value: '3', label: '3 actions' },
+  { value: 'free', label: 'Free action' },
+  { value: 'reaction', label: 'Reaction' },
+  { value: 'variable', label: 'Variable' },
 ];
 
 const CATEGORY_OPTIONS = Object.entries(CATEGORY_LABEL) as Array<[CardCategory, string]>;
@@ -26,7 +26,7 @@ export function CardEditor({ card }: Props) {
     updateCard(card.id, changes);
   }
 
-  function patchRules(changes: Partial<CardModel["rules"]>) {
+  function patchRules(changes: Partial<CardModel['rules']>) {
     patch({ rules: { ...card.rules, ...changes } });
   }
 
@@ -43,7 +43,7 @@ export function CardEditor({ card }: Props) {
           >
             ⧉
           </button>
-          {card.source.system === "generated" && (
+          {card.source.system === 'generated' && (
             <button
               className={styles.iconBtn}
               onClick={() => resetCardToGenerated(card.id)}
@@ -54,12 +54,12 @@ export function CardEditor({ card }: Props) {
             </button>
           )}
           <button
-            className={`${styles.iconBtn} ${card.print.include ? styles.active : ""}`}
+            className={`${styles.iconBtn} ${card.print.include ? styles.active : ''}`}
             onClick={() => toggleCardInclude(card.id)}
-            title={card.print.include ? "Hide from print" : "Include in print"}
-            aria-label={card.print.include ? "Hide card from print" : "Include card in print"}
+            title={card.print.include ? 'Hide from print' : 'Include in print'}
+            aria-label={card.print.include ? 'Hide card from print' : 'Include card in print'}
           >
-            {card.print.include ? "◉" : "○"}
+            {card.print.include ? '◉' : '○'}
           </button>
         </div>
       </div>
@@ -78,7 +78,7 @@ export function CardEditor({ card }: Props) {
           <span>Subtitle</span>
           <input
             type="text"
-            value={card.subtitle ?? ""}
+            value={card.subtitle ?? ''}
             onChange={(e) => patch({ subtitle: e.target.value || undefined })}
           />
         </label>
@@ -90,7 +90,9 @@ export function CardEditor({ card }: Props) {
             onChange={(e) => patch({ category: e.target.value as CardCategory })}
           >
             {CATEGORY_OPTIONS.map(([v, l]) => (
-              <option key={v} value={v}>{l}</option>
+              <option key={v} value={v}>
+                {l}
+              </option>
             ))}
           </select>
         </label>
@@ -98,11 +100,15 @@ export function CardEditor({ card }: Props) {
         <label className={styles.fieldGroup}>
           <span>Action cost</span>
           <select
-            value={card.rules.actionCost ?? ""}
-            onChange={(e) => patchRules({ actionCost: (e.target.value || undefined) as ActionCost | undefined })}
+            value={card.rules.actionCost ?? ''}
+            onChange={(e) =>
+              patchRules({ actionCost: (e.target.value || undefined) as ActionCost | undefined })
+            }
           >
             {ACTION_COST_OPTIONS.map(({ value, label }) => (
-              <option key={value} value={value}>{label}</option>
+              <option key={value} value={value}>
+                {label}
+              </option>
             ))}
           </select>
         </label>
@@ -111,9 +117,14 @@ export function CardEditor({ card }: Props) {
           <span>Traits (comma-separated)</span>
           <input
             type="text"
-            value={card.rules.traits.join(", ")}
+            value={card.rules.traits.join(', ')}
             onChange={(e) =>
-              patchRules({ traits: e.target.value.split(",").map((t) => t.trim()).filter(Boolean) })
+              patchRules({
+                traits: e.target.value
+                  .split(',')
+                  .map((t) => t.trim())
+                  .filter(Boolean),
+              })
             }
           />
         </label>
@@ -122,7 +133,7 @@ export function CardEditor({ card }: Props) {
           <span>Trigger</span>
           <input
             type="text"
-            value={card.rules.trigger ?? ""}
+            value={card.rules.trigger ?? ''}
             onChange={(e) => patchRules({ trigger: e.target.value || undefined })}
           />
         </label>
@@ -131,7 +142,7 @@ export function CardEditor({ card }: Props) {
           <span>Requirements</span>
           <input
             type="text"
-            value={card.rules.requirements ?? ""}
+            value={card.rules.requirements ?? ''}
             onChange={(e) => patchRules({ requirements: e.target.value || undefined })}
           />
         </label>
@@ -140,7 +151,7 @@ export function CardEditor({ card }: Props) {
           <span>Frequency</span>
           <input
             type="text"
-            value={card.rules.frequency ?? ""}
+            value={card.rules.frequency ?? ''}
             onChange={(e) => patchRules({ frequency: e.target.value || undefined })}
           />
         </label>
@@ -158,7 +169,7 @@ export function CardEditor({ card }: Props) {
           <span>AoN / Source URL</span>
           <input
             type="url"
-            value={card.source.aonUrl ?? ""}
+            value={card.source.aonUrl ?? ''}
             onChange={(e) =>
               patch({ source: { ...card.source, aonUrl: e.target.value || undefined } })
             }
@@ -169,7 +180,7 @@ export function CardEditor({ card }: Props) {
           <span>Notes</span>
           <textarea
             rows={2}
-            value={card.userEdits.notes ?? ""}
+            value={card.userEdits.notes ?? ''}
             onChange={(e) =>
               patch({ userEdits: { ...card.userEdits, notes: e.target.value || undefined } })
             }
@@ -177,9 +188,7 @@ export function CardEditor({ card }: Props) {
         </label>
       </div>
 
-      {card.userEdits.edited && (
-        <div className={styles.editedBadge}>Edited</div>
-      )}
+      {card.userEdits.edited && <div className={styles.editedBadge}>Edited</div>}
     </div>
   );
 }

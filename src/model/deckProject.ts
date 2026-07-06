@@ -1,10 +1,10 @@
-import type { CharacterModel } from "./character";
-import type { CardModel } from "./cards";
+import type { CardModel } from './cards';
+import type { CharacterModel } from './character';
 
 export interface PrintSettings {
-  paper: "A4";
-  cardSize: "poker";
-  layout: "3x3";
+  paper: 'A4';
+  cardSize: 'poker';
+  layout: '3x3';
   showCutGuides: boolean;
   includeHidden: boolean;
 }
@@ -33,9 +33,9 @@ export interface DeckProject {
 }
 
 export const DEFAULT_PRINT_SETTINGS: PrintSettings = {
-  paper: "A4",
-  cardSize: "poker",
-  layout: "3x3",
+  paper: 'A4',
+  cardSize: 'poker',
+  layout: '3x3',
   showCutGuides: true,
   includeHidden: false,
 };
