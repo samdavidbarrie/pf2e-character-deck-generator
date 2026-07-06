@@ -1,0 +1,299 @@
+.card {
+  width: 100%;
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 6px 8px;
+  box-sizing: border-box;
+  background: #fff;
+  cursor: default;
+  font-size: 8pt;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  overflow: hidden;
+  min-height: 80px;
+}
+
+.card.selected {
+  outline: 2px solid #0066cc;
+  outline-offset: 1px;
+}
+
+.card.hidden {
+  opacity: 0.45;
+}
+
+.card[role="button"] {
+  cursor: pointer;
+}
+
+.card[role="button"]:hover {
+  border-color: #0066cc;
+}
+
+.card[role="button"]:focus-visible {
+  outline: 2px solid #0066cc;
+}
+
+.topBand {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.title {
+  font-size: 11pt;
+  font-weight: 700;
+  line-height: 1.2;
+  flex: 1;
+}
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  white-space: nowrap;
+}
+
+.category {
+  font-size: 7pt;
+  color: #555;
+}
+
+.actionCost {
+  font-size: 8pt;
+  font-weight: 600;
+}
+
+.subtitle {
+  font-size: 8pt;
+  color: #444;
+}
+
+.traits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin: 1px 0;
+}
+
+.trait {
+  font-size: 6pt;
+  text-transform: uppercase;
+  border: 1px solid #333;
+  border-radius: 2px;
+  padding: 0 3px;
+  background: #f0f0f0;
+  letter-spacing: 0.03em;
+}
+
+.field {
+  font-size: 7.5pt;
+}
+
+.fieldLabel {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 6.5pt;
+  margin-right: 3px;
+}
+
+.outcomeField {
+  font-size: 7.5pt;
+  line-height: 1.35;
+}
+
+.outcomeLabel {
+  display: block;
+  font-weight: 700;
+  font-size: 7pt;
+}
+
+.summary {
+  font-size: 7.5pt;
+  line-height: 1.4;
+  color: #111;
+  white-space: pre-line;
+}
+
+.writableFields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 4px;
+  border-top: 1px solid #ccc;
+  padding-top: 3px;
+}
+
+.sectionDivider {
+  flex: 1 1 100%;
+  font-size: 6pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #555;
+  border-top: 0.5pt solid #ccc;
+  padding-top: 2px;
+  margin-top: 1px;
+}
+
+.writableField {
+  font-size: 7pt;
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+}
+
+.writableLabel {
+  font-size: 6.5pt;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.blankBox {
+  font-family: monospace;
+  border-bottom: 1px solid #333;
+  min-width: 30px;
+  color: #fff;
+  display: inline-block;
+}
+
+.notesLine {
+  color: transparent;
+  border-bottom: 1px solid #333;
+  flex: 1;
+  min-width: 80px;
+}
+
+.checkboxes {
+  display: flex;
+  gap: 2px;
+}
+
+.checkbox {
+  font-size: 9pt;
+}
+
+.size-sm { flex: 0 0 auto; }
+.size-md { flex: 0 0 auto; min-width: 80px; }
+.size-lg { flex: 1 1 100%; }
+
+.sourceFooter {
+  margin-top: auto;
+  font-size: 5.5pt;
+  color: #888;
+  text-align: right;
+}
+
+.sourceFooter a {
+  color: #888;
+  text-decoration: none;
+}
+
+.sourceFooter a:hover {
+  text-decoration: underline;
+}
+
+/* Merged passive feats */
+.mergedChildren {
+  margin-top: 4px;
+  border-top: 1px solid #ddd;
+  padding-top: 4px;
+}
+
+.mergedChildrenLabel {
+  font-size: 6pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #666;
+  margin-bottom: 2px;
+}
+
+.mergedChild {
+  margin-top: 2px;
+  font-size: 6.5pt;
+}
+
+.mergedChildName {
+  font-weight: 700;
+}
+
+.mergedChildLevel {
+  font-weight: 400;
+  color: #666;
+}
+
+.mergedChildSummary {
+  display: block;
+  color: #333;
+}
+
+.mergedIntoBadge {
+  margin-top: 4px;
+  font-size: 0.7rem;
+  color: #888;
+  font-style: italic;
+}
+
+/* Skill TEML table */
+.skillTable {
+  margin-top: 4px;
+  width: 100%;
+}
+
+.skillColumnHeader {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 3px;
+  font-size: 5.5pt;
+  font-weight: 700;
+  color: #555;
+  border-bottom: 0.5pt solid #ccc;
+  padding-bottom: 1px;
+  margin-bottom: 1px;
+}
+
+.skillRow {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 6.5pt;
+  line-height: 1.45;
+}
+
+.skillName {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.skillTeml {
+  font-size: 6pt;
+  letter-spacing: 0;
+  white-space: nowrap;
+  color: #333;
+}
+
+.skillTotal {
+  font-size: 6pt;
+  border-bottom: 0.5pt solid #333;
+  min-width: 28px;
+  display: inline-block;
+}
+
+/* Print overrides applied via forPrint class */
+.forPrint {
+  width: 63mm;
+  height: 88mm;
+  font-size: 7pt;
+  page-break-inside: avoid;
+  cursor: default;
+}
+
+.forPrint .title {
+  font-size: 10pt;
+}
