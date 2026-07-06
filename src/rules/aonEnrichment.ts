@@ -399,7 +399,7 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
   const rules = { ...card.rules };
   const source = { ...card.source };
   const subtitle = card.subtitle;
-  let writableFields = card.writableFields;
+  const writableFields = card.writableFields;
 
   // For basic/skill actions the template provides a short one-liner; always
   // replace it with the fuller AoN description so roll/DC text is visible.
