@@ -291,7 +291,7 @@ export function parsePathbuilder(json: unknown): CharacterModel {
 
   // --- Defenses ---
   const ac = num(get(build, "acTotal", "acTotal")) ??
-    num(get(build, "armor", 0, "acBonus"));
+    num(get(build, "armor", "0", "acBonus"));
   const hp = num(get(build, "attributes", "ancestryhp")) === undefined
     ? undefined
     : (num(get(build, "attributes", "ancestryhp")) ?? 0) +

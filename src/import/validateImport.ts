@@ -17,7 +17,7 @@ const PathbuilderBuildSchema = z.object({
   class: z.string().optional(),
   subclass: z.string().optional(),
   keyability: z.string().optional(),
-  abilities: z.record(z.unknown()).optional(),
+  abilities: z.record(z.string(), z.unknown()).optional(),
   feats: z.array(z.unknown()).optional(),
   spellCasters: z.array(z.unknown()).optional(),
   equipment: z.array(z.unknown()).optional(),

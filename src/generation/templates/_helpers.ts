@@ -1,6 +1,5 @@
 import type { CardModel, WritableField } from "../../model/cards";
 import type { ProficiencyRank } from "../../model/character";
-import { buildStableKey } from "../../rules/nameNormalization";
 
 let _idCounter = 0;
 function nextId(): string {

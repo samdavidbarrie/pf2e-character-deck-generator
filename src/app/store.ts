@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import type { DeckProject, PrintSettings } from "../model/deckProject";
 import type { CardModel } from "../model/cards";
-import type { CharacterModel } from "../model/character";
 import { DEFAULT_PRINT_SETTINGS } from "../model/deckProject";
 import { generateDeck, type GenerationWarning } from "../generation/generateDeck";
 import { validateImport, type ValidationResult } from "../import/validateImport";

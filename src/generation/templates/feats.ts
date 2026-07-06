@@ -1,7 +1,7 @@
 import type { CharacterModel, CharacterFeat } from "../../model/character";
-import type { CardModel, CardCategory, ActionCost } from "../../model/cards";
+import type { CardModel, CardCategory } from "../../model/cards";
 import { buildStableKey } from "../../rules/nameNormalization";
-import { blankField, notesField, defaultCard } from "./_helpers";
+import { notesField, defaultCard } from "./_helpers";
 import { parseActionCost } from "../../import/pathbuilderAdapter";
 import { aonSearchUrl } from "../../rules/aonUrlResolver";
 

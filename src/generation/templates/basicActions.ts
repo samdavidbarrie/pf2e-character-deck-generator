@@ -1,12 +1,12 @@
 import type { CardModel } from "../../model/cards";
 import { buildStableKey } from "../../rules/nameNormalization";
-import { blankField, notesField, defaultCard } from "./_helpers";
+import { blankField, defaultCard } from "./_helpers";
 import type { CharacterModel } from "../../model/character";
 
 interface BasicAction {
   name: string;
   actionCost: "1" | "2" | "3" | "free" | "reaction" | "variable";
-  traits: string[];
+traits: string[];
   summary: string;
   requiresSkill?: string;
 }

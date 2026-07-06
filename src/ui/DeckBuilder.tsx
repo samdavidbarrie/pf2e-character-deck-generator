@@ -1,7 +1,4 @@
-import { useState } from "react";
 import { useAppStore } from "../app/store";
-import type { CardModel, CardCategory } from "../model/cards";
-import { CATEGORY_LABEL } from "../model/cards";
 import { CardPreview } from "./CardPreview";
 import { CardEditor } from "./CardEditor";
 import styles from "./DeckBuilder.module.css";

@@ -1,7 +1,7 @@
 import type { CharacterModel } from "../../model/character";
 import type { CardModel } from "../../model/cards";
 import { buildStableKey } from "../../rules/nameNormalization";
-import { blankField, checkboxField, notesField, defaultCard } from "./_helpers";
+import { checkboxField, notesField, defaultCard } from "./_helpers";
 
 export function generateEquipmentCards(char: CharacterModel): CardModel[] {
   return char.equipment
