@@ -430,6 +430,49 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
       if (resolvedPrice && !rules.price) rules.price = resolvedPrice;
       if (data.activateTag && !rules.activateTag) rules.activateTag = data.activateTag;
 
+      // -----------------------------------------------------------------------
+      // Helpers for building extra section bodies (used by both the Activate—
+      // split below and the ' --- ' section-separator split further down).
+      // -----------------------------------------------------------------------
+
+      const splitOnAonSep = (text: string): string[] =>
+        text
+          .split(' --- ')
+          .map((s) => s.trim())
+          .filter(Boolean);
+
+      /**
+       * Apply bold formatting to the leading ability-name in an extra section body.
+       *
+       * Two patterns:
+       *  1. Activate— sections  → bold up to the first action icon
+       *     "Activate—Return Force ↺ …"  →  "**Activate—Return Force** ↺ …"
+       *  2. Named sections (e.g. "Tea Ceremony") → find consecutive Title-Case words,
+       *     drop the last one (it starts the description, e.g. "The", "You"), bold the rest.
+       *     "Tea Ceremony The duration…"  →  "**Tea Ceremony** The duration…"
+       */
+      const applyHeadingFormat = (body: string): string => {
+        const activateM = /^(Activate—[A-Z][\w\s]*?)(\s*[◆◇↺(])/.exec(body);
+        if (activateM) {
+          return `**${activateM[1].trim()}**${activateM[2]}${body.slice(activateM[0].length)}`;
+        }
+        const capsM = /^((?:[A-Z]\S*\s+)*[A-Z]\S*)\s+([a-z])(.*)$/.exec(body);
+        if (capsM) {
+          const words = capsM[1].split(/\s+/);
+          if (words.length >= 2) {
+            const name = words.slice(0, -1).join(' ');
+            const dropped = words[words.length - 1];
+            return `**${name}** ${dropped} ${capsM[2]}${capsM[3]}`;
+          }
+        }
+        return body;
+      };
+
+      const makeExtraBody = (body: string) =>
+        applyHeadingFormat(
+          replaceActivationActionWords(body.replace(/\s*\bCraft Requirements\b.*$/is, '').trim()),
+        );
+
       // Split "Activate—AbilityName" sections out of the summary into extraSections.
       // Each activation ability then overflows to a back card via splitOverflowCards
       // when the combined text is too long to fit on a single card.
@@ -450,13 +493,36 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
 
           rules.extraSections = activateParts.slice(1).map((body) => ({
             heading: undefined as string | undefined,
-            // Strip any trailing Craft Requirements block and replace action-type words
-            // with their Unicode symbols (◆ ◇ ↺ etc.).
-            body: replaceActivationActionWords(
-              body.replace(/\s*\bCraft Requirements\b.*$/is, '').trim(),
-            ),
+            body: makeExtraBody(body),
           }));
         }
+      }
+
+      // Handle ' --- ' section separators left in the text by AoN's text format.
+      if (!rules.extraSections?.length) {
+        const dashParts = splitOnAonSep(rules.summary);
+        if (dashParts.length > 1) {
+          rules.summary = dashParts[0];
+          rules.extraSections = dashParts.slice(1).map((body) => ({
+            heading: undefined as string | undefined,
+            body: makeExtraBody(body),
+          }));
+        }
+      } else {
+        // Also expand any ' --- ' separators that remain inside existing extraSection bodies.
+        const expanded: Array<{ heading?: string; body: string }> = [];
+        for (const sec of rules.extraSections) {
+          const subParts = splitOnAonSep(sec.body);
+          if (subParts.length <= 1) {
+            expanded.push(sec);
+          } else {
+            expanded.push({ heading: sec.heading, body: subParts[0] });
+            for (const sub of subParts.slice(1)) {
+              expanded.push({ heading: undefined, body: makeExtraBody(sub) });
+            }
+          }
+        }
+        rules.extraSections = expanded;
       }
     } else {
       const isItem = card.category === 'weapon';
