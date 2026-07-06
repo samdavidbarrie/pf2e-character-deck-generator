@@ -4,6 +4,7 @@
  */
 
 import type { ActionCost, CardCategory, CardModel } from '../model/cards';
+import { buildEquipmentDescription, filterEquipmentDescription } from './equipmentVariantMatcher';
 
 /** Direct endpoint — override with VITE_AON_PROXY_URL to route through a CORS proxy. */
 const AON_ES =
@@ -35,6 +36,11 @@ export interface AonData {
   level?: number;
   prerequisite?: string;
   url?: string;
+  /** Equipment-specific fields populated from AoN. */
+  usage?: string; // e.g. "held in 1 hand"
+  bulk?: string; // e.g. "L"
+  priceRaw?: string; // e.g. "50 gp"
+  activateTag?: string; // activation trait, e.g. "manipulate"
   // Degree-of-success outcomes
   criticalSuccess?: string;
   success?: string;
@@ -146,12 +152,14 @@ function stripHtml(html: string): string {
 }
 
 /**
- * Remove AoN source/price/bulk metadata that gets embedded in item description text.
- * E.g. "… Source GM Core pg. 236 Price 450 gp Bulk L ---"
+ * Remove AoN source/price/bulk metadata and craft requirements from item description text.
+ * E.g. "… Source GM Core pg. 236 Price 450 gp Bulk L ---" or "Craft Requirements You're a monk…"
  */
 function stripSourceMetadata(text: string): string {
   return (
     text
+      // Remove "Craft Requirements …" blocks (always appear at end of item entries).
+      .replace(/\s*\bCraft Requirements\b.*$/is, '')
       // Remove "Source …" trailing reference blocks
       .replace(/\s+Source\s+[A-Z][\w ',]+pg\.\s*\d+.*$/s, '')
       // Remove any remaining "Price X gp" / "Bulk …" artifacts
@@ -159,6 +167,21 @@ function stripSourceMetadata(text: string): string {
       .replace(/\s+Bulk\s+\S+\s*---.*$/s, '')
       .trim()
   );
+}
+
+/**
+ * Replace PF2e action-type words with their standard Unicode symbols so that
+ * activation text is compact and consistent with the rest of the card.
+ *   Free Action → ◇   Single Action → ◆   Reaction → ↺
+ *   Two Actions → ◆◆  Three Actions → ◆◆◆
+ */
+function replaceActivationActionWords(text: string): string {
+  return text
+    .replace(/\bThree Actions\b/g, '◆◆◆')
+    .replace(/\bTwo Actions\b/g, '◆◆')
+    .replace(/\bSingle Action\b/g, '◆')
+    .replace(/\bFree Action\b/g, '◇')
+    .replace(/\bReaction\b/g, '↺');
 }
 
 function mapActionCost(raw: string | undefined): ActionCost | undefined {
@@ -214,11 +237,30 @@ function preferredTypesFor(category: CardCategory): string[] {
 // Fetch
 // ---------------------------------------------------------------------------
 
+/**
+ * Pathbuilder and AoN sometimes disagree on the casing of the variant part of
+ * an item name. For example Pathbuilder sends "+2 Striking" (Title Case) while
+ * AoN stores "+2 striking" (lowercase). Searching with the lowercased variant
+ * covers this mismatch without affecting names whose parenthetical uses proper
+ * nouns (e.g. "Healing Potion (Minor)" stays unchanged because it already
+ * matches AoN exactly).
+ */
+function normalizeItemVariantCase(name: string): string {
+  return name.replace(/\(([^)]+)\)$/, (_, inner) => `(${inner.toLowerCase()})`);
+}
+
 async function fetchBatch(names: string[]): Promise<AonData[]> {
   const body = {
     query: {
       bool: {
-        should: names.map((name) => ({ term: { 'name.keyword': name } })),
+        should: names.flatMap((name) => {
+          const queries: Array<{ term: { 'name.keyword': string } }> = [
+            { term: { 'name.keyword': name } },
+          ];
+          const normalized = normalizeItemVariantCase(name);
+          if (normalized !== name) queries.push({ term: { 'name.keyword': normalized } });
+          return queries;
+        }),
         minimum_should_match: 1,
       },
     },
@@ -240,6 +282,9 @@ async function fetchBatch(names: string[]): Promise<AonData[]> {
       'level',
       'prerequisite',
       'url',
+      'usage',
+      'bulk',
+      'price_raw',
     ],
     size: Math.min(names.length * 3, 200),
   };
@@ -263,6 +308,25 @@ async function fetchBatch(names: string[]): Promise<AonData[]> {
       s['text'] as string | undefined,
       s['summary'] as string | undefined,
     );
+
+    // Equipment-specific: parse activation tag from the metadata section (parts[0] of text).
+    // AoN stores "Activate Single Action (manipulate)" there; the tag is in parentheses.
+    const rawText = s['text'] as string | undefined;
+    const metaSection = rawText ? stripHtml(rawText.split(' --- ')[0]) : '';
+    const activateTagMatch = /\bActivate\b[^(]*\(([^)]+)\)/i.exec(metaSection);
+
+    // Separate the AoN 'usage' and 'bulk' fields so they can be rendered independently.
+    const usageRaw = (s['usage'] as string | undefined) || undefined;
+    const bulkRaw = s['bulk'] as number | undefined;
+    const bulk =
+      bulkRaw === undefined || bulkRaw === null
+        ? undefined
+        : bulkRaw === 0.1
+          ? 'L'
+          : bulkRaw === 0
+            ? '\u2014'
+            : String(bulkRaw);
+
     return {
       name: s['name'] as string,
       aonType: (s['type'] as string) ?? '',
@@ -285,6 +349,10 @@ async function fetchBatch(names: string[]): Promise<AonData[]> {
       level: s['level'] as number | undefined,
       prerequisite: s['prerequisite'] as string | undefined,
       url: rawUrl ? `${AON_BASE}${rawUrl}` : undefined,
+      usage: usageRaw,
+      bulk,
+      priceRaw: (s['price_raw'] as string | undefined) || undefined,
+      activateTag: activateTagMatch?.[1]?.trim() || undefined,
     };
   });
 }
@@ -320,11 +388,21 @@ export async function fetchAonData(
   for (const card of cards) {
     const key = `${card.category}:${card.title}`;
     if (result.has(key)) continue;
-    const candidates = byName.get(card.title);
+    // Try exact name first, then the variant-case-normalised form (e.g. "+2 Striking" → "+2 striking").
+    const candidates = byName.get(card.title) ?? byName.get(normalizeItemVariantCase(card.title));
     if (!candidates || candidates.length === 0) continue;
 
     const preferred = preferredTypesFor(card.category);
-    const best = candidates.find((c) => preferred.includes(c.aonType)) ?? candidates[0];
+    // For equipment, prefer candidates that have a specific-tier price (price_raw)
+    // over parent/range documents that don't — the specific document has the correct
+    // level, price, and usage for the item the character actually owns.
+    const best =
+      (card.category === 'equipment'
+        ? (candidates.find((c) => preferred.includes(c.aonType) && c.priceRaw) ??
+          candidates.find((c) => c.priceRaw))
+        : undefined) ??
+      candidates.find((c) => preferred.includes(c.aonType)) ??
+      candidates[0];
     result.set(key, best);
   }
 
@@ -340,15 +418,145 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
 
   const rules = { ...card.rules };
   const source = { ...card.source };
+  const subtitle = card.subtitle;
+  const writableFields = card.writableFields;
 
   // For basic/skill actions the template provides a short one-liner; always
   // replace it with the fuller AoN description so roll/DC text is visible.
   const alwaysReplace = card.category === 'basic-action' || card.category === 'skill-action';
 
   if (data.description && (rules.summary.startsWith(SUMMARY_PLACEHOLDER) || alwaysReplace)) {
-    const isItem = card.category === 'equipment' || card.category === 'weapon';
-    const desc = isItem ? stripSourceMetadata(data.description) : data.description;
-    rules.summary = desc;
+    if (card.category === 'equipment') {
+      // Run variant filtering on the raw description BEFORE stripSourceMetadata so that
+      // price information embedded in variant text is still available for extraction.
+      const enriched = filterEquipmentDescription(
+        data.description,
+        card.title,
+        data.level,
+        undefined,
+        undefined,
+      );
+      // Apply stripSourceMetadata to the assembled (shared + variant) text.
+      rules.summary = stripSourceMetadata(buildEquipmentDescription(enriched));
+      // Set equipment-specific metadata fields from AoN.
+      if (data.level !== undefined && rules.level === undefined) rules.level = data.level;
+      if (data.usage && !rules.usage) rules.usage = data.usage;
+      if (data.bulk && !rules.bulk) rules.bulk = data.bulk;
+      // Price: variant price (from metadata) → extracted from raw description text →
+      // AoN price_raw field. All three are read before stripSourceMetadata removes
+      // the price from the description, so the correct price is always captured.
+      const resolvedPrice =
+        enriched.matchedVariant?.price ?? enriched.extractedPrice ?? data.priceRaw;
+      if (resolvedPrice && !rules.price) rules.price = resolvedPrice;
+      if (data.activateTag && !rules.activateTag) rules.activateTag = data.activateTag;
+
+      // -----------------------------------------------------------------------
+      // Helpers for building extra section bodies (used by both the Activate—
+      // split below and the ' --- ' section-separator split further down).
+      // -----------------------------------------------------------------------
+
+      const splitOnAonSep = (text: string): string[] =>
+        text
+          .split(' --- ')
+          .map((s) => s.trim())
+          .filter(Boolean);
+
+      /**
+       * Apply bold formatting to the leading ability-name in an extra section body.
+       *
+       * Two patterns:
+       *  1. Activate— sections  → bold up to the first action icon
+       *     "Activate—Return Force ↺ …"  →  "**Activate—Return Force** ↺ …"
+       *  2. Named sections (e.g. "Tea Ceremony") → find consecutive Title-Case words,
+       *     drop the last one (it starts the description, e.g. "The", "You"), bold the rest.
+       *     "Tea Ceremony The duration…"  →  "**Tea Ceremony** The duration…"
+       */
+      const applyHeadingFormat = (body: string): string => {
+        // Activate— sections: bold from "Activate—" up to the first action icon or paren.
+        const activateM = /^(Activate—[A-Z][\w\s]*?)(\s*[◆◇↺(])/.exec(body);
+        if (activateM) {
+          return `**${activateM[1].trim()}**${activateM[2]}${body.slice(activateM[0].length)}`;
+        }
+        // Other named sections (e.g. "Tea Ceremony"): find the run of leading Title Case
+        // words. The last one in that run starts the description — bold all the words
+        // before it as the heading.
+        const words = body.split(' ');
+        let i = 0;
+        while (
+          i < words.length &&
+          words[i].length > 0 &&
+          words[i][0] >= 'A' &&
+          words[i][0] <= 'Z'
+        ) {
+          i++;
+        }
+        if (i >= 2) {
+          return `**${words.slice(0, i - 1).join(' ')}** ${words.slice(i - 1).join(' ')}`;
+        }
+        return body;
+      };
+
+      const makeExtraBody = (body: string) =>
+        applyHeadingFormat(
+          replaceActivationActionWords(body.replace(/\s*\bCraft Requirements\b.*$/is, '').trim()),
+        );
+
+      // Split "Activate—AbilityName" sections out of the summary into extraSections.
+      // Each activation ability then overflows to a back card via splitOverflowCards
+      // when the combined text is too long to fit on a single card.
+      if (!rules.extraSections?.length) {
+        const activateParts = rules.summary.split(/(?=\bActivate—)/);
+        if (activateParts.length > 1) {
+          rules.summary = activateParts[0].trim();
+
+          // Infer the card's action cost from the first activation section when AoN
+          // does not supply it via the 'actions' ES field (common for equipment items).
+          if (!rules.actionCost) {
+            const actionWordMatch =
+              /\b(Three Actions|Two Actions|Single Action|Free Action|Reaction)\b/.exec(
+                activateParts[1],
+              );
+            if (actionWordMatch) rules.actionCost = mapActionCost(actionWordMatch[1]);
+          }
+
+          rules.extraSections = activateParts.slice(1).map((body) => ({
+            heading: undefined as string | undefined,
+            body: makeExtraBody(body),
+          }));
+        }
+      }
+
+      // Handle ' --- ' section separators left in the text by AoN's text format.
+      if (!rules.extraSections?.length) {
+        const dashParts = splitOnAonSep(rules.summary);
+        if (dashParts.length > 1) {
+          rules.summary = dashParts[0];
+          rules.extraSections = dashParts.slice(1).map((body) => ({
+            heading: undefined as string | undefined,
+            body: makeExtraBody(body),
+          }));
+        }
+      } else {
+        // Also expand any ' --- ' separators that remain inside existing extraSection bodies.
+        const expanded: Array<{ heading?: string; body: string }> = [];
+        for (const sec of rules.extraSections) {
+          const subParts = splitOnAonSep(sec.body);
+          if (subParts.length <= 1) {
+            expanded.push(sec);
+          } else {
+            expanded.push({ heading: sec.heading, body: subParts[0] });
+            for (const sub of subParts.slice(1)) {
+              expanded.push({ heading: undefined, body: makeExtraBody(sub) });
+            }
+          }
+        }
+        rules.extraSections = expanded;
+      }
+    } else {
+      const isItem = card.category === 'weapon';
+      const desc = isItem ? stripSourceMetadata(data.description) : data.description;
+      rules.summary = desc;
+    }
   }
 
   // For spells: attach Heightened text as an extraSection (parsed separately by fetchBatch)
@@ -407,7 +615,7 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
 
   if (data.url) source.aonUrl = data.url;
 
-  return { ...card, rules, source };
+  return { ...card, rules, source, subtitle, writableFields };
 }
 
 // ---------------------------------------------------------------------------

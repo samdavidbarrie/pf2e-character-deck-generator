@@ -1,6 +1,7 @@
 .card {
   text-align: left;
   width: 100%;
+  aspect-ratio: 63 / 88;
   border: 1px solid #bbb;
   border-radius: 4px;
   padding: 6px 8px;
@@ -11,7 +12,6 @@
   flex-direction: column;
   gap: 3px;
   overflow: hidden;
-  min-height: 80px;
 }
 
 .card.selected {
@@ -112,6 +112,34 @@
   width: auto;
   vertical-align: middle;
   display: inline-block;
+}
+
+/* Inline action icon appearing within body text — slightly smaller than the corner icon. */
+.actionIconInline {
+  height: 10px;
+  width: auto;
+  vertical-align: middle;
+  display: inline-block;
+  margin: 0 1px;
+}
+
+/* Item level badge shown in the top-right of equipment cards: "Item 6" */
+.itemLevel {
+  font-size: 5.5pt;
+  font-weight: 600;
+  color: #555;
+  margin-right: 3px;
+  white-space: nowrap;
+}
+
+/* Stacked column layout for equipment item metadata (Usage, Activate, Price). */
+.itemMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 6.5pt;
+  line-height: 1.4;
+  color: #333;
 }
 
 .actionRange {

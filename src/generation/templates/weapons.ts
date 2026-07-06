@@ -126,9 +126,14 @@ function buildMainCard(attack: CharacterAttack): CardModel {
 
 function buildRuneCard(runeName: string): CardModel {
   return defaultCard({
-    title: `${runeName} Rune`,
+    // Use the bare rune name (e.g. "Astral") so the AoN lookup matches exactly.
+    // The subtitle "Property Rune" provides the context.
+    title: runeName,
     subtitle: 'Property Rune',
-    category: 'weapon',
+    // 'equipment' routes the card through the full equipment enrichment pipeline
+    // (variant matching, usage, price, activateTag, activation section splitting).
+    category: 'equipment',
+    // Keep the weapon-rune stableKey prefix for backward compatibility with saved projects.
     stableKey: buildStableKey('weapon-rune', runeName),
     source: { system: 'generated', runes: [runeName] },
     rules: {

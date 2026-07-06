@@ -79,17 +79,6 @@ const SKILL_FOR_ACTION: Record<string, string> = {
 };
 
 /** Render text that may contain **bold** markers produced by stripHtml. */
-function renderBold(text: string): React.ReactNode {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
-  if (parts.length === 1) return text;
-  return parts.map((part, i) =>
-    part.startsWith('**') && part.endsWith('**') ? (
-      <strong key={i}>{part.slice(2, -2)}</strong>
-    ) : (
-      part || null
-    ),
-  );
-}
 const ACTION_ICON: Partial<Record<ActionCost, string>> = {
   '1': `${BASE}icons/action-1.png`,
   '2': `${BASE}icons/action-2.png`,
@@ -97,6 +86,39 @@ const ACTION_ICON: Partial<Record<ActionCost, string>> = {
   free: `${BASE}icons/action-free.png`,
   reaction: `${BASE}icons/action-reaction.png`,
 };
+
+/**
+ * Map the Unicode action symbols (stored in card text by replaceActivationActionWords)
+ * to inline icon image sources. Multi-character sequences must appear before single ones.
+ */
+const INLINE_ACTION_ICONS: [string, string][] = [
+  ['◆◆◆', ACTION_ICON['3'] ?? ''],
+  ['◆◆', ACTION_ICON['2'] ?? ''],
+  ['◆', ACTION_ICON['1'] ?? ''],
+  ['◇', ACTION_ICON['free'] ?? ''],
+  ['↺', ACTION_ICON['reaction'] ?? ''],
+].filter(([, src]) => src) as [string, string][];
+
+const INLINE_ACTION_SPLIT_RE = new RegExp(
+  `(\\*\\*[^*]+\\*\\*|${INLINE_ACTION_ICONS.map(([s]) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`,
+  'g',
+);
+
+/** Render text with **bold** markers as <strong> and Unicode action symbols as icon images. */
+function renderBold(text: string): React.ReactNode {
+  const parts = text.split(INLINE_ACTION_SPLIT_RE);
+  if (parts.length === 1) return text;
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    }
+    const icon = INLINE_ACTION_ICONS.find(([s]) => s === part);
+    if (icon) {
+      return <img key={i} src={icon[1]} className={styles.actionIconInline} alt={part} />;
+    }
+    return part || null;
+  });
+}
 const ACTION_RANGE_PARTS: Partial<Record<ActionCost, [ActionCost, ActionCost]>> = {
   '1-2': ['1', '2'],
   '1-3': ['1', '3'],
@@ -136,11 +158,12 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
 
   // For skill-action cards, show the relevant skill above the summary and remove it from the bottom.
   const isSkillAction = card.category === 'skill-action' && !card.continuationOf;
+  const hasItemLevel = card.category === 'equipment' && card.rules.level !== undefined;
   const skillLabel = isSkillAction ? (SKILL_FOR_ACTION[card.title] ?? 'Skill') : null;
 
-  // For sparse print cards, scale up body text to better fill the physical card.
-  const printScaleClass = (() => {
-    if (!forPrint) return '';
+  // Scale body text to match card density — applied in both deck-builder and print views
+  // so the two surfaces look identical.
+  const scaleClass = (() => {
     if (card.writableFields.some((f) => f.type === 'skill-row')) return '';
     const allChars =
       [
@@ -186,7 +209,7 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
 
   return (
     <div
-      className={`${styles.card} ${selected ? styles.selected : ''} ${forPrint ? styles.forPrint : ''} ${!card.print.include && !forPrint ? styles.hidden : ''} ${printScaleClass}`}
+      className={`${styles.card} ${selected ? styles.selected : ''} ${forPrint ? styles.forPrint : ''} ${!card.print.include && !forPrint ? styles.hidden : ''} ${scaleClass}`}
       style={{ backgroundColor: CATEGORY_COLOR[card.category] }}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
@@ -227,6 +250,54 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
               {t}
             </span>
           ))}
+        </div>
+      )}
+
+      {(hasItemLevel ||
+        card.rules.usage ||
+        card.rules.bulk ||
+        card.rules.activateTag ||
+        card.rules.price) && (
+        <div className={styles.itemMeta}>
+          {/* Row 1: Item; Usage; Bulk */}
+          {(hasItemLevel || card.rules.usage || card.rules.bulk) && (
+            <div>
+              {hasItemLevel && (
+                <>
+                  <span className={styles.spellMetaLabel}>Item</span> {card.rules.level}
+                </>
+              )}
+              {card.rules.usage && (
+                <>
+                  {hasItemLevel && '; '}
+                  <span className={styles.spellMetaLabel}>Usage</span> {card.rules.usage}
+                </>
+              )}
+              {card.rules.bulk && (
+                <>
+                  {(hasItemLevel || card.rules.usage) && '; '}
+                  <span className={styles.spellMetaLabel}>Bulk</span> {card.rules.bulk}
+                </>
+              )}
+            </div>
+          )}
+          {/* Row 2: Activate; Price */}
+          {((card.rules.activateTag && card.rules.actionCost) || card.rules.price) && (
+            <div>
+              {card.rules.activateTag && card.rules.actionCost && (
+                <>
+                  <span className={styles.spellMetaLabel}>Activate</span>{' '}
+                  <ActionCostDisplay cost={card.rules.actionCost} /> {card.rules.activateTag}
+                </>
+              )}
+              {card.rules.price && (
+                <>
+                  {card.rules.activateTag && card.rules.actionCost && '; '}
+                  <span className={styles.spellMetaLabel}>Price</span> {card.rules.price}
+                </>
+              )}
+            </div>
+          )}
         </div>
       )}
 

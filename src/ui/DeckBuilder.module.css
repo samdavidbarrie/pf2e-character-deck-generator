@@ -160,7 +160,6 @@
 
 .cardWrapper {
   position: relative;
-  aspect-ratio: 63 / 88;
   overflow: hidden;
   border-radius: 4px;
 }

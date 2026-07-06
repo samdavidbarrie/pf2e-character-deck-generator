@@ -104,21 +104,28 @@ export function generateDeck(char: CharacterModel): GenerationResult {
 }
 
 /**
- * Split cards whose summary + outcomes together won't fit on a single card.
+ * Split cards whose text won't fit on a single card.
+ * Runs iteratively so that back cards which are themselves too long can be
+ * split again, supporting 3+ card layouts. Stops once no new splits occur.
  * Back cards are inserted immediately after their front card.
- * Safe to call multiple times — skips cards that already have a back.
  */
 export function splitOverflowCards(cards: CardModel[]): CardModel[] {
+  let current = cards;
+  for (let pass = 0; pass < 5; pass++) {
+    const next = splitOverflowOnce(current);
+    if (next.length === current.length) break;
+    current = next;
+  }
+  return current;
+}
+
+function splitOverflowOnce(cards: CardModel[]): CardModel[] {
+  // Track which cards already have a back so we don't split them again this pass.
   const existingBackKeys = new Set(cards.filter((c) => c.continuationOf).map((c) => c.stableKey));
 
   const result: CardModel[] = [];
   for (const card of cards) {
-    // Already a back card — keep as-is
-    if (card.continuationOf) {
-      result.push(card);
-      continue;
-    }
-    // Back card already exists for this front — keep front as-is
+    // Back card already exists for this card — keep as-is and move on.
     if (existingBackKeys.has(`${card.stableKey}-back`)) {
       result.push(card);
       continue;
@@ -138,18 +145,31 @@ export function splitOverflowCards(cards: CardModel[]): CardModel[] {
     // Split only when the combined text genuinely won't fit on one card (~700 chars
     // is roughly the practical limit for a 63×88 mm card at 7 pt body text).
     if (hasOutcomes && summary.length + outcomesLength > 700) {
-      // Front: summary only
+      // If the summary itself is too long, truncate it at a sentence boundary so
+      // the front card doesn't overflow even after outcomes are moved to the back.
+      const SUMMARY_LIMIT = 600;
+      let frontSummary = summary;
+      let spilloverSummary = '';
+      if (summary.length > SUMMARY_LIMIT) {
+        let breakAt = summary.lastIndexOf('. ', SUMMARY_LIMIT);
+        if (breakAt < SUMMARY_LIMIT * 0.4) breakAt = summary.lastIndexOf(' ', SUMMARY_LIMIT);
+        if (breakAt <= 0) breakAt = SUMMARY_LIMIT;
+        frontSummary = summary.slice(0, breakAt + 1).trim();
+        spilloverSummary = summary.slice(breakAt + 1).trim();
+      }
+      // Front: (truncated) summary only
       result.push({
         ...card,
         rules: {
           ...card.rules,
+          summary: frontSummary,
           criticalSuccess: undefined,
           success: undefined,
           failure: undefined,
           criticalFailure: undefined,
         },
       });
-      // Back: outcomes only
+      // Back: any spillover summary text + outcomes
       result.push({
         ...card,
         id: `${card.id}-back`,
@@ -158,11 +178,15 @@ export function splitOverflowCards(cards: CardModel[]): CardModel[] {
         writableFields: [],
         rules: {
           ...card.rules,
-          summary: '',
+          summary: spilloverSummary,
           traits: [],
           trigger: undefined,
           requirements: undefined,
           frequency: undefined,
+          usage: undefined,
+          bulk: undefined,
+          price: undefined,
+          activateTag: undefined,
         },
         userEdits: { edited: false },
       });
@@ -189,6 +213,41 @@ export function splitOverflowCards(cards: CardModel[]): CardModel[] {
           trigger: undefined,
           requirements: undefined,
           frequency: undefined,
+          usage: undefined,
+          bulk: undefined,
+          price: undefined,
+          activateTag: undefined,
+        },
+        userEdits: { edited: false },
+      });
+    } else if (!hasOutcomes && !hasExtraSections && summary.length > 600) {
+      // Long plain summary — find the last sentence end before the threshold and
+      // split there. Front shows the first chunk; back shows the rest.
+      const THRESHOLD = 600;
+      let breakAt = summary.lastIndexOf('. ', THRESHOLD);
+      if (breakAt < THRESHOLD * 0.4) breakAt = summary.lastIndexOf(' ', THRESHOLD);
+      if (breakAt <= 0) breakAt = THRESHOLD;
+      const front = summary.slice(0, breakAt + 1).trim();
+      const back = summary.slice(breakAt + 1).trim();
+      result.push({ ...card, rules: { ...card.rules, summary: front } });
+      result.push({
+        ...card,
+        id: `${card.id}-back`,
+        stableKey: `${card.stableKey}-back`,
+        continuationOf: card.id,
+        writableFields: [],
+        rules: {
+          ...card.rules,
+          summary: back,
+          traits: [],
+          trigger: undefined,
+          requirements: undefined,
+          frequency: undefined,
+          usage: undefined,
+          bulk: undefined,
+          price: undefined,
+          activateTag: undefined,
+          level: undefined,
         },
         userEdits: { edited: false },
       });
