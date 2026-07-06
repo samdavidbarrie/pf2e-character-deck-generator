@@ -116,6 +116,9 @@ function mapActionCost(raw: string | undefined): ActionCost | undefined {
   if (s === '1' || s === 'one action') return '1';
   if (s === '2' || s === 'two actions') return '2';
   if (s === '3' || s === 'three actions') return '3';
+  if (s.match(/1.*(to|or|[-–]).*3/) || s.includes('one to three')) return '1-3';
+  if (s.match(/1.*(to|or|[-–]).*2/) || s.includes('one to two')) return '1-2';
+  if (s.match(/2.*(to|or|[-–]).*3/) || s.includes('two to three')) return '2-3';
   if (s.includes(' to ') || s.includes('varies') || s.includes('variable')) return 'variable';
   if (s === 'passive' || s === 'none' || s === '') return 'passive';
   return undefined;

@@ -13,8 +13,8 @@ export function generateSummaryCards(char: CharacterModel): CardModel[] {
 
   const combatSubtitle = [
     `Level ${char.level}`,
-    [char.ancestry, char.className].filter(Boolean).join(' ') +
-      (char.background ? ` / ${char.background}` : ''),
+    [char.ancestry, char.className].filter(Boolean).join(' '),
+    char.background,
   ]
     .filter(Boolean)
     .join(' · ');
@@ -53,8 +53,7 @@ export function generateSummaryCards(char: CharacterModel): CardModel[] {
 
   // --- Character Details ---
   const detailLines: string[] = [
-    [char.ancestry, char.className].filter(Boolean).join(' ') +
-      (char.background ? ` / ${char.background}` : ''),
+    [char.ancestry, char.className, char.background].filter(Boolean).join(' · '),
   ].filter(Boolean);
 
   if (char.languages && char.languages.length > 0) {

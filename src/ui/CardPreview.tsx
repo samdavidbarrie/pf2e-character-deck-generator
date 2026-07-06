@@ -1,5 +1,5 @@
-import type { CardModel } from '../model/cards';
-import { ACTION_COST_LABEL, CATEGORY_LABEL, TEML_RANKS } from '../model/cards';
+import type { ActionCost, CardModel } from '../model/cards';
+import { ACTION_COST_LABEL, CATEGORY_COLOR, TEML_RANKS } from '../model/cards';
 import styles from './CardPreview.module.css';
 
 interface Props {
@@ -9,13 +9,45 @@ interface Props {
   forPrint?: boolean;
 }
 
-export function CardPreview({ card, selected, onClick, forPrint }: Props) {
-  const actionLabel = card.rules.actionCost ? ACTION_COST_LABEL[card.rules.actionCost] : '';
-  const categoryLabel = CATEGORY_LABEL[card.category];
+const BASE = import.meta.env.BASE_URL;
+const ACTION_ICON: Partial<Record<ActionCost, string>> = {
+  '1': `${BASE}icons/action-1.png`,
+  '2': `${BASE}icons/action-2.png`,
+  '3': `${BASE}icons/action-3.png`,
+  free: `${BASE}icons/action-free.png`,
+  reaction: `${BASE}icons/action-reaction.png`,
+};
+const ACTION_RANGE_PARTS: Partial<Record<ActionCost, [ActionCost, ActionCost]>> = {
+  '1-2': ['1', '2'],
+  '1-3': ['1', '3'],
+  '2-3': ['2', '3'],
+};
 
+function ActionCostDisplay({ cost }: { cost: ActionCost }) {
+  if (cost === 'passive') return null;
+  const icon = ACTION_ICON[cost];
+  if (icon) {
+    return <img src={icon} className={styles.actionIcon} alt={ACTION_COST_LABEL[cost]} />;
+  }
+  const range = ACTION_RANGE_PARTS[cost];
+  if (range) {
+    return (
+      <span className={styles.actionRange}>
+        <img src={ACTION_ICON[range[0]]} className={styles.actionIcon} alt={range[0]} />
+        <span className={styles.actionRangeDash}>–</span>
+        <img src={ACTION_ICON[range[1]]} className={styles.actionIcon} alt={range[1]} />
+      </span>
+    );
+  }
+  // fallback (variable)
+  return <span className={styles.actionCost}>{ACTION_COST_LABEL[cost]}</span>;
+}
+
+export function CardPreview({ card, selected, onClick, forPrint }: Props) {
   return (
     <div
       className={`${styles.card} ${selected ? styles.selected : ''} ${forPrint ? styles.forPrint : ''} ${!card.print.include && !forPrint ? styles.hidden : ''}`}
+      style={{ backgroundColor: CATEGORY_COLOR[card.category] }}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
@@ -24,10 +56,7 @@ export function CardPreview({ card, selected, onClick, forPrint }: Props) {
     >
       <div className={styles.topBand}>
         <span className={styles.title}>{card.title}</span>
-        <span className={styles.meta}>
-          <span className={styles.category}>{categoryLabel}</span>
-          {actionLabel && <span className={styles.actionCost}>{actionLabel}</span>}
-        </span>
+        {card.rules.actionCost && <ActionCostDisplay cost={card.rules.actionCost} />}
       </div>
 
       {card.subtitle && <div className={styles.subtitle}>{card.subtitle}</div>}

@@ -1,12 +1,12 @@
 .card {
+  text-align: left;
   width: 100%;
-  border: 1px solid #333;
+  border: 1px solid #bbb;
   border-radius: 4px;
   padding: 6px 8px;
   box-sizing: border-box;
-  background: #fff;
   cursor: default;
-  font-size: 8pt;
+  font-size: 7pt;
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -65,6 +65,26 @@
 .actionCost {
   font-size: 8pt;
   font-weight: 600;
+}
+
+.actionIcon {
+  height: 13px;
+  width: auto;
+  vertical-align: middle;
+  display: inline-block;
+}
+
+.actionRange {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+}
+
+.actionRangeDash {
+  font-size: 8pt;
+  font-weight: 600;
+  line-height: 1;
+  margin: 0 1px;
 }
 
 .subtitle {
