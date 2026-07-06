@@ -183,6 +183,32 @@
   opacity: 0.45;
   font-style: italic;
 }
+.skillTopField {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  font-size: 7.5pt;
+  font-weight: 700;
+  margin: 2px 0 5px;
+}
+
+.skillTopLabel {
+  /* inherits bold from parent */
+}
+
+.skillTopSign {
+  font-weight: 400;
+  font-size: 7pt;
+}
+
+.skillTopBlank {
+  flex: 0 0 30px;
+  height: 0;
+  border-bottom: 0.5pt solid currentColor;
+  align-self: flex-end;
+  margin-bottom: 2px;
+}
+
 .spellMeta {
   display: flex;
   flex-wrap: wrap;
@@ -196,6 +222,28 @@
   font-weight: 700;
   margin-right: 2px;
 }
+.skillTopField {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  font-size: 7.5pt;
+  font-weight: 700;
+  margin: 2px 0 5px;
+}
+
+.skillTopSign {
+  font-weight: 400;
+  font-size: 7pt;
+}
+
+.skillTopBlank {
+  flex: 0 0 30px;
+  height: 0;
+  border-bottom: 0.5pt solid currentColor;
+  align-self: flex-end;
+  margin-bottom: 2px;
+}
+
 .summary {
   font-size: 7.5pt;
   line-height: 1.4;
@@ -336,6 +384,10 @@
 .skillTable {
   margin-top: 4px;
   width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .skillColumnHeader {
@@ -379,6 +431,12 @@
   display: inline-block;
 }
 
+.skillTotalHeader {
+  font-size: 6pt;
+  min-width: 28px;
+  display: inline-block;
+}
+
 /* Print overrides applied via forPrint class */
 .forPrint {
   width: 63mm;
@@ -390,4 +448,80 @@
 
 .forPrint .title {
   font-size: 10pt;
+}
+
+/* Upscale body text for sparse print cards that have room to breathe */
+.scaleLg .summary,
+.scaleLg .field,
+.scaleLg .outcomeField,
+.scaleLg .extraSection {
+  font-size: 11pt;
+  line-height: 1.35;
+}
+.scaleLg .fieldLabel {
+  font-size: 9.5pt;
+}
+.scaleLg .outcomeLabel {
+  font-size: 9.5pt;
+}
+.scaleLg .trait {
+  font-size: 8pt;
+}
+.scaleLg .subtitle {
+  font-size: 10pt;
+}
+
+.scaleMd .summary,
+.scaleMd .field,
+.scaleMd .outcomeField,
+.scaleMd .extraSection {
+  font-size: 9.5pt;
+  line-height: 1.35;
+}
+.scaleMd .fieldLabel {
+  font-size: 8pt;
+}
+.scaleMd .outcomeLabel {
+  font-size: 8.5pt;
+}
+.scaleMd .trait {
+  font-size: 7pt;
+}
+.scaleMd .subtitle {
+  font-size: 9pt;
+}
+
+.scaleSm .summary,
+.scaleSm .field,
+.scaleSm .outcomeField,
+.scaleSm .extraSection {
+  font-size: 8.5pt;
+  line-height: 1.35;
+}
+.scaleSm .fieldLabel {
+  font-size: 7.5pt;
+}
+.scaleSm .subtitle {
+  font-size: 8pt;
+}
+
+/* Downscale body text for dense print cards */
+.scaleDense .summary,
+.scaleDense .field,
+.scaleDense .outcomeField,
+.scaleDense .extraSection {
+  font-size: 7pt;
+  line-height: 1.3;
+}
+.scaleDense .fieldLabel {
+  font-size: 6pt;
+}
+.scaleDense .outcomeLabel {
+  font-size: 6.5pt;
+}
+.scaleDense .trait {
+  font-size: 5.5pt;
+}
+.scaleDense .subtitle {
+  font-size: 7pt;
 }

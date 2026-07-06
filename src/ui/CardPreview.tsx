@@ -13,6 +13,71 @@ interface Props {
 
 const BASE = import.meta.env.BASE_URL;
 
+/** Primary skill for each skill-action by card title. 'Skill' means multiple options. */
+const SKILL_FOR_ACTION: Record<string, string> = {
+  // Acrobatics
+  Balance: 'Acrobatics',
+  'Maneuver in Flight': 'Acrobatics',
+  Squeeze: 'Acrobatics',
+  'Tumble Through': 'Acrobatics',
+  // Athletics
+  Climb: 'Athletics',
+  Disarm: 'Athletics',
+  'Force Open': 'Athletics',
+  Grapple: 'Athletics',
+  'High Jump': 'Athletics',
+  'Long Jump': 'Athletics',
+  Shove: 'Athletics',
+  Swim: 'Athletics',
+  Trip: 'Athletics',
+  // Deception
+  'Create a Diversion': 'Deception',
+  Feint: 'Deception',
+  Impersonate: 'Deception',
+  Lie: 'Deception',
+  // Diplomacy
+  'Gather Information': 'Diplomacy',
+  'Make an Impression': 'Diplomacy',
+  Request: 'Diplomacy',
+  // Intimidation
+  Coerce: 'Intimidation',
+  Demoralize: 'Intimidation',
+  // Medicine
+  'Administer First Aid': 'Medicine',
+  'Treat Disease': 'Medicine',
+  'Treat Poison': 'Medicine',
+  'Treat Wounds': 'Medicine',
+  // Nature
+  'Command an Animal': 'Nature',
+  // Performance
+  Perform: 'Performance',
+  // Society
+  'Create Forgery': 'Society',
+  // Stealth
+  'Conceal an Object': 'Stealth',
+  Hide: 'Stealth',
+  Sneak: 'Stealth',
+  // Survival
+  'Cover Tracks': 'Survival',
+  Track: 'Survival',
+  // Thievery
+  'Disable a Device': 'Thievery',
+  'Palm an Object': 'Thievery',
+  'Pick a Lock': 'Thievery',
+  Steal: 'Thievery',
+  // Perception (treated as a skill)
+  Seek: 'Perception',
+  'Sense Motive': 'Perception',
+  // Multiple / varies
+  Escape: 'Skill',
+  'Identify Alchemy': 'Skill',
+  'Identify Magic': 'Skill',
+  'Learn a Spell': 'Skill',
+  'Recall Knowledge': 'Skill',
+  'Earn Income': 'Skill',
+  Subsist: 'Skill',
+};
+
 /** Render text that may contain **bold** markers produced by stripHtml. */
 function renderBold(text: string): React.ReactNode {
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
@@ -68,17 +133,60 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
     isSpellCard &&
     !!card.rules.defense &&
     /\b(fortitude|reflex|will|fort)\b/i.test(card.rules.defense);
-  const effectiveWritableFields = isSpellCard
-    ? card.writableFields.filter((f) => {
+
+  // For skill-action cards, show the relevant skill above the summary and remove it from the bottom.
+  const isSkillAction = card.category === 'skill-action' && !card.continuationOf;
+  const skillLabel = isSkillAction ? (SKILL_FOR_ACTION[card.title] ?? 'Skill') : null;
+
+  // For sparse print cards, scale up body text to better fill the physical card.
+  const printScaleClass = (() => {
+    if (!forPrint) return '';
+    if (card.writableFields.some((f) => f.type === 'skill-row')) return '';
+    const allChars =
+      [
+        card.rules.summary ?? '',
+        card.rules.requirements ?? '',
+        card.rules.trigger ?? '',
+        card.rules.frequency ?? '',
+        card.rules.criticalSuccess ?? '',
+        card.rules.success ?? '',
+        card.rules.failure ?? '',
+        card.rules.criticalFailure ?? '',
+        ...(card.rules.extraSections?.flatMap((s) => [s.heading ?? '', s.body ?? '']) ?? []),
+      ].join('').length +
+      card.rules.traits.length * 20;
+    if (allChars > 650) return styles.scaleDense;
+    const hasOutcomes = !!(
+      card.rules.criticalSuccess ||
+      card.rules.success ||
+      card.rules.failure ||
+      card.rules.criticalFailure
+    );
+    if (hasOutcomes) return '';
+    if (allChars < 200) return styles.scaleLg;
+    if (allChars < 380) return styles.scaleMd;
+    if (allChars < 540) return styles.scaleSm;
+    return '';
+  })();
+
+  const effectiveWritableFields = (() => {
+    let fields = card.writableFields;
+    if (isSpellCard) {
+      fields = fields.filter((f) => {
         if (f.label === 'Spell DC') return defenseIsSave;
         if (f.label === 'Spell Attack') return card.rules.spellAttack === true;
         return true;
-      })
-    : card.writableFields;
+      });
+    }
+    if (isSkillAction) {
+      fields = fields.filter((f) => f.label !== 'Skill bonus');
+    }
+    return fields;
+  })();
 
   return (
     <div
-      className={`${styles.card} ${selected ? styles.selected : ''} ${forPrint ? styles.forPrint : ''} ${!card.print.include && !forPrint ? styles.hidden : ''}`}
+      className={`${styles.card} ${selected ? styles.selected : ''} ${forPrint ? styles.forPrint : ''} ${!card.print.include && !forPrint ? styles.hidden : ''} ${printScaleClass}`}
       style={{ backgroundColor: CATEGORY_COLOR[card.category] }}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
@@ -172,6 +280,14 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
         </div>
       )}
 
+      {skillLabel && (
+        <div className={styles.skillTopField}>
+          <span className={styles.skillTopLabel}>{skillLabel}:</span>
+          <span className={styles.skillTopSign}>+</span>
+          <span className={styles.skillTopBlank} />
+        </div>
+      )}
+
       <div className={styles.summary}>{renderBold(card.rules.summary)}</div>
 
       {card.rules.criticalSuccess && (
@@ -241,7 +357,7 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
                 <div className={styles.skillColumnHeader}>
                   <span className={styles.skillName} />
                   <span className={styles.skillTeml}>T&nbsp;E&nbsp;M&nbsp;L</span>
-                  <span className={styles.skillTotal}>Bonus</span>
+                  <span className={styles.skillTotalHeader}>Bonus</span>
                 </div>
                 {skillRows.map((f) => {
                   const rankIndex = TEML_RANKS.indexOf(f.rank as (typeof TEML_RANKS)[number]);

@@ -76,6 +76,30 @@ export function generateDeck(char: CharacterModel): GenerationResult {
     return a.title.localeCompare(b.title);
   });
 
+  // Cross-reference pass: bold any card title that appears (plain) in another card's text.
+  const sortedTitles = [...new Set(cards.map((c) => c.title))].sort((a, b) => b.length - a.length);
+  function boldRefs(text: string | undefined): string | undefined {
+    if (!text) return text;
+    let out = text;
+    for (const title of sortedTitles) {
+      const esc = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      // Only replace occurrences not already wrapped in **
+      out = out.replace(new RegExp(`(?<!\\*)\\b${esc}\\b(?!\\*)`, 'g'), `**${title}**`);
+    }
+    return out;
+  }
+  for (const card of cards) {
+    card.rules.summary = boldRefs(card.rules.summary) ?? card.rules.summary;
+    card.rules.criticalSuccess = boldRefs(card.rules.criticalSuccess);
+    card.rules.success = boldRefs(card.rules.success);
+    card.rules.failure = boldRefs(card.rules.failure);
+    card.rules.criticalFailure = boldRefs(card.rules.criticalFailure);
+    card.rules.extraSections = card.rules.extraSections?.map((s) => ({
+      ...s,
+      body: boldRefs(s.body),
+    }));
+  }
+
   return { cards, warnings };
 }
 
