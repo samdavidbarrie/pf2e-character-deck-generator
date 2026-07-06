@@ -38,8 +38,34 @@
 .topBand {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   gap: 4px;
+}
+
+.includeToggle {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  border: none;
+  border-radius: 50%;
+  font-size: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+}
+
+.toggleIncluded {
+  background: #00aa44;
+  color: #fff;
+}
+
+.toggleExcluded {
+  background: #ccc;
+  color: #555;
 }
 
 .title {
@@ -49,17 +75,31 @@
   flex: 1;
 }
 
-.meta {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 1px;
-  white-space: nowrap;
+.backBadge {
+  display: inline-block;
+  font-size: 7pt;
+  font-weight: 400;
+  opacity: 0.55;
+  margin-right: 3px;
+  vertical-align: middle;
 }
 
-.category {
-  font-size: 7pt;
-  color: #555;
+.metaRight {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.splitBadge {
+  display: inline-block;
+  font-size: 6.5pt;
+  font-weight: 700;
+  color: #888;
+  letter-spacing: -0.02em;
+  margin-left: 4px;
+  vertical-align: middle;
 }
 
 .actionCost {
@@ -131,6 +171,31 @@
   font-size: 7pt;
 }
 
+.extraSection {
+  font-size: 7pt;
+  line-height: 1.35;
+  border-top: 0.5pt solid rgba(0, 0, 0, 0.15);
+  padding-top: 2px;
+  margin-top: 1px;
+}
+
+.runeBodyPlaceholder {
+  opacity: 0.45;
+  font-style: italic;
+}
+.spellMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  font-size: 6.5pt;
+  line-height: 1.4;
+  color: #333;
+}
+
+.spellMetaLabel {
+  font-weight: 700;
+  margin-right: 2px;
+}
 .summary {
   font-size: 7.5pt;
   line-height: 1.4;

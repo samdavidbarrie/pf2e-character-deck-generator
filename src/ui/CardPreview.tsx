@@ -1,3 +1,4 @@
+import { splitOverflowCards } from '../generation/generateDeck';
 import type { ActionCost, CardModel } from '../model/cards';
 import { ACTION_COST_LABEL, CATEGORY_COLOR, TEML_RANKS } from '../model/cards';
 import styles from './CardPreview.module.css';
@@ -7,9 +8,23 @@ interface Props {
   selected?: boolean;
   onClick?: () => void;
   forPrint?: boolean;
+  onToggleInclude?: () => void;
 }
 
 const BASE = import.meta.env.BASE_URL;
+
+/** Render text that may contain **bold** markers produced by stripHtml. */
+function renderBold(text: string): React.ReactNode {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  if (parts.length === 1) return text;
+  return parts.map((part, i) =>
+    part.startsWith('**') && part.endsWith('**') ? (
+      <strong key={i}>{part.slice(2, -2)}</strong>
+    ) : (
+      part || null
+    ),
+  );
+}
 const ACTION_ICON: Partial<Record<ActionCost, string>> = {
   '1': `${BASE}icons/action-1.png`,
   '2': `${BASE}icons/action-2.png`,
@@ -43,7 +58,24 @@ function ActionCostDisplay({ cost }: { cost: ActionCost }) {
   return <span className={styles.actionCost}>{ACTION_COST_LABEL[cost]}</span>;
 }
 
-export function CardPreview({ card, selected, onClick, forPrint }: Props) {
+export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude }: Props) {
+  const splitCount = !forPrint && !card.continuationOf ? splitOverflowCards([card]).length : 1;
+
+  // For spell cards, only show Spell DC when defense is a save, Spell Attack when it's a
+  // spell-attack roll. If neither applies (e.g. auto-hit spells like Force Barrage) hide both.
+  const isSpellCard = card.category === 'spell' || card.category === 'focus-spell';
+  const defenseIsSave =
+    isSpellCard &&
+    !!card.rules.defense &&
+    /\b(fortitude|reflex|will|fort)\b/i.test(card.rules.defense);
+  const effectiveWritableFields = isSpellCard
+    ? card.writableFields.filter((f) => {
+        if (f.label === 'Spell DC') return defenseIsSave;
+        if (f.label === 'Spell Attack') return card.rules.spellAttack === true;
+        return true;
+      })
+    : card.writableFields;
+
   return (
     <div
       className={`${styles.card} ${selected ? styles.selected : ''} ${forPrint ? styles.forPrint : ''} ${!card.print.include && !forPrint ? styles.hidden : ''}`}
@@ -55,8 +87,27 @@ export function CardPreview({ card, selected, onClick, forPrint }: Props) {
       aria-pressed={selected}
     >
       <div className={styles.topBand}>
-        <span className={styles.title}>{card.title}</span>
-        {card.rules.actionCost && <ActionCostDisplay cost={card.rules.actionCost} />}
+        {onToggleInclude && (
+          <button
+            className={`${styles.includeToggle} ${card.print.include ? styles.toggleIncluded : styles.toggleExcluded}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleInclude();
+            }}
+            aria-label={card.print.include ? 'Hide from print' : 'Include in print'}
+            title={card.print.include ? 'Hide from print' : 'Include in print'}
+          >
+            {card.print.include ? '✓' : '–'}
+          </button>
+        )}
+        <span className={styles.title}>
+          {card.continuationOf && <span className={styles.backBadge}>↩</span>}
+          {card.title}
+          {splitCount > 1 && <span className={styles.splitBadge}>×{splitCount}</span>}
+        </span>
+        <span className={styles.metaRight}>
+          {card.rules.actionCost && <ActionCostDisplay cost={card.rules.actionCost} />}
+        </span>
       </div>
 
       {card.subtitle && <div className={styles.subtitle}>{card.subtitle}</div>}
@@ -87,32 +138,77 @@ export function CardPreview({ card, selected, onClick, forPrint }: Props) {
         </div>
       )}
 
-      <div className={styles.summary}>{card.rules.summary}</div>
+      {(card.rules.range ||
+        card.rules.area ||
+        card.rules.targets ||
+        card.rules.defense ||
+        card.rules.duration) && (
+        <div className={styles.spellMeta}>
+          {card.rules.range && (
+            <span>
+              <span className={styles.spellMetaLabel}>Range</span> {card.rules.range}
+            </span>
+          )}
+          {card.rules.area && (
+            <span>
+              <span className={styles.spellMetaLabel}>Area</span> {card.rules.area}
+            </span>
+          )}
+          {card.rules.targets && (
+            <span>
+              <span className={styles.spellMetaLabel}>Targets</span> {card.rules.targets}
+            </span>
+          )}
+          {card.rules.defense && (
+            <span>
+              <span className={styles.spellMetaLabel}>Defense</span> {card.rules.defense}
+            </span>
+          )}
+          {card.rules.duration && (
+            <span>
+              <span className={styles.spellMetaLabel}>Duration</span> {card.rules.duration}
+            </span>
+          )}
+        </div>
+      )}
+
+      <div className={styles.summary}>{renderBold(card.rules.summary)}</div>
 
       {card.rules.criticalSuccess && (
         <div className={styles.outcomeField}>
           <span className={styles.outcomeLabel}>Critical Success</span>
-          {card.rules.criticalSuccess}
+          {renderBold(card.rules.criticalSuccess)}
         </div>
       )}
       {card.rules.success && (
         <div className={styles.outcomeField}>
           <span className={styles.outcomeLabel}>Success</span>
-          {card.rules.success}
+          {renderBold(card.rules.success)}
         </div>
       )}
       {card.rules.failure && (
         <div className={styles.outcomeField}>
           <span className={styles.outcomeLabel}>Failure</span>
-          {card.rules.failure}
+          {renderBold(card.rules.failure)}
         </div>
       )}
       {card.rules.criticalFailure && (
         <div className={styles.outcomeField}>
           <span className={styles.outcomeLabel}>Critical Failure</span>
-          {card.rules.criticalFailure}
+          {renderBold(card.rules.criticalFailure)}
         </div>
       )}
+
+      {card.rules.extraSections?.map((sec, i) => (
+        <div key={i} className={styles.extraSection}>
+          {sec.heading && <span className={styles.outcomeLabel}>{sec.heading}</span>}
+          {sec.body ? (
+            renderBold(sec.body)
+          ) : (
+            <span className={styles.runeBodyPlaceholder}>See AoN ↗</span>
+          )}
+        </div>
+      ))}
 
       {card.mergedChildren && card.mergedChildren.length > 0 && (
         <div className={styles.mergedChildren}>
@@ -136,8 +232,8 @@ export function CardPreview({ card, selected, onClick, forPrint }: Props) {
       )}
 
       {(() => {
-        const skillRows = card.writableFields.filter((f) => f.type === 'skill-row');
-        const otherFields = card.writableFields.filter((f) => f.type !== 'skill-row');
+        const skillRows = effectiveWritableFields.filter((f) => f.type === 'skill-row');
+        const otherFields = effectiveWritableFields.filter((f) => f.type !== 'skill-row');
         return (
           <>
             {skillRows.length > 0 && (

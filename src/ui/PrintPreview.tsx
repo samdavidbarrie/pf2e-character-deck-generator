@@ -1,4 +1,5 @@
 import { useAppStore } from '../app/store';
+import { splitOverflowCards } from '../generation/generateDeck';
 import { exportProjectJson } from '../storage/exportProject';
 import { CardPreview } from './CardPreview';
 import styles from './PrintPreview.module.css';
@@ -11,9 +12,9 @@ export function PrintPreview() {
   if (!project) return null;
 
   const settings = project.printSettings;
-  const printCards = settings.includeHidden
-    ? project.cards
-    : project.cards.filter((c) => c.print.include);
+  const printCards = splitOverflowCards(
+    settings.includeHidden ? project.cards : project.cards.filter((c) => c.print.include),
+  );
 
   // Paginate into sheets of 9
   const sheets: (typeof printCards)[] = [];

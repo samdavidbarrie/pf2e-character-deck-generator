@@ -292,15 +292,31 @@ export function parsePathbuilder(json: unknown): CharacterModel {
   // --- Weapons / Attacks ---
   const attacks: CharacterAttack[] = [];
   const weaponsRaw = arr<unknown>(get(build, 'weapons'));
+
+  function strikingMult(v: unknown): number {
+    const s = typeof v === 'string' ? v.toLowerCase() : '';
+    if (s.includes('major')) return 4;
+    if (s.includes('greater')) return 3;
+    if (s.includes('striking')) return 2;
+    return 1;
+  }
+
   for (const w of weaponsRaw) {
-    const name = str(get(w, 'name')) ?? str(get(w, 'display'));
+    const name = str(get(w, 'name'));
     if (!name) continue;
     attacks.push({
       name,
+      display: str(get(w, 'display')),
       traits: arr<string>(get(w, 'traits')),
       damageDice: str(get(w, 'die')) ?? str(get(w, 'damage')),
       damageType: str(get(w, 'damageType')),
+      attackBonus: num(get(w, 'attack')),
+      damageBonus: num(get(w, 'damageBonus')),
+      diceMult: strikingMult(get(w, 'str')),
+      extraDamage: arr<string>(get(w, 'extraDamage')).filter(Boolean),
+      runes: arr<string>(get(w, 'runes')).filter(Boolean),
       notes: str(get(w, 'notes')),
+      isUnarmed: str(get(w, 'prof')) === 'unarmed',
     });
   }
 
@@ -310,8 +326,13 @@ export function parsePathbuilder(json: unknown): CharacterModel {
   for (const e of equipRaw) {
     if (Array.isArray(e)) {
       const name = str(e[0]);
+      const quantity = typeof e[1] === 'number' ? e[1] : undefined;
+      // Elements after index 1 can be a container UUID or the string "Invested"
+      const invested = e
+        .slice(2)
+        .some((v) => typeof v === 'string' && v.toLowerCase() === 'invested');
       if (name) {
-        equipment.push({ name, quantity: typeof e[1] === 'number' ? e[1] : undefined, traits: [] });
+        equipment.push({ name, quantity, traits: [], invested });
       }
     } else if (typeof e === 'object' && e !== null) {
       const name = str(get(e, 'name'));

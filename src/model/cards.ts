@@ -45,6 +45,8 @@ export interface CardModel {
     originalName?: string;
     aonUrl?: string;
     pathbuilderPath?: string;
+    /** Property rune names stored for AoN enrichment lookup. */
+    runes?: string[];
   };
 
   rules: {
@@ -60,6 +62,16 @@ export interface CardModel {
     success?: string;
     failure?: string;
     criticalFailure?: string;
+    /** Extra labelled text blocks (rune descriptions, crit spec, etc.). Can overflow to a back card. */
+    extraSections?: Array<{ heading?: string; body: string }>;
+    /** Spell / ability targeting info applied from AoN enrichment. */
+    range?: string;
+    area?: string;
+    targets?: string;
+    defense?: string;
+    duration?: string;
+    /** True if the spell requires a spell attack roll (targets AC). Set by AoN enrichment. */
+    spellAttack?: boolean;
   };
 
   writableFields: WritableField[];
@@ -86,6 +98,9 @@ export interface CardModel {
 
   /** Title of the parent card this card was merged into (hides it from print). */
   mergedInto?: string;
+
+  /** ID of the front card that this card continues (back-of-card content). */
+  continuationOf?: string;
 }
 
 export const ACTION_COST_LABEL: Record<ActionCost, string> = {

@@ -6,7 +6,13 @@ import { validateImport, type ValidationResult } from '../import/validateImport'
 import type { CardModel } from '../model/cards';
 import type { DeckProject, PrintSettings } from '../model/deckProject';
 import { DEFAULT_PRINT_SETTINGS } from '../model/deckProject';
-import { applyAonDataToCard, detectFeatMerges, fetchAonData } from '../rules/aonEnrichment';
+import {
+  applyAonDataToCard,
+  applyRuneDescriptions,
+  detectFeatMerges,
+  fetchAonData,
+  fetchRuneDescriptions,
+} from '../rules/aonEnrichment';
 
 export type AppScreen = 'import' | 'deck-builder' | 'print-preview';
 
@@ -204,7 +210,8 @@ export const useAppStore = create<AppState>((set, get) => ({
 
       // Apply AoN data to each card
       let cards = project.cards.map((card) => {
-        const data = aonDataMap.get(card.title);
+        if (card.continuationOf) return card; // back cards are not independently enriched
+        const data = aonDataMap.get(`${card.category}:${card.title}`);
         return data ? applyAonDataToCard(card, data) : card;
       });
 
@@ -219,14 +226,17 @@ export const useAppStore = create<AppState>((set, get) => ({
           const child = cardById.get(childId);
           if (!parent || !child) continue;
 
-          // Add child info to parent
-          cardById.set(parentId, {
-            ...parent,
-            mergedChildren: [
-              ...(parent.mergedChildren ?? []),
-              { name: child.title, level: child.rules.level, summary: child.rules.summary },
-            ],
-          });
+          // Add child info to parent (guard against duplicates on re-enrichment)
+          const alreadyMerged = (parent.mergedChildren ?? []).some((c) => c.name === child.title);
+          if (!alreadyMerged) {
+            cardById.set(parentId, {
+              ...parent,
+              mergedChildren: [
+                ...(parent.mergedChildren ?? []),
+                { name: child.title, level: child.rules.level, summary: child.rules.summary },
+              ],
+            });
+          }
 
           // Hide child and mark it as merged
           cardById.set(childId, {
@@ -239,8 +249,18 @@ export const useAppStore = create<AppState>((set, get) => ({
         cards = [...cardById.values()];
       }
 
+      // Enrich weapon property rune descriptions from AoN
+      const runeMap = await fetchRuneDescriptions(cards);
+      if (runeMap.size > 0) {
+        cards = cards.map((card) => applyRuneDescriptions(card, runeMap));
+      }
+
       set({
-        project: { ...project, cards, updatedAt: new Date().toISOString() },
+        project: {
+          ...project,
+          cards,
+          updatedAt: new Date().toISOString(),
+        },
         enriching: false,
       });
     } catch (err) {
