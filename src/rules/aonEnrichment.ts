@@ -347,7 +347,7 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
 
   if (data.description && (rules.summary.startsWith(SUMMARY_PLACEHOLDER) || alwaysReplace)) {
     const isItem = card.category === 'equipment' || card.category === 'weapon';
-    let desc = isItem ? stripSourceMetadata(data.description) : data.description;
+    const desc = isItem ? stripSourceMetadata(data.description) : data.description;
     rules.summary = desc;
   }
 

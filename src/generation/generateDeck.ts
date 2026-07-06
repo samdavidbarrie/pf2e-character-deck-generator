@@ -96,7 +96,7 @@ export function generateDeck(char: CharacterModel): GenerationResult {
     card.rules.criticalFailure = boldRefs(card.rules.criticalFailure);
     card.rules.extraSections = card.rules.extraSections?.map((s) => ({
       ...s,
-      body: boldRefs(s.body),
+      body: boldRefs(s.body) ?? s.body,
     }));
   }
 
