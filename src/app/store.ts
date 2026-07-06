@@ -13,6 +13,7 @@ import {
   fetchAonData,
   fetchRuneDescriptions,
 } from '../rules/aonEnrichment';
+import { aonSearchUrl } from '../rules/aonUrlResolver';
 
 export type AppScreen = 'import' | 'deck-builder' | 'print-preview';
 
@@ -254,6 +255,14 @@ export const useAppStore = create<AppState>((set, get) => ({
       if (runeMap.size > 0) {
         cards = cards.map((card) => applyRuneDescriptions(card, runeMap));
       }
+
+      // Apply AoN search link fallback for any card still missing a URL
+      const NO_SEARCH_CATEGORIES = new Set(['summary', 'reminder', 'manual']);
+      cards = cards.map((card) => {
+        if (card.continuationOf || card.source.aonUrl || NO_SEARCH_CATEGORIES.has(card.category))
+          return card;
+        return { ...card, source: { ...card.source, aonUrl: aonSearchUrl(card.title) } };
+      });
 
       set({
         project: {
