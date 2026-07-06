@@ -31,6 +31,8 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          VITE_AON_PROXY_URL: ${{ vars.VITE_AON_PROXY_URL }}
 
       - name: Inspect build output
         run: |
