@@ -237,11 +237,30 @@ function preferredTypesFor(category: CardCategory): string[] {
 // Fetch
 // ---------------------------------------------------------------------------
 
+/**
+ * Pathbuilder and AoN sometimes disagree on the casing of the variant part of
+ * an item name. For example Pathbuilder sends "+2 Striking" (Title Case) while
+ * AoN stores "+2 striking" (lowercase). Searching with the lowercased variant
+ * covers this mismatch without affecting names whose parenthetical uses proper
+ * nouns (e.g. "Healing Potion (Minor)" stays unchanged because it already
+ * matches AoN exactly).
+ */
+function normalizeItemVariantCase(name: string): string {
+  return name.replace(/\(([^)]+)\)$/, (_, inner) => `(${inner.toLowerCase()})`);
+}
+
 async function fetchBatch(names: string[]): Promise<AonData[]> {
   const body = {
     query: {
       bool: {
-        should: names.map((name) => ({ term: { 'name.keyword': name } })),
+        should: names.flatMap((name) => {
+          const queries: Array<{ term: { 'name.keyword': string } }> = [
+            { term: { 'name.keyword': name } },
+          ];
+          const normalized = normalizeItemVariantCase(name);
+          if (normalized !== name) queries.push({ term: { 'name.keyword': normalized } });
+          return queries;
+        }),
         minimum_should_match: 1,
       },
     },
@@ -369,7 +388,8 @@ export async function fetchAonData(
   for (const card of cards) {
     const key = `${card.category}:${card.title}`;
     if (result.has(key)) continue;
-    const candidates = byName.get(card.title);
+    // Try exact name first, then the variant-case-normalised form (e.g. "+2 Striking" → "+2 striking").
+    const candidates = byName.get(card.title) ?? byName.get(normalizeItemVariantCase(card.title));
     if (!candidates || candidates.length === 0) continue;
 
     const preferred = preferredTypesFor(card.category);

@@ -161,9 +161,9 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
   const hasItemLevel = card.category === 'equipment' && card.rules.level !== undefined;
   const skillLabel = isSkillAction ? (SKILL_FOR_ACTION[card.title] ?? 'Skill') : null;
 
-  // For sparse print cards, scale up body text to better fill the physical card.
-  const printScaleClass = (() => {
-    if (!forPrint) return '';
+  // Scale body text to match card density — applied in both deck-builder and print views
+  // so the two surfaces look identical.
+  const scaleClass = (() => {
     if (card.writableFields.some((f) => f.type === 'skill-row')) return '';
     const allChars =
       [
@@ -209,7 +209,7 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
 
   return (
     <div
-      className={`${styles.card} ${selected ? styles.selected : ''} ${forPrint ? styles.forPrint : ''} ${!card.print.include && !forPrint ? styles.hidden : ''} ${printScaleClass}`}
+      className={`${styles.card} ${selected ? styles.selected : ''} ${forPrint ? styles.forPrint : ''} ${!card.print.include && !forPrint ? styles.hidden : ''} ${scaleClass}`}
       style={{ backgroundColor: CATEGORY_COLOR[card.category] }}
       onClick={onClick}
       role={onClick ? 'button' : undefined}

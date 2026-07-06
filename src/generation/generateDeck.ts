@@ -200,6 +200,37 @@ export function splitOverflowCards(cards: CardModel[]): CardModel[] {
         },
         userEdits: { edited: false },
       });
+    } else if (!hasOutcomes && !hasExtraSections && summary.length > 600) {
+      // Long plain summary — find the last sentence end before the threshold and
+      // split there. Front shows the first chunk; back shows the rest.
+      const THRESHOLD = 600;
+      let breakAt = summary.lastIndexOf('. ', THRESHOLD);
+      if (breakAt < THRESHOLD * 0.4) breakAt = summary.lastIndexOf(' ', THRESHOLD);
+      if (breakAt <= 0) breakAt = THRESHOLD;
+      const front = summary.slice(0, breakAt + 1).trim();
+      const back = summary.slice(breakAt + 1).trim();
+      result.push({ ...card, rules: { ...card.rules, summary: front } });
+      result.push({
+        ...card,
+        id: `${card.id}-back`,
+        stableKey: `${card.stableKey}-back`,
+        continuationOf: card.id,
+        writableFields: [],
+        rules: {
+          ...card.rules,
+          summary: back,
+          traits: [],
+          trigger: undefined,
+          requirements: undefined,
+          frequency: undefined,
+          usage: undefined,
+          bulk: undefined,
+          price: undefined,
+          activateTag: undefined,
+          level: undefined,
+        },
+        userEdits: { edited: false },
+      });
     } else {
       result.push(card);
     }
