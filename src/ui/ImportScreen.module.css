@@ -79,11 +79,11 @@
   display: none;
 }
 
-.pasteSection {
+.uploadSection {
   margin-top: 16px;
 }
 
-.pasteSection summary {
+.uploadSection summary {
   cursor: pointer;
   font-weight: 600;
   padding: 4px 0;
@@ -92,7 +92,7 @@
 .pasteArea {
   width: 100%;
   box-sizing: border-box;
-  margin-top: 8px;
+  margin-bottom: 8px;
   font-family: monospace;
   font-size: 0.8rem;
   border: 1px solid #ccc;

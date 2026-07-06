@@ -155,6 +155,7 @@ export function splitOverflowCards(cards: CardModel[]): CardModel[] {
         id: `${card.id}-back`,
         stableKey: `${card.stableKey}-back`,
         continuationOf: card.id,
+        writableFields: [],
         rules: {
           ...card.rules,
           summary: '',
@@ -180,6 +181,7 @@ export function splitOverflowCards(cards: CardModel[]): CardModel[] {
         id: `${card.id}-back`,
         stableKey: `${card.stableKey}-back`,
         continuationOf: card.id,
+        writableFields: [],
         rules: {
           ...card.rules,
           summary: '',
