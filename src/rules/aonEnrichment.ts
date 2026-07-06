@@ -9,6 +9,12 @@ const AON_ES = 'https://elasticsearch.aonprd.com/aon/_search';
 const AON_BASE = 'https://2e.aonprd.com';
 const BATCH_SIZE = 50;
 
+/**
+ * When false (the default), all direct AoN Elasticsearch calls are skipped.
+ * Set VITE_ENABLE_AON_LIVE_SEARCH=true in your local .env to enable live enrichment.
+ */
+export const ENABLE_AON_LIVE_SEARCH = import.meta.env.VITE_ENABLE_AON_LIVE_SEARCH === 'true';
+
 export const SUMMARY_PLACEHOLDER = 'Rules summary not imported.';
 
 // ---------------------------------------------------------------------------
@@ -294,6 +300,8 @@ async function fetchBatch(names: string[]): Promise<AonData[]> {
 export async function fetchAonData(
   cards: Array<{ title: string; category: CardCategory }>,
 ): Promise<Map<string, AonData>> {
+  if (!ENABLE_AON_LIVE_SEARCH) return new Map();
+
   const names = [...new Set(cards.map((c) => c.title).filter(Boolean))];
   const allResults: AonData[] = [];
 
@@ -462,6 +470,8 @@ export function detectFeatMerges(
  * Returns a map of rune name → description text.
  */
 export async function fetchRuneDescriptions(cards: CardModel[]): Promise<Map<string, string>> {
+  if (!ENABLE_AON_LIVE_SEARCH) return new Map();
+
   const runeNames = new Set<string>();
   for (const card of cards) {
     if (card.category === 'weapon' && !card.continuationOf) {

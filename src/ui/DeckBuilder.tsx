@@ -1,5 +1,6 @@
 import { useAppStore } from '../app/store';
 import { splitOverflowCards } from '../generation/generateDeck';
+import { ENABLE_AON_LIVE_SEARCH } from '../rules/aonEnrichment';
 import { CardEditor } from './CardEditor';
 import { CardPreview } from './CardPreview';
 import styles from './DeckBuilder.module.css';
@@ -96,9 +97,17 @@ export function DeckBuilder() {
             className={styles.enrichBtn}
             onClick={() => void enrichCardsFromAon()}
             disabled={enriching}
-            title="Fetch rules text, traits, and action costs from Archives of Nethys"
+            title={
+              ENABLE_AON_LIVE_SEARCH
+                ? 'Fetch rules text, traits, and action costs from Archives of Nethys'
+                : 'Add AoN search links to cards (live enrichment disabled — set VITE_ENABLE_AON_LIVE_SEARCH=true to enable)'
+            }
           >
-            {enriching ? 'Enriching…' : '⬇ Enrich from AoN'}
+            {enriching
+              ? 'Enriching…'
+              : ENABLE_AON_LIVE_SEARCH
+                ? '⬇ Enrich from AoN'
+                : '⬇ Add AoN Links'}
           </button>
           {enrichError && <div className={styles.enrichError}>{enrichError}</div>}
           <button className={styles.primaryBtn} onClick={() => goTo('print-preview')}>
