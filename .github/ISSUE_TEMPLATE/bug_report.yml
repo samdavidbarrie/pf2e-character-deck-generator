@@ -1,0 +1,99 @@
+name: Bug report
+description: Report something that is broken or behaving unexpectedly.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug.
+
+        Please include enough detail for the issue to be reproduced. Screenshots, browser details, and example files are especially useful.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What went wrong?
+      placeholder: "Example: The print preview overlaps cards on the second page."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: What should someone do to reproduce the issue?
+      placeholder: |
+        1. Import a Pathbuilder JSON file
+        2. Go to Print Preview
+        3. Select A4 3x3 layout
+        4. Print preview shows overlapping cards
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+      description: What did you expect to happen?
+      placeholder: "Example: Cards should fit cleanly within the A4 page boundaries."
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: What actually happened?
+      placeholder: "Example: The bottom row of cards is clipped."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area of the app
+      options:
+        - Import
+        - Card generation
+        - Card editing
+        - Print preview
+        - Export/save
+        - Styling/layout
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser
+      placeholder: "Example: Firefox 128, Chrome 126, Safari 17"
+    validations:
+      required: false
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: "Example: Windows 11, macOS, Linux, iOS, Android"
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots or files
+      description: Add screenshots or example files if useful.
+      placeholder: "Drag screenshots or files here."
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Anything else that may help.
+    validations:
+      required: false

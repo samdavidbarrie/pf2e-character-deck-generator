@@ -1,0 +1,72 @@
+name: Feature request
+description: Suggest a new feature or improvement.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an improvement.
+
+        Please focus on the table-use problem the feature would solve, rather than only the implementation.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: What problem would this solve?
+      placeholder: "Example: When a character levels up, I want to know which cards need reprinting."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What would you like the app to do?
+      placeholder: "Example: Compare the new Pathbuilder JSON against the previous import and show added, removed, and changed cards."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area of the app
+      options:
+        - Import
+        - Card generation
+        - Card editing
+        - Print layout
+        - Level-up changelog
+        - Rules/reference links
+        - Foundry import
+        - Accessibility
+        - Styling/design
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Are there other ways this could be handled?
+      placeholder: "Example: This could also be done manually by exporting a print list."
+    validations:
+      required: false
+
+  - type: textarea
+    id: examples
+    attributes:
+      label: Examples or references
+      description: Add screenshots, mockups, links, or examples if useful.
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Anything else that would help explain the request.
+    validations:
+      required: false

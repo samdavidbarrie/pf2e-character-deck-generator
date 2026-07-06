@@ -1,0 +1,121 @@
+name: Pathbuilder import problem
+description: Report a problem importing or interpreting a Pathbuilder 2e JSON export.
+title: "[Import]: "
+labels: ["import", "pathbuilder"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for issues where a Pathbuilder 2e JSON export fails to import, imports partially, or generates incorrect cards.
+
+        Attaching the affected JSON export is usually the fastest way to diagnose import issues, but only share files you are comfortable posting in a public GitHub issue.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What is wrong with the import?
+      placeholder: "Example: My character imports, but none of the archetype feats generate cards."
+    validations:
+      required: true
+
+  - type: input
+    id: character-level
+    attributes:
+      label: Character level
+      placeholder: "Example: 7"
+    validations:
+      required: true
+
+  - type: input
+    id: character-class
+    attributes:
+      label: Class
+      placeholder: "Example: Fighter, Sorcerer, Thaumaturge"
+    validations:
+      required: true
+
+  - type: input
+    id: ancestry
+    attributes:
+      label: Ancestry and heritage
+      placeholder: "Example: Kitsune, Ancient-Blooded Dwarf, Human Nephilim"
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: variant-rules
+    attributes:
+      label: Variant rules / build options
+      description: Select any that apply.
+      options:
+        - label: Free Archetype
+        - label: Dual Class
+        - label: Ancestry Paragon
+        - label: Automatic Bonus Progression
+        - label: Gradual Ability Boosts
+        - label: Custom/homebrew content
+        - label: Remaster options
+        - label: Legacy options
+
+  - type: dropdown
+    id: import-result
+    attributes:
+      label: What happened?
+      options:
+        - JSON would not import at all
+        - Character imported but some data was missing
+        - Cards generated but some were incorrect
+        - App crashed or froze
+        - Print output was wrong after import
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: missing-or-wrong
+    attributes:
+      label: What was missing or incorrect?
+      description: Be as specific as possible.
+      placeholder: |
+        Example:
+        - Champion reaction did not generate
+        - Free Archetype feats were missing
+        - Spell DC was blank
+        - Skill proficiencies were incorrect
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+      description: What should the app have generated or shown?
+      placeholder: "Example: It should have generated cards for my archetype feats and focus spell."
+    validations:
+      required: true
+
+  - type: textarea
+    id: json-file
+    attributes:
+      label: Pathbuilder JSON
+      description: Attach the affected JSON export or a smaller example that reproduces the same issue.
+      placeholder: "Drag a JSON file here, or explain why one cannot be shared."
+    validations:
+      required: false
+
+  - type: input
+    id: pathbuilder-version
+    attributes:
+      label: Pathbuilder version or export source
+      placeholder: "Example: Pathbuilder web, Android app, iOS app, unknown"
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Anything else that may help debug the import.
+    validations:
+      required: false
