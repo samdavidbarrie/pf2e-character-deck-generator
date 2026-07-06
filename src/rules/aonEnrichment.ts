@@ -452,18 +452,26 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
        *     "Tea Ceremony The duration…"  →  "**Tea Ceremony** The duration…"
        */
       const applyHeadingFormat = (body: string): string => {
+        // Activate— sections: bold from "Activate—" up to the first action icon or paren.
         const activateM = /^(Activate—[A-Z][\w\s]*?)(\s*[◆◇↺(])/.exec(body);
         if (activateM) {
           return `**${activateM[1].trim()}**${activateM[2]}${body.slice(activateM[0].length)}`;
         }
-        const capsM = /^((?:[A-Z]\S*\s+)*[A-Z]\S*)\s+([a-z])(.*)$/.exec(body);
-        if (capsM) {
-          const words = capsM[1].split(/\s+/);
-          if (words.length >= 2) {
-            const name = words.slice(0, -1).join(' ');
-            const dropped = words[words.length - 1];
-            return `**${name}** ${dropped} ${capsM[2]}${capsM[3]}`;
-          }
+        // Other named sections (e.g. "Tea Ceremony"): find the run of leading Title Case
+        // words. The last one in that run starts the description — bold all the words
+        // before it as the heading.
+        const words = body.split(' ');
+        let i = 0;
+        while (
+          i < words.length &&
+          words[i].length > 0 &&
+          words[i][0] >= 'A' &&
+          words[i][0] <= 'Z'
+        ) {
+          i++;
+        }
+        if (i >= 2) {
+          return `**${words.slice(0, i - 1).join(' ')}** ${words.slice(i - 1).join(' ')}`;
         }
         return body;
       };
