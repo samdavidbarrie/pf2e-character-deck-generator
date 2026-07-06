@@ -1,4 +1,5 @@
 import { useAppStore } from '../app/store';
+import { splitOverflowCards } from '../generation/generateDeck';
 import { CardEditor } from './CardEditor';
 import { CardPreview } from './CardPreview';
 import styles from './DeckBuilder.module.css';
@@ -6,12 +7,12 @@ import styles from './DeckBuilder.module.css';
 const CATEGORY_FILTERS: Array<{ value: string; label: string }> = [
   { value: 'all', label: 'All' },
   { value: 'summary', label: 'Summaries' },
-  { value: 'basic-action', label: 'Basic Actions' },
-  { value: 'skill-action', label: 'Skill Actions' },
+  { value: 'basic-action', label: 'Basic' },
+  { value: 'skill-action', label: 'Skill' },
   { value: 'reaction', label: 'Reactions' },
-  { value: 'free-action', label: 'Free Actions' },
-  { value: 'feat-action', label: 'Feat Actions' },
-  { value: 'feat-passive', label: 'Feats (Passive)' },
+  { value: 'free-action', label: 'Free' },
+  { value: 'feat-action', label: 'Feats' },
+  { value: 'feat-passive', label: 'Passives' },
   { value: 'spell', label: 'Spells' },
   { value: 'focus-spell', label: 'Focus Spells' },
   { value: 'weapon', label: 'Weapons' },
@@ -57,7 +58,9 @@ export function DeckBuilder() {
     return true;
   });
 
-  const includedCount = cards.filter((c) => c.print.include).length;
+  const includedCards = cards.filter((c) => c.print.include);
+  const includedCount = includedCards.length;
+  const printCount = splitOverflowCards(includedCards).length;
 
   return (
     <div className={styles.layout}>
@@ -67,7 +70,11 @@ export function DeckBuilder() {
         <div className={styles.charMeta}>
           Level {project.character.level} · {project.character.className ?? ''}
         </div>
-        <div className={styles.cardCount}>{includedCount} cards included</div>
+        <div className={styles.cardCount}>
+          {printCount !== includedCount
+            ? `${includedCount} cards (${printCount} to print)`
+            : `${includedCount} cards`}
+        </div>
 
         <nav className={styles.filters} aria-label="Card category filter">
           {CATEGORY_FILTERS.map((f) => (
@@ -131,15 +138,8 @@ export function DeckBuilder() {
                 card={card}
                 selected={card.id === selectedCardId}
                 onClick={() => selectCard(card.id === selectedCardId ? null : card.id)}
+                onToggleInclude={() => toggleCardInclude(card.id)}
               />
-              <button
-                className={`${styles.includeToggle} ${card.print.include ? styles.included : styles.excluded}`}
-                onClick={() => toggleCardInclude(card.id)}
-                aria-label={card.print.include ? 'Hide card from print' : 'Include card in print'}
-                title={card.print.include ? 'Hide from print' : 'Include in print'}
-              >
-                {card.print.include ? '✓' : '–'}
-              </button>
             </div>
           ))}
           {filtered.length === 0 && <p className={styles.empty}>No cards match this filter.</p>}

@@ -53,11 +53,21 @@ export interface CharacterSpell {
 
 export interface CharacterAttack {
   name: string;
+  /** Full display name including rune descriptors, e.g. "+2 Striking Astral Special Unarmed Tiger Claw". */
+  display?: string;
   traits: string[];
   damageDice?: string;
   damageType?: string;
   attackBonus?: number;
+  damageBonus?: number;
+  /** Dice multiplier from striking rune: 1 = base, 2 = striking, 3 = greater, 4 = major. */
+  diceMult?: number;
+  /** Extra damage entries from property runes, e.g. ["1d6 Spirit", "1d6 Force"]. */
+  extraDamage?: string[];
+  /** Property rune names, e.g. ["Astral", "Impactful"]. */
+  runes?: string[];
   critSpecialization?: string;
+  group?: string;
   notes?: string;
   isUnarmed?: boolean;
 }

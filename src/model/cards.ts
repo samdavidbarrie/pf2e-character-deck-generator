@@ -13,7 +13,8 @@ export type CardCategory =
   | 'reminder'
   | 'manual';
 
-export type ActionCost = 'free' | 'reaction' | '1' | '2' | '3' | 'variable' | 'passive';
+export type ActionCost =
+  'free' | 'reaction' | '1' | '2' | '3' | '1-2' | '1-3' | '2-3' | 'variable' | 'passive';
 
 export type WritableFieldType =
   'blank' | 'checkboxes' | 'counter' | 'notes' | 'skill-row' | 'section';
@@ -44,6 +45,8 @@ export interface CardModel {
     originalName?: string;
     aonUrl?: string;
     pathbuilderPath?: string;
+    /** Property rune names stored for AoN enrichment lookup. */
+    runes?: string[];
   };
 
   rules: {
@@ -59,6 +62,16 @@ export interface CardModel {
     success?: string;
     failure?: string;
     criticalFailure?: string;
+    /** Extra labelled text blocks (rune descriptions, crit spec, etc.). Can overflow to a back card. */
+    extraSections?: Array<{ heading?: string; body: string }>;
+    /** Spell / ability targeting info applied from AoN enrichment. */
+    range?: string;
+    area?: string;
+    targets?: string;
+    defense?: string;
+    duration?: string;
+    /** True if the spell requires a spell attack roll (targets AC). Set by AoN enrichment. */
+    spellAttack?: boolean;
   };
 
   writableFields: WritableField[];
@@ -85,30 +98,52 @@ export interface CardModel {
 
   /** Title of the parent card this card was merged into (hides it from print). */
   mergedInto?: string;
+
+  /** ID of the front card that this card continues (back-of-card content). */
+  continuationOf?: string;
 }
 
 export const ACTION_COST_LABEL: Record<ActionCost, string> = {
-  free: '[free]',
-  reaction: '[reaction]',
-  '1': '[1]',
-  '2': '[2]',
-  '3': '[3]',
-  variable: '[variable]',
+  free: '◇',
+  reaction: '↺',
+  '1': '◆',
+  '2': '◆◆',
+  '3': '◆◆◆',
+  '1-2': '◆–◆◆',
+  '1-3': '◆–◆◆◆',
+  '2-3': '◆◆–◆◆◆',
+  variable: '◆?',
   passive: '',
 };
 
 export const CATEGORY_LABEL: Record<CardCategory, string> = {
   summary: 'Summary',
-  'basic-action': 'Basic Action',
-  'skill-action': 'Skill Action',
+  'basic-action': 'Basic',
+  'skill-action': 'Skill',
   'feat-action': 'Feat',
-  'feat-passive': 'Feat (Passive)',
+  'feat-passive': 'Passive',
   reaction: 'Reaction',
-  'free-action': 'Free Action',
+  'free-action': 'Free',
   spell: 'Spell',
-  'focus-spell': 'Focus Spell',
+  'focus-spell': 'Focus',
   weapon: 'Weapon',
   equipment: 'Equipment',
   reminder: 'Reminder',
   manual: 'Custom',
+};
+
+export const CATEGORY_COLOR: Record<CardCategory, string> = {
+  summary: '#efefef',
+  'basic-action': '#f5e8cc',
+  'skill-action': '#d6edda',
+  reaction: '#fbe3c8',
+  'free-action': '#fdf5c8',
+  'feat-action': '#e8d6f0',
+  'feat-passive': '#f0e4f8',
+  spell: '#d0def5',
+  'focus-spell': '#c8ecf0',
+  weapon: '#f5d8d8',
+  equipment: '#e8e4d8',
+  reminder: '#f8f8f2',
+  manual: '#f0f0f0',
 };
