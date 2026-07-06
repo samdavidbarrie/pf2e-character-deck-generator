@@ -19,6 +19,8 @@ export interface EnrichedEquipmentResult {
   parentName: string;
   sharedText?: string;
   matchedVariant?: EquipmentVariant;
+  /** Price captured from the description text before stripSourceMetadata removes it. */
+  extractedPrice?: string;
   confidence: 'exact' | 'normalized' | 'level' | 'price' | 'fallback';
   sourceUrl?: string;
 }
@@ -213,9 +215,14 @@ export function filterEquipmentDescription(
   const { sharedText, variants } = parseEquipmentVariants(description, baseName);
 
   if (variants.length === 0) {
+    const stripped = description.replace(/\*\*/g, '');
+    const priceMatch = /\bPrice\s+([\d,]+\s*(?:gp|sp|cp)(?:\s*,\s*\d+\s*(?:sp|cp))*)/i.exec(
+      stripped,
+    );
     return {
       parentName: baseName,
-      sharedText: description.replace(/\*\*/g, '').trim(),
+      sharedText: stripped.trim(),
+      extractedPrice: priceMatch?.[1]?.trim(),
       confidence: 'exact',
       sourceUrl,
     };

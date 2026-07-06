@@ -163,6 +163,9 @@ export function splitOverflowCards(cards: CardModel[]): CardModel[] {
           trigger: undefined,
           requirements: undefined,
           frequency: undefined,
+          usage: undefined,
+          price: undefined,
+          activateTag: undefined,
         },
         userEdits: { edited: false },
       });
@@ -189,6 +192,9 @@ export function splitOverflowCards(cards: CardModel[]): CardModel[] {
           trigger: undefined,
           requirements: undefined,
           frequency: undefined,
+          usage: undefined,
+          price: undefined,
+          activateTag: undefined,
         },
         userEdits: { edited: false },
       });

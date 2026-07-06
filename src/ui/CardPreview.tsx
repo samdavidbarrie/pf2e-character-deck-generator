@@ -79,17 +79,6 @@ const SKILL_FOR_ACTION: Record<string, string> = {
 };
 
 /** Render text that may contain **bold** markers produced by stripHtml. */
-function renderBold(text: string): React.ReactNode {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
-  if (parts.length === 1) return text;
-  return parts.map((part, i) =>
-    part.startsWith('**') && part.endsWith('**') ? (
-      <strong key={i}>{part.slice(2, -2)}</strong>
-    ) : (
-      part || null
-    ),
-  );
-}
 const ACTION_ICON: Partial<Record<ActionCost, string>> = {
   '1': `${BASE}icons/action-1.png`,
   '2': `${BASE}icons/action-2.png`,
@@ -97,6 +86,39 @@ const ACTION_ICON: Partial<Record<ActionCost, string>> = {
   free: `${BASE}icons/action-free.png`,
   reaction: `${BASE}icons/action-reaction.png`,
 };
+
+/**
+ * Map the Unicode action symbols (stored in card text by replaceActivationActionWords)
+ * to inline icon image sources. Multi-character sequences must appear before single ones.
+ */
+const INLINE_ACTION_ICONS: [string, string][] = [
+  ['◆◆◆', ACTION_ICON['3'] ?? ''],
+  ['◆◆', ACTION_ICON['2'] ?? ''],
+  ['◆', ACTION_ICON['1'] ?? ''],
+  ['◇', ACTION_ICON['free'] ?? ''],
+  ['↺', ACTION_ICON['reaction'] ?? ''],
+].filter(([, src]) => src) as [string, string][];
+
+const INLINE_ACTION_SPLIT_RE = new RegExp(
+  `(\\*\\*[^*]+\\*\\*|${INLINE_ACTION_ICONS.map(([s]) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`,
+  'g',
+);
+
+/** Render text with **bold** markers as <strong> and Unicode action symbols as icon images. */
+function renderBold(text: string): React.ReactNode {
+  const parts = text.split(INLINE_ACTION_SPLIT_RE);
+  if (parts.length === 1) return text;
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    }
+    const icon = INLINE_ACTION_ICONS.find(([s]) => s === part);
+    if (icon) {
+      return <img key={i} src={icon[1]} className={styles.actionIconInline} alt={part} />;
+    }
+    return part || null;
+  });
+}
 const ACTION_RANGE_PARTS: Partial<Record<ActionCost, [ActionCost, ActionCost]>> = {
   '1-2': ['1', '2'],
   '1-3': ['1', '3'],

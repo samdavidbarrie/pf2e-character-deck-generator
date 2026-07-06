@@ -114,6 +114,15 @@
   display: inline-block;
 }
 
+/* Inline action icon appearing within body text — slightly smaller than the corner icon. */
+.actionIconInline {
+  height: 10px;
+  width: auto;
+  vertical-align: middle;
+  display: inline-block;
+  margin: 0 1px;
+}
+
 .actionRange {
   display: inline-flex;
   align-items: center;

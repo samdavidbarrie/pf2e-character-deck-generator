@@ -151,12 +151,14 @@ function stripHtml(html: string): string {
 }
 
 /**
- * Remove AoN source/price/bulk metadata that gets embedded in item description text.
- * E.g. "… Source GM Core pg. 236 Price 450 gp Bulk L ---"
+ * Remove AoN source/price/bulk metadata and craft requirements from item description text.
+ * E.g. "… Source GM Core pg. 236 Price 450 gp Bulk L ---" or "Craft Requirements You're a monk…"
  */
 function stripSourceMetadata(text: string): string {
   return (
     text
+      // Remove "Craft Requirements …" blocks (always appear at end of item entries).
+      .replace(/\s*\bCraft Requirements\b.*$/is, '')
       // Remove "Source …" trailing reference blocks
       .replace(/\s+Source\s+[A-Z][\w ',]+pg\.\s*\d+.*$/s, '')
       // Remove any remaining "Price X gp" / "Bulk …" artifacts
@@ -164,6 +166,21 @@ function stripSourceMetadata(text: string): string {
       .replace(/\s+Bulk\s+\S+\s*---.*$/s, '')
       .trim()
   );
+}
+
+/**
+ * Replace PF2e action-type words with their standard Unicode symbols so that
+ * activation text is compact and consistent with the rest of the card.
+ *   Free Action → ◇   Single Action → ◆   Reaction → ↺
+ *   Two Actions → ◆◆  Three Actions → ◆◆◆
+ */
+function replaceActivationActionWords(text: string): string {
+  return text
+    .replace(/\bThree Actions\b/g, '◆◆◆')
+    .replace(/\bTwo Actions\b/g, '◆◆')
+    .replace(/\bSingle Action\b/g, '◆')
+    .replace(/\bFree Action\b/g, '◇')
+    .replace(/\bReaction\b/g, '↺');
 }
 
 function mapActionCost(raw: string | undefined): ActionCost | undefined {
@@ -357,7 +374,16 @@ export async function fetchAonData(
     if (!candidates || candidates.length === 0) continue;
 
     const preferred = preferredTypesFor(card.category);
-    const best = candidates.find((c) => preferred.includes(c.aonType)) ?? candidates[0];
+    // For equipment, prefer candidates that have a specific-tier price (price_raw)
+    // over parent/range documents that don't — the specific document has the correct
+    // level, price, and usage for the item the character actually owns.
+    const best =
+      (card.category === 'equipment'
+        ? (candidates.find((c) => preferred.includes(c.aonType) && c.priceRaw) ??
+          candidates.find((c) => c.priceRaw))
+        : undefined) ??
+      candidates.find((c) => preferred.includes(c.aonType)) ??
+      candidates[0];
     result.set(key, best);
   }
 
@@ -395,8 +421,11 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
       rules.summary = stripSourceMetadata(buildEquipmentDescription(enriched));
       // Set equipment-specific metadata fields from AoN.
       if (data.usage && !rules.usage) rules.usage = data.usage;
-      // Price: prefer the matched variant's extracted price, fall back to the AoN field.
-      const resolvedPrice = enriched.matchedVariant?.price ?? data.priceRaw;
+      // Price: variant price (from metadata) → extracted from raw description text →
+      // AoN price_raw field. All three are read before stripSourceMetadata removes
+      // the price from the description, so the correct price is always captured.
+      const resolvedPrice =
+        enriched.matchedVariant?.price ?? enriched.extractedPrice ?? data.priceRaw;
       if (resolvedPrice && !rules.price) rules.price = resolvedPrice;
       if (data.activateTag && !rules.activateTag) rules.activateTag = data.activateTag;
 
@@ -407,9 +436,24 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
         const activateParts = rules.summary.split(/(?=\bActivate—)/);
         if (activateParts.length > 1) {
           rules.summary = activateParts[0].trim();
+
+          // Infer the card's action cost from the first activation section when AoN
+          // does not supply it via the 'actions' ES field (common for equipment items).
+          if (!rules.actionCost) {
+            const actionWordMatch =
+              /\b(Three Actions|Two Actions|Single Action|Free Action|Reaction)\b/.exec(
+                activateParts[1],
+              );
+            if (actionWordMatch) rules.actionCost = mapActionCost(actionWordMatch[1]);
+          }
+
           rules.extraSections = activateParts.slice(1).map((body) => ({
             heading: undefined as string | undefined,
-            body: body.trim(),
+            // Strip any trailing Craft Requirements block and replace action-type words
+            // with their Unicode symbols (◆ ◇ ↺ etc.).
+            body: replaceActivationActionWords(
+              body.replace(/\s*\bCraft Requirements\b.*$/is, '').trim(),
+            ),
           }));
         }
       }

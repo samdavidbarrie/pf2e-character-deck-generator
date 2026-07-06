@@ -365,6 +365,33 @@ describe('filterEquipmentDescription', () => {
     expect(result.matchedVariant).toBeUndefined();
   });
 
+  it('extracts price from a non-variant description so it survives stripSourceMetadata', () => {
+    const desc =
+      'This humble sash can be worn around the waist or across the chest. ' +
+      'Shadow Signet Source Agent Optics pg. 42 Price 475 gp Usage worn (as signet ring) ' +
+      'Bulk —';
+    const result = filterEquipmentDescription(
+      desc,
+      'Shadow Signet',
+      undefined,
+      undefined,
+      undefined,
+    );
+    expect(result.extractedPrice).toBe('475 gp');
+  });
+
+  it('leaves extractedPrice undefined when no price is present in the description', () => {
+    const desc = 'This signet ring bears the symbol of a crescent moon.';
+    const result = filterEquipmentDescription(
+      desc,
+      'Shadow Signet',
+      undefined,
+      undefined,
+      undefined,
+    );
+    expect(result.extractedPrice).toBeUndefined();
+  });
+
   it('strips the variant header when AoN returns a single-variant page', () => {
     // Simulates AoN returning the Minor entry on its own page (no siblings).
     const result = filterEquipmentDescription(
