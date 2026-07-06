@@ -37,7 +37,8 @@ export interface AonData {
   prerequisite?: string;
   url?: string;
   /** Equipment-specific fields populated from AoN. */
-  usage?: string; // e.g. "held in 1 hand; Bulk L"
+  usage?: string; // e.g. "held in 1 hand"
+  bulk?: string; // e.g. "L"
   priceRaw?: string; // e.g. "50 gp"
   activateTag?: string; // activation trait, e.g. "manipulate"
   // Degree-of-success outcomes
@@ -295,10 +296,10 @@ async function fetchBatch(names: string[]): Promise<AonData[]> {
     const metaSection = rawText ? stripHtml(rawText.split(' --- ')[0]) : '';
     const activateTagMatch = /\bActivate\b[^(]*\(([^)]+)\)/i.exec(metaSection);
 
-    // Combine AoN 'usage' and 'bulk' fields into a single display string.
-    const usageRaw = s['usage'] as string | undefined;
+    // Separate the AoN 'usage' and 'bulk' fields so they can be rendered independently.
+    const usageRaw = (s['usage'] as string | undefined) || undefined;
     const bulkRaw = s['bulk'] as number | undefined;
-    const bulkStr =
+    const bulk =
       bulkRaw === undefined || bulkRaw === null
         ? undefined
         : bulkRaw === 0.1
@@ -306,9 +307,6 @@ async function fetchBatch(names: string[]): Promise<AonData[]> {
           : bulkRaw === 0
             ? '\u2014'
             : String(bulkRaw);
-    const usage =
-      [usageRaw, bulkStr != null ? `Bulk ${bulkStr}` : undefined].filter(Boolean).join('; ') ||
-      undefined;
 
     return {
       name: s['name'] as string,
@@ -332,7 +330,8 @@ async function fetchBatch(names: string[]): Promise<AonData[]> {
       level: s['level'] as number | undefined,
       prerequisite: s['prerequisite'] as string | undefined,
       url: rawUrl ? `${AON_BASE}${rawUrl}` : undefined,
-      usage,
+      usage: usageRaw,
+      bulk,
       priceRaw: (s['price_raw'] as string | undefined) || undefined,
       activateTag: activateTagMatch?.[1]?.trim() || undefined,
     };
@@ -420,7 +419,9 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
       // Apply stripSourceMetadata to the assembled (shared + variant) text.
       rules.summary = stripSourceMetadata(buildEquipmentDescription(enriched));
       // Set equipment-specific metadata fields from AoN.
+      if (data.level !== undefined && rules.level === undefined) rules.level = data.level;
       if (data.usage && !rules.usage) rules.usage = data.usage;
+      if (data.bulk && !rules.bulk) rules.bulk = data.bulk;
       // Price: variant price (from metadata) → extracted from raw description text →
       // AoN price_raw field. All three are read before stripSourceMetadata removes
       // the price from the description, so the correct price is always captured.
@@ -484,15 +485,6 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
 
   if (data.traits.length > 0 && rules.traits.length === 0) {
     rules.traits = data.traits;
-  }
-
-  // Consumable equipment cards have a single use (the card IS the physical item).
-  // Remove the Uses checkbox added by the generator — copies handle quantity instead.
-  if (card.category === 'equipment') {
-    const isConsumable = rules.traits.some((t) => t.toLowerCase() === 'consumable');
-    if (isConsumable) {
-      writableFields = writableFields.filter((f) => f.label !== 'Uses');
-    }
   }
 
   if (data.actionCost && !rules.actionCost) {

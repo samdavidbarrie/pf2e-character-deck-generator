@@ -73,7 +73,8 @@ export interface CardModel {
     /** True if the spell requires a spell attack roll (targets AC). Set by AoN enrichment. */
     spellAttack?: boolean;
     /** Equipment item metadata set by AoN enrichment. */
-    usage?: string; // e.g. "held in 1 hand; Bulk L"
+    usage?: string; // e.g. "held in 1 hand"
+    bulk?: string; // e.g. "L"
     price?: string; // e.g. "50 gp"
     activateTag?: string; // activation trait(s), e.g. "manipulate"
   };

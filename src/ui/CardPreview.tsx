@@ -158,6 +158,7 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
 
   // For skill-action cards, show the relevant skill above the summary and remove it from the bottom.
   const isSkillAction = card.category === 'skill-action' && !card.continuationOf;
+  const hasItemLevel = card.category === 'equipment' && card.rules.level !== undefined;
   const skillLabel = isSkillAction ? (SKILL_FOR_ACTION[card.title] ?? 'Skill') : null;
 
   // For sparse print cards, scale up body text to better fill the physical card.
@@ -252,23 +253,50 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
         </div>
       )}
 
-      {(card.rules.usage || card.rules.activateTag || card.rules.price) && (
-        <div className={styles.spellMeta}>
-          {card.rules.usage && (
-            <span>
-              <span className={styles.spellMetaLabel}>Usage</span> {card.rules.usage}
-            </span>
+      {(hasItemLevel ||
+        card.rules.usage ||
+        card.rules.bulk ||
+        card.rules.activateTag ||
+        card.rules.price) && (
+        <div className={styles.itemMeta}>
+          {/* Row 1: Item; Usage; Bulk */}
+          {(hasItemLevel || card.rules.usage || card.rules.bulk) && (
+            <div>
+              {hasItemLevel && (
+                <>
+                  <span className={styles.spellMetaLabel}>Item</span> {card.rules.level}
+                </>
+              )}
+              {card.rules.usage && (
+                <>
+                  {hasItemLevel && '; '}
+                  <span className={styles.spellMetaLabel}>Usage</span> {card.rules.usage}
+                </>
+              )}
+              {card.rules.bulk && (
+                <>
+                  {(hasItemLevel || card.rules.usage) && '; '}
+                  <span className={styles.spellMetaLabel}>Bulk</span> {card.rules.bulk}
+                </>
+              )}
+            </div>
           )}
-          {card.rules.activateTag && card.rules.actionCost && (
-            <span>
-              <span className={styles.spellMetaLabel}>Activate</span>{' '}
-              <ActionCostDisplay cost={card.rules.actionCost} /> {card.rules.activateTag}
-            </span>
-          )}
-          {card.rules.price && (
-            <span>
-              <span className={styles.spellMetaLabel}>Price</span> {card.rules.price}
-            </span>
+          {/* Row 2: Activate; Price */}
+          {((card.rules.activateTag && card.rules.actionCost) || card.rules.price) && (
+            <div>
+              {card.rules.activateTag && card.rules.actionCost && (
+                <>
+                  <span className={styles.spellMetaLabel}>Activate</span>{' '}
+                  <ActionCostDisplay cost={card.rules.actionCost} /> {card.rules.activateTag}
+                </>
+              )}
+              {card.rules.price && (
+                <>
+                  {card.rules.activateTag && card.rules.actionCost && '; '}
+                  <span className={styles.spellMetaLabel}>Price</span> {card.rules.price}
+                </>
+              )}
+            </div>
           )}
         </div>
       )}
