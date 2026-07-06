@@ -4,6 +4,7 @@
  */
 
 import type { ActionCost, CardCategory, CardModel } from '../model/cards';
+import { buildEquipmentDescription, filterEquipmentDescription } from './equipmentVariantMatcher';
 
 /** Direct endpoint — override with VITE_AON_PROXY_URL to route through a CORS proxy. */
 const AON_ES =
@@ -347,7 +348,17 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
 
   if (data.description && (rules.summary.startsWith(SUMMARY_PLACEHOLDER) || alwaysReplace)) {
     const isItem = card.category === 'equipment' || card.category === 'weapon';
-    const desc = isItem ? stripSourceMetadata(data.description) : data.description;
+    let desc = isItem ? stripSourceMetadata(data.description) : data.description;
+    if (card.category === 'equipment') {
+      const enriched = filterEquipmentDescription(
+        desc,
+        card.title,
+        data.level,
+        undefined,
+        undefined,
+      );
+      desc = buildEquipmentDescription(enriched);
+    }
     rules.summary = desc;
   }
 
