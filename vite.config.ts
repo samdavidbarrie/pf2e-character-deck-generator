@@ -5,4 +5,8 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   plugins: [react()],
   base: '/pf2e-character-deck-generator/',
+  test: {
+    environment: 'node',
+    include: ['src/**/*.test.ts'],
+  },
 });

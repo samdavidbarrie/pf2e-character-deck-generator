@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useAppStore } from '../app/store';
+import { isPathbuilderId } from '../import/detectPathbuilderId';
 import { validateImport } from '../import/validateImport';
 import { importProjectJson } from '../storage/exportProject';
 import styles from './ImportScreen.module.css';
@@ -16,7 +17,8 @@ export function ImportScreen() {
   const { importJson, loadProject, setImportValidation } = useAppStore();
   const importValidation = useAppStore((s) => s.importValidation);
 
-  const [pasteText, setPasteText] = useState('');
+  const [inputText, setInputText] = useState('');
+  const [loading, setLoading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const [debugText, setDebugText] = useState<string | null>(null);
@@ -39,6 +41,39 @@ export function ImportScreen() {
     },
     [importJson, setImportValidation],
   );
+
+  const handleImport = useCallback(async () => {
+    const trimmed = inputText.trim();
+    if (!trimmed) return;
+    setErrors([]);
+    setDebugText(null);
+
+    // Numeric-only input → Pathbuilder JSON ID
+    if (isPathbuilderId(trimmed)) {
+      setLoading(true);
+      try {
+        const res = await fetch(
+          `https://pathbuilder2e.com/json.php?id=${encodeURIComponent(trimmed)}`,
+        );
+        if (!res.ok) throw new Error(`Pathbuilder returned ${res.status}`);
+        handleJson(await res.json());
+      } catch (err) {
+        setErrors([
+          err instanceof Error ? err.message : 'Failed to fetch character from Pathbuilder.',
+        ]);
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // Otherwise try to parse as JSON
+    try {
+      handleJson(JSON.parse(trimmed));
+    } catch {
+      setErrors(['Could not parse as JSON. Check the text and try again.']);
+    }
+  }, [inputText, handleJson]);
 
   const handleFileUpload = useCallback(
     (file: File) => {
@@ -81,15 +116,6 @@ export function ImportScreen() {
     if (file) handleFileUpload(file);
   };
 
-  const handlePaste = () => {
-    try {
-      const json = JSON.parse(pasteText);
-      handleJson(json);
-    } catch {
-      setErrors(['Could not parse pasted text as JSON.']);
-    }
-  };
-
   return (
     <div className={styles.screen}>
       <header className={styles.header}>
@@ -102,43 +128,51 @@ export function ImportScreen() {
       <main className={styles.main}>
         <section className={styles.importSection}>
           <h2>Import Character</h2>
-          <p>Upload a Pathbuilder 2e JSON export, or paste the JSON below.</p>
+          <p>Paste your Pathbuilder 2e JSON export or enter your JSON ID number.</p>
 
-          <div
-            className={`${styles.dropZone} ${isDragging ? styles.dragging : ''}`}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setIsDragging(true);
+          <textarea
+            className={styles.pasteArea}
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) void handleImport();
             }}
-            onDragLeave={() => setIsDragging(false)}
-            onDrop={handleDrop}
+            placeholder={'Paste JSON here, or just type your Pathbuilder ID (e.g. 422538)'}
+            rows={6}
+            aria-label="Paste character JSON or enter Pathbuilder ID"
+            spellCheck={false}
+          />
+          <button
+            className={styles.button}
+            onClick={() => void handleImport()}
+            disabled={!inputText.trim() || loading}
           >
-            <p>Drag &amp; drop a JSON file here</p>
-            <label className={styles.uploadButton}>
-              Choose file
-              <input
-                type="file"
-                accept=".json"
-                onChange={handleFilePicker}
-                className={styles.hiddenInput}
-                aria-label="Upload character JSON file"
-              />
-            </label>
-          </div>
+            {loading ? 'Fetching…' : 'Import'}
+          </button>
 
-          <details className={styles.pasteSection}>
-            <summary>Paste JSON</summary>
-            <textarea
-              className={styles.pasteArea}
-              value={pasteText}
-              onChange={(e) => setPasteText(e.target.value)}
-              placeholder="Paste Pathbuilder JSON here…"
-              rows={10}
-              aria-label="Paste character JSON"
-            />
-            <button className={styles.button} onClick={handlePaste} disabled={!pasteText.trim()}>
-              Import from paste
-            </button>
+          <details className={styles.uploadSection}>
+            <summary>Upload a file instead</summary>
+            <div
+              className={`${styles.dropZone} ${isDragging ? styles.dragging : ''}`}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDragging(true);
+              }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={handleDrop}
+            >
+              <p>Drag &amp; drop a JSON file here</p>
+              <label className={styles.uploadButton}>
+                Choose file
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={handleFilePicker}
+                  className={styles.hiddenInput}
+                  aria-label="Upload character JSON file"
+                />
+              </label>
+            </div>
           </details>
 
           {errors.length > 0 && (
@@ -197,7 +231,7 @@ export function ImportScreen() {
             <li>
               Select <strong>Export</strong> → <strong>Export JSON</strong>.
             </li>
-            <li>Save the file and upload it here.</li>
+            <li>Copy the JSON ID number shown and enter it above.</li>
           </ol>
         </section>
       </main>
