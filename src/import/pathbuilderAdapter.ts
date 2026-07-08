@@ -315,6 +315,16 @@ export function parsePathbuilder(json: unknown): CharacterModel {
       diceMult: strikingMult(get(w, 'str')),
       extraDamage: arr<string>(get(w, 'extraDamage')).filter(Boolean),
       runes: arr<string>(get(w, 'runes')).filter(Boolean),
+      fundamentalRunes: (() => {
+        const pot = num(get(w, 'pot'));
+        const striking = typeof get(w, 'str') === 'string' ? (get(w, 'str') as string).trim() : '';
+        const parts: string[] = [];
+        if (pot && pot > 0) parts.push(`+${pot}`);
+        if (striking === 'striking') parts.push('Striking');
+        else if (striking === 'greater striking') parts.push('Greater Striking');
+        else if (striking === 'major striking') parts.push('Major Striking');
+        return parts.length > 0 ? parts : undefined;
+      })(),
       notes: str(get(w, 'notes')),
       isUnarmed: str(get(w, 'prof')) === 'unarmed',
     });

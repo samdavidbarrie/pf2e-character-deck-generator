@@ -85,6 +85,30 @@ function inferGroup(attack: CharacterAttack): string | undefined {
   return undefined;
 }
 
+// Traits added to a weapon by common property runes.
+// Only includes traits the *weapon* gains (not the rune's own traits).
+const RUNE_WEAPON_TRAITS: Record<string, string[]> = {
+  astral: ['Force', 'Spirit'],
+  impactful: ['Force'],
+  flaming: ['Fire'],
+  frost: ['Cold'],
+  shock: ['Electricity'],
+  thundering: ['Sonic'],
+  corrosive: ['Acid'],
+  holy: ['Holy'],
+  unholy: ['Unholy'],
+  disrupting: ['Positive'],
+};
+
+function traitsFromRunes(runes: string[]): string[] {
+  const added: string[] = [];
+  for (const rune of runes) {
+    const granted = RUNE_WEAPON_TRAITS[rune.toLowerCase()];
+    if (granted) added.push(...granted);
+  }
+  return added;
+}
+
 function buildMainCard(attack: CharacterAttack): CardModel {
   const title = attack.name.replace(/^special\s+unarmed\s+/i, '').trim();
   const die = attack.damageDice ?? 'd?';
@@ -93,7 +117,10 @@ function buildMainCard(attack: CharacterAttack): CardModel {
   // Blanks for fillable numbers; die type and damage type are pre-printed
   const damageLine = `Damage: ___ ${die} + ___ ${type}`;
   const extraLines = (attack.extraDamage ?? []).map((d) => `+${d}`);
-  const runeNote = (attack.runes ?? []).length > 0 ? `Runes: ${attack.runes!.join(', ')}` : '';
+
+  // Runes line: fundamental runes first, then property runes
+  const allRunes = [...(attack.fundamentalRunes ?? []), ...(attack.runes ?? [])];
+  const runeNote = allRunes.length > 0 ? `Runes: ${allRunes.join(', ')}` : '';
   const summaryParts = ['Hit: + ___', damageLine, ...extraLines, runeNote].filter(Boolean);
   const summary = summaryParts.join('\n');
 
@@ -105,7 +132,9 @@ function buildMainCard(attack: CharacterAttack): CardModel {
     extraSections.push({ heading: 'Critical Specialization', body: critSpec });
   }
 
-  const traits = [...new Set([...attack.traits, 'Attack'])];
+  // Merge base traits + traits granted by property runes, deduplicated
+  const runeTraits = traitsFromRunes(attack.runes ?? []);
+  const traits = [...new Set([...attack.traits, ...runeTraits, 'Attack'])];
 
   return defaultCard({
     title,

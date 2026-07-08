@@ -254,6 +254,8 @@ function preferredTypesFor(category: CardCategory): string[] {
     case 'basic-action':
     case 'skill-action':
       return ['Action', 'Feat'];
+    case 'weapon':
+      return ['Weapon'];
     default:
       return [];
   }
@@ -603,8 +605,14 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
   if (data.failure && !rules.failure) rules.failure = data.failure;
   if (data.criticalFailure && !rules.criticalFailure) rules.criticalFailure = data.criticalFailure;
 
-  if (data.traits.length > 0 && rules.traits.length === 0) {
-    rules.traits = data.traits;
+  if (data.traits.length > 0) {
+    if (card.category === 'weapon' && !card.continuationOf) {
+      // Merge AoN weapon traits with the generated 'Attack' trait; AoN doesn't
+      // include 'Attack' as a trait but it's needed for the table-use pill.
+      rules.traits = [...new Set([...data.traits, 'Attack'])];
+    } else if (rules.traits.length === 0) {
+      rules.traits = data.traits;
+    }
   }
 
   if (data.actionCost && !rules.actionCost) {

@@ -309,6 +309,14 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
   const rarityTraits = new Set(['uncommon', 'rare', 'unique']);
   const sizeTraits = new Set(['tiny', 'small', 'medium', 'large', 'huge', 'gargantuan']);
 
+  /** Sort traits: rarity → size → others (stable within each group). */
+  function traitSortKey(t: string): number {
+    const lower = t.toLowerCase();
+    if (rarityTraits.has(lower)) return 0;
+    if (sizeTraits.has(lower)) return 1;
+    return 2;
+  }
+
   return (
     <div
       className={[
@@ -384,19 +392,21 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
 
         {card.rules.traits.length > 0 && (
           <div className={styles.traits}>
-            {card.rules.traits.map((t) => {
-              const lower = t.toLowerCase();
-              const traitClass = rarityTraits.has(lower)
-                ? styles[lower]
-                : sizeTraits.has(lower)
-                  ? styles.size
-                  : '';
-              return (
-                <span key={t} className={[styles.trait, traitClass].filter(Boolean).join(' ')}>
-                  {t}
-                </span>
-              );
-            })}
+            {[...card.rules.traits]
+              .sort((a, b) => traitSortKey(a) - traitSortKey(b))
+              .map((t) => {
+                const lower = t.toLowerCase();
+                const traitClass = rarityTraits.has(lower)
+                  ? styles[lower]
+                  : sizeTraits.has(lower)
+                    ? styles.size
+                    : '';
+                return (
+                  <span key={t} className={[styles.trait, traitClass].filter(Boolean).join(' ')}>
+                    {t}
+                  </span>
+                );
+              })}
           </div>
         )}
 

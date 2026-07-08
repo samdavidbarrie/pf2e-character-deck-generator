@@ -66,6 +66,8 @@ export interface CharacterAttack {
   extraDamage?: string[];
   /** Property rune names, e.g. ["Astral", "Impactful"]. */
   runes?: string[];
+  /** Fundamental rune display names, e.g. ["+2", "Striking"]. */
+  fundamentalRunes?: string[];
   critSpecialization?: string;
   group?: string;
   notes?: string;
