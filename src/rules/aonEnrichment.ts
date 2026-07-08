@@ -92,7 +92,18 @@ function parseFullRulesHtml(
   }
 
   const html = contentParts.length > 0 ? contentParts.join(' --- ') : text;
-  const plain = stripHtml(html).trim();
+
+  // TODO: Parse and render HTML table sections as structured card content.
+  // Some spells (e.g. Dragon Form) include <h2>/<table> sections containing
+  // reference tables (dragon type list, tradition speeds, etc.) that are not
+  // combat-critical and cannot be meaningfully laid out in a 63×88 mm card.
+  // For now we truncate at the first heading or table element so the
+  // overflow text doesn't inflate card counts with unreadable raw data.
+  // The AoN source link on each card gives access to the full reference table.
+  const tableStart = html.search(/<(?:h[2-6]|table)\b/i);
+  const usableHtml = tableStart > 0 ? html.slice(0, tableStart) : html;
+
+  const plain = stripHtml(usableHtml).trim();
 
   // Split on outcome keyword boundaries. Critical variants must come before
   // plain Success/Failure in the alternation to avoid partial matching.
@@ -109,6 +120,21 @@ function parseFullRulesHtml(
   } = {};
 
   result.summary = segments[0]?.trim() || fallback?.trim() || undefined;
+
+  // Hard cap for extremely long descriptions such as Dragon Form's per-dragon
+  // ability list. Beyond 1200 chars the content is typically per-variant
+  // reference stats that don't belong on a play-aid card and cause runaway
+  // card counts. Truncate at a sentence boundary and keep the AoN link for
+  // the full text.
+  // TODO: consider richer handling (e.g. detect "- DragonName" list patterns)
+  // as part of the table-rendering feature tracked in the TODO above.
+  const MAX_DESC = 1200;
+  if (result.summary && result.summary.length > MAX_DESC) {
+    let cutAt = result.summary.lastIndexOf('. ', MAX_DESC);
+    if (cutAt < MAX_DESC * 0.6) cutAt = result.summary.lastIndexOf(' ', MAX_DESC);
+    if (cutAt <= 0) cutAt = MAX_DESC;
+    result.summary = result.summary.slice(0, cutAt + 1).trim();
+  }
 
   for (let i = 1; i < segments.length; i += 2) {
     const label = segments[i];
@@ -613,7 +639,38 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
     }
   }
 
+  // For polymorph / battle-form and incarnate spells, strip the in-description
+  // stat block ("You gain the following statistics and abilities...") which
+  // contains spell-instance-specific data the player fills in at the table.
+  // The stat block is replaced with an italicised note in square brackets so
+  // it’s clear the content was deliberately removed.
+  // A blank companion card for filling in form stats is added by the store
+  // enrichment pass (see enrichCardsFromAon in store.ts).
+  const isPolymorphForm =
+    (card.category === 'spell' || card.category === 'focus-spell') &&
+    rules.traits.some((t) => t.toLowerCase() === 'polymorph' || t.toLowerCase() === 'incarnate');
+  if (isPolymorphForm && rules.summary) {
+    const statBlockIdx = rules.summary.search(
+      /\bYou gain the following statistics and abilities\b/i,
+    );
+    if (statBlockIdx > 0) {
+      rules.summary =
+        rules.summary.slice(0, statBlockIdx).trimEnd() +
+        '\n[Stat block removed — see AoN for full form statistics. ' +
+        'Fill in your chosen form’s stats on the companion card.]';
+    }
+  }
+
   if (data.url) source.aonUrl = data.url;
+
+  // Level: for feat cards always prefer the AoN level (= feat's own minimum
+  // level) over the Pathbuilder character level stored as a fallback.
+  // For all other non-equipment cards (spells, actions, etc.) only fill in
+  // if not already set — equipment level is handled in the block above.
+  const isFeat = card.category === 'feat-action' || card.category === 'feat-passive';
+  if (data.level !== undefined && (rules.level === undefined || isFeat)) {
+    rules.level = data.level;
+  }
 
   return { ...card, rules, source, subtitle, writableFields };
 }

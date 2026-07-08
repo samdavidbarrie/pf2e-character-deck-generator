@@ -6,10 +6,9 @@ import { buildStableKey } from '../../rules/nameNormalization';
 import { defaultCard, notesField } from './_helpers';
 
 function featCategory(feat: CharacterFeat): CardCategory {
+  // All feats stay in feat categories regardless of action cost so the rank
+  // label always shows "Feat N" rather than the generic "Reaction" / "Free".
   if (feat.actionCost) {
-    const cost = parseActionCost(feat.actionCost);
-    if (cost === 'reaction') return 'reaction';
-    if (cost === 'free') return 'free-action';
     return 'feat-action';
   }
   return 'feat-passive';
@@ -34,7 +33,10 @@ export function generateFeatCards(char: CharacterModel): CardModel[] {
 
     return defaultCard({
       title: feat.name,
-      subtitle: `${feat.type.charAt(0).toUpperCase() + feat.type.slice(1)} Feat ${feat.level > 0 ? `· Level ${feat.level}` : ''}`,
+      // No subtitle — feat type is conveyed by the card theme and rank label.
+      // Level is intentionally omitted here: feat.level is the *character* level
+      // at which the feat slot was filled, not the feat's own minimum level.
+      // AoN enrichment fills in the correct feat level via rules.level.
       category,
       stableKey,
       source: {
@@ -46,7 +48,9 @@ export function generateFeatCards(char: CharacterModel): CardModel[] {
       rules: {
         actionCost: cost,
         traits: feat.traits,
-        level: feat.level,
+        // Store the character level as a display fallback; AoN enrichment
+        // overwrites this with the feat's correct minimum level when it runs.
+        level: feat.level > 0 ? feat.level : undefined,
         trigger: feat.trigger,
         requirements: feat.requirements,
         frequency: feat.frequency,

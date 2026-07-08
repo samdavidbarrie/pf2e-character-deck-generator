@@ -1,0 +1,54 @@
+/* ============================================================
+   PF2e card design tokens
+   Imported globally — do not bundle unlicensed fonts or artwork.
+   ============================================================ */
+
+:root {
+  /* Paper / ink */
+  --pf-card-paper: #ffffff;
+  --pf-card-ink: #15120f;
+  --pf-card-rule: #1e1a16;
+  --pf-card-border: #2a2018;
+
+  /* Trait pills */
+  --pf-maroon: #5e0000;
+  --pf-maroon-dark: #3f0000;
+  --pf-trait-gold: #d8c483;
+
+  /* Rarity */
+  --pf-rarity-uncommon: #c45500;
+  --pf-rarity-rare: #0c1466;
+  --pf-rarity-unique: #54166e;
+
+  /* Traditions */
+  --pf-tradition-arcane: #7a1f1f;
+  --pf-tradition-divine: #1d4f8f;
+  --pf-tradition-occult: #5b2a86;
+  --pf-tradition-primal: #0f7a3a;
+  --pf-tradition-focus: #2a5a6e;
+
+  /* Card type accents */
+  --pf-accent-action: #1a4a6e;
+  --pf-accent-feat: #4a3a6e;
+  --pf-accent-weapon: #6e2a2a;
+  --pf-accent-equipment: #8a5a2b;
+  --pf-accent-summary: #3a4a3a;
+  --pf-accent-reminder: #4a5a4a;
+  --pf-accent-spell: var(--pf-maroon);
+
+  /* Typography — Oswald and Source Sans 3 loaded via Google Fonts in index.html
+     Oswald ≈ FF Good Web Pro Condensed (spell card titles, rank labels)
+     Source Sans 3 ≈ FF Good Web Pro (body text, metadata — same card sans used on physical PF2e cards)
+  */
+  --pf-title-font: 'Oswald', 'Roboto Condensed', 'Arial Narrow', sans-serif;
+  --pf-body-font: 'Source Sans 3', 'Source Sans Pro', system-ui, sans-serif;
+}
+
+@media print {
+  :root {
+    --pf-card-paper: #fff;
+    --pf-card-ink: #000;
+    --pf-card-rule: #000;
+    --pf-card-border: #000;
+  }
+}
