@@ -33,7 +33,6 @@ const NAME_TO_GROUP: Record<string, string> = {
   'crane wing': 'brawling',
   'dragon tail': 'brawling',
   'wind crash': 'brawling',
-  'rising sun': 'brawling',
   fist: 'brawling',
   'throwing knife': 'knife',
   dagger: 'knife',
@@ -82,22 +81,119 @@ function inferGroup(attack: CharacterAttack): string | undefined {
   for (const key of keys) {
     if (nameLower.includes(key)) return NAME_TO_GROUP[key];
   }
+  // All unarmed attacks default to brawling for crit spec purposes
+  if (attack.isUnarmed) return 'brawling';
   return undefined;
 }
 
+// Traits / range for named unarmed attacks that Pathbuilder doesn't export.
+// Covers all core Monk stance weapons and common ki-power strikes.
+// Keyed by lowercased name (after stripping "Special Unarmed" prefix).
+interface UnarmedAttackData {
+  traits: string[];
+  range?: string;
+}
+const UNARMED_ATTACK_DATA: Record<string, UnarmedAttackData> = {
+  // Cobra Stance
+  'cobra fang': { traits: ['Agile', 'Deadly', 'Finesse', 'Unarmed', 'Venomous'] },
+  // Crane Stance
+  'crane wing': { traits: ['Agile', 'Finesse', 'Nonlethal', 'Unarmed'] },
+  // Dragon Stance
+  'dragon tail': { traits: ['Backswing', 'Nonlethal', 'Unarmed'] },
+  // Mountain Stance
+  'falling stone': { traits: ['Forceful', 'Nonlethal', 'Unarmed'] },
+  // Rain of Embers Stance
+  'fire talon': { traits: ['Agile', 'Finesse', 'Fire', 'Nonlethal', 'Unarmed'] },
+  // Stoked Flame Stance
+  'flashing spark': { traits: ['Forceful', 'Nonlethal', 'Sweep', 'Unarmed'] },
+  // Flood Stance
+  'flooded river': { traits: ['Nonlethal', 'Trip', 'Unarmed', 'Water'] },
+  // Reflective Ripple Stance
+  'flowing wave': {
+    traits: ['Agile', 'Disarm', 'Finesse', 'Nonlethal', 'Trip', 'Unarmed', 'Water'],
+  },
+  // Twisting Petal Stance
+  'gale blossom': { traits: ['Agile', 'Finesse', 'Nonlethal', 'Shove', 'Unarmed'] },
+  // Gorilla Stance
+  'gorilla slam': { traits: ['Backswing', 'Forceful', 'Grapple', 'Nonlethal', 'Unarmed'] },
+  // Ironblood Stance
+  'iron sweep': { traits: ['Nonlethal', 'Parry', 'Sweep', 'Unarmed'] },
+  // Tangled Forest Stance
+  'lashing branch': { traits: ['Agile', 'Finesse', 'Nonlethal', 'Unarmed'] },
+  // Rushing Goat Stance
+  'ramming horn': { traits: ['Forceful', 'Nonlethal', 'Shove', 'Unarmed'] },
+  // Jellyfish Stance
+  'shadow grasp': { traits: ['Agile', 'Grapple', 'Reach', 'Unarmed'] },
+  // Kaiju Stance
+  'shattering earth': { traits: ['Backswing', 'Fatal', 'Reach', 'Unarmed'] },
+  // Jellyfish Stance (secondary)
+  'stinging lash': { traits: ['Finesse', 'Nonlethal', 'Reach', 'Unarmed'] },
+  // Stumbling Stance
+  'stumbling swing': { traits: ['Agile', 'Backstabber', 'Finesse', 'Nonlethal', 'Unarmed'] },
+  // Tiger Stance
+  'tiger claw': { traits: ['Agile', 'Finesse', 'Nonlethal', 'Unarmed'] },
+  // Vitality-Manipulating Stance
+  'vitality blast': { traits: ['Unarmed', 'Versatile'], range: '30 ft.' },
+  // Wild Winds Stance
+  'wind crash': { traits: ['Agile', 'Nonlethal', 'Propulsive', 'Unarmed'], range: '30 ft.' },
+  // Wolf Stance
+  'wolf jaw': { traits: ['Agile', 'Backstabber', 'Finesse', 'Nonlethal', 'Unarmed'] },
+};
+// Only includes traits the *weapon* gains (not the rune's own traits).
+const RUNE_WEAPON_TRAITS: Record<string, string[]> = {
+  astral: ['Force', 'Spirit'],
+  impactful: ['Force'],
+  flaming: ['Fire'],
+  frost: ['Cold'],
+  shock: ['Electricity'],
+  thundering: ['Sonic'],
+  corrosive: ['Acid'],
+  holy: ['Holy'],
+  unholy: ['Unholy'],
+  disrupting: ['Positive'],
+};
+
+function traitsFromRunes(runes: string[]): string[] {
+  const added: string[] = [];
+  for (const rune of runes) {
+    const granted = RUNE_WEAPON_TRAITS[rune.toLowerCase()];
+    if (granted) added.push(...granted);
+  }
+  return added;
+}
+
 function buildMainCard(attack: CharacterAttack): CardModel {
-  const displayName = attack.display ?? attack.name;
+  // Strip the 'Special Unarmed' prefix only when a real name remains afterwards.
+  // A result that is purely a parenthetical die size like '(1d6)' is not a name.
+  const stripped = attack.name.replace(/^special\s+unarmed\s+/i, '').trim();
+  const title = /^\([^)]+\)$/.test(stripped) ? attack.name : stripped;
   const die = attack.damageDice ?? 'd?';
   const type = normaliseDamageType(attack.damageType ?? '');
 
   // Blanks for fillable numbers; die type and damage type are pre-printed
   const damageLine = `Damage: ___ ${die} + ___ ${type}`;
   const extraLines = (attack.extraDamage ?? []).map((d) => `+${d}`);
-  const runeNote = (attack.runes ?? []).length > 0 ? `Runes: ${attack.runes!.join(', ')}` : '';
+
+  // Runes line: fundamental runes first, then property runes
+  const allRunes = [...(attack.fundamentalRunes ?? []), ...(attack.runes ?? [])];
+  const runeNote = allRunes.length > 0 ? `Runes: ${allRunes.join(', ')}` : '';
   const summaryParts = ['Hit: + ___', damageLine, ...extraLines, runeNote].filter(Boolean);
   const summary = summaryParts.join('\n');
 
-  // Only crit spec in extraSections; rune descriptions live on separate cards
+  // Merge base traits + traits granted by property runes, deduplicated.
+  // For named unarmed attacks (monk stances / ki powers), seed from the
+  // lookup table since Pathbuilder doesn't export weapon traits.
+  const normalizedTitle = title.toLowerCase();
+  const unarmedData = attack.isUnarmed ? UNARMED_ATTACK_DATA[normalizedTitle] : undefined;
+  const baseTraits = unarmedData ? unarmedData.traits : attack.traits;
+  const runeTraits = traitsFromRunes(attack.runes ?? []);
+  const traits = [...new Set([...baseTraits, ...runeTraits, 'Attack'])];
+
+  // Range: from unarmed lookup table (Pathbuilder doesn't export it)
+  const range = unarmedData?.range;
+
+  // Only crit spec in extraSections; rune descriptions live on separate cards.
+  // Stance reminder (if known) appended after crit spec.
   const extraSections: Array<{ heading?: string; body: string }> = [];
   const group = inferGroup(attack);
   const critSpec = group ? CRIT_SPEC[group] : undefined;
@@ -105,11 +201,8 @@ function buildMainCard(attack: CharacterAttack): CardModel {
     extraSections.push({ heading: 'Critical Specialization', body: critSpec });
   }
 
-  const traits = [...new Set([...attack.traits, 'Attack'])];
-
   return defaultCard({
-    title: displayName,
-    subtitle: attack.isUnarmed ? 'Unarmed Attack' : 'Weapon',
+    title,
     category: 'weapon',
     stableKey: buildStableKey('weapon', attack.name),
     source: { system: 'generated', runes: attack.runes },
@@ -117,6 +210,7 @@ function buildMainCard(attack: CharacterAttack): CardModel {
       actionCost: '1',
       traits,
       summary,
+      ...(range ? { range } : {}),
       ...(extraSections.length > 0 ? { extraSections } : {}),
     },
     print: { include: true, priority: 35, size: 'standard' },
@@ -127,9 +221,7 @@ function buildMainCard(attack: CharacterAttack): CardModel {
 function buildRuneCard(runeName: string): CardModel {
   return defaultCard({
     // Use the bare rune name (e.g. "Astral") so the AoN lookup matches exactly.
-    // The subtitle "Property Rune" provides the context.
     title: runeName,
-    subtitle: 'Property Rune',
     // 'equipment' routes the card through the full equipment enrichment pipeline
     // (variant matching, usage, price, activateTag, activation section splitting).
     category: 'equipment',

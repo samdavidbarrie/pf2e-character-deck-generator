@@ -17,7 +17,7 @@ export type ActionCost =
   'free' | 'reaction' | '1' | '2' | '3' | '1-2' | '1-3' | '2-3' | 'variable' | 'passive';
 
 export type WritableFieldType =
-  'blank' | 'checkboxes' | 'counter' | 'notes' | 'skill-row' | 'section';
+  'blank' | 'checkboxes' | 'counter' | 'notes' | 'skill-row' | 'section' | 'display';
 
 /** Proficiency ranks in ascending order — used by skill-row fields. */
 export const TEML_RANKS = ['trained', 'expert', 'master', 'legendary'] as const;
@@ -30,6 +30,10 @@ export interface WritableField {
   boxes?: number;
   /** For skill-row: the skill's current proficiency rank (fills circles up to this rank). */
   rank?: string;
+  /** For display fields: pre-filled text shown instead of a blank. */
+  value?: string;
+  /** Quadrant position for cards using layout: 'quadrant'. 1=top-left, 2=top-right, 3=bottom-left, 4=bottom-right. */
+  quadrant?: 1 | 2 | 3 | 4;
 }
 
 export interface CardModel {
@@ -79,6 +83,9 @@ export interface CardModel {
     activateTag?: string; // activation trait(s), e.g. "manipulate"
   };
 
+  layout?: 'standard' | 'quadrant';
+  /** When true, renders a writable level blank in the top-right rank area instead of the computed rank label. */
+  rankBlank?: boolean;
   writableFields: WritableField[];
 
   print: {

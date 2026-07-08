@@ -66,6 +66,8 @@ export interface CharacterAttack {
   extraDamage?: string[];
   /** Property rune names, e.g. ["Astral", "Impactful"]. */
   runes?: string[];
+  /** Fundamental rune display names, e.g. ["+2", "Striking"]. */
+  fundamentalRunes?: string[];
   critSpecialization?: string;
   group?: string;
   notes?: string;
@@ -121,6 +123,9 @@ export interface CharacterModel {
       reflex?: number;
       will?: number;
     };
+    resistances?: Array<{ type: string; value: number }>;
+    weaknesses?: Array<{ type: string; value: number }>;
+    immunities?: string[];
   };
 
   speeds?: {
@@ -133,6 +138,10 @@ export interface CharacterModel {
 
   languages?: string[];
   senses?: string[];
+  traits?: string[];
+  deity?: string;
+  age?: string;
+  gender?: string;
 
   proficiencies: {
     skills: SkillProficiency[];
