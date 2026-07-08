@@ -227,10 +227,7 @@
   flex-shrink: 0;
 }
 
-/* Subtitle line below title (hidden in print for spell cards) */
-.subtitleSpell {
-  /* inherits .subtitle styles; targeted in .forPrint to be hidden */
-}
+/* Subtitle line below title (hidden in print for spell cards -- see .forPrint below) */
 
 .splitBadge {
   display: inline-block;
@@ -392,13 +389,12 @@
 }
 
 /* Suppress top border on the first section of a continuation card.
-   Placed after .heightened/.extraSection so equal-specificity rules don't
-   win; using combined selectors makes this robust regardless of order. */
-.heightened.noBorderTop,
-.extraSection.noBorderTop {
-  border-top: none;
-  margin-top: 0;
-  padding-top: 0;
+   Uses !important to override .heightened / .extraSection border-top without
+   needing a compound selector (which trips VS Code's CSS language service). */
+.noBorderTop {
+  border-top: none !important;
+  margin-top: 0 !important;
+  padding-top: 0 !important;
 }
 
 .runeBodyPlaceholder {
@@ -698,7 +694,7 @@
 }
 
 /* Upscale body text for sparse print cards that have room to breathe.
-   title and cardRank are intentionally excluded — the header has a fixed
+   title and cardRank are intentionally excluded -- the header has a fixed
    7mm height so the title must always render at 10pt. */
 .scaleLg .summary,
 .scaleLg .field,

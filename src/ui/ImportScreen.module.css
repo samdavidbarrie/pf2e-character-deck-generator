@@ -5,6 +5,9 @@
   max-width: 760px;
   margin: 0 auto;
   padding: 24px 16px;
+  background: var(--pf-card-paper, #f5f1e7);
+  color: var(--pf-card-ink, #15120f);
+  font-family: var(--pf-body-font, system-ui, sans-serif);
 }
 
 .header {
@@ -12,16 +15,20 @@
 }
 
 .appTitle {
-  font-size: 1.8rem;
-  font-weight: 800;
+  font-family: var(--pf-title-font, 'Oswald', system-ui, sans-serif);
+  font-size: 2rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   margin: 0 0 4px;
+  color: var(--pf-maroon, #5e0000);
 }
 
 .privacy {
   font-size: 0.85rem;
-  color: #666;
+  color: #555;
   margin: 0;
-  border-left: 3px solid #0066cc;
+  border-left: 3px solid var(--pf-trait-gold, #d8c483);
   padding-left: 8px;
 }
 
@@ -33,25 +40,35 @@
 
 .importSection h2,
 .helpSection h2 {
-  font-size: 1.1rem;
+  font-family: var(--pf-title-font, 'Oswald', system-ui, sans-serif);
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--pf-maroon, #5e0000);
+  border-bottom: 1pt solid var(--pf-trait-gold, #d8c483);
+  padding-bottom: 4px;
   margin: 0 0 12px;
 }
 
 .dropZone {
-  border: 2px dashed #999;
-  border-radius: 8px;
+  border: 2px dashed var(--pf-trait-gold, #d8c483);
+  border-radius: 6px;
   padding: 32px;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  transition: border-color 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+  background: #fff;
 }
 
 .dropZone.dragging {
-  border-color: #0066cc;
-  background: #f0f6ff;
+  border-color: var(--pf-maroon, #5e0000);
+  background: #fdf7f7;
 }
 
 .dropZone p {
@@ -61,18 +78,21 @@
 
 .uploadButton {
   display: inline-block;
-  background: #0066cc;
+  background: var(--pf-maroon, #5e0000);
   color: #fff;
   padding: 8px 20px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 0.95rem;
+  font-family: var(--pf-title-font, 'Oswald', system-ui, sans-serif);
+  font-size: 0.9rem;
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   user-select: none;
 }
 
 .uploadButton:hover {
-  background: #0052a3;
+  background: var(--pf-maroon-dark, #3f0000);
 }
 
 .hiddenInput {
@@ -103,13 +123,16 @@
 
 .button {
   margin-top: 8px;
-  background: #0066cc;
+  background: var(--pf-maroon, #5e0000);
   color: #fff;
   border: none;
   border-radius: 4px;
   padding: 8px 16px;
+  font-family: var(--pf-title-font, 'Oswald', system-ui, sans-serif);
   font-size: 0.9rem;
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   cursor: pointer;
 }
 
@@ -119,7 +142,7 @@
 }
 
 .button:hover:not(:disabled) {
-  background: #0052a3;
+  background: var(--pf-maroon-dark, #3f0000);
 }
 
 .errorPanel {
