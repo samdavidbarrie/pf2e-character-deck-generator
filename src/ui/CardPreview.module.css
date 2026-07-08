@@ -2,16 +2,61 @@
   text-align: left;
   width: 100%;
   aspect-ratio: 63 / 88;
-  border: 1px solid #bbb;
-  border-radius: 4px;
-  padding: 6px 8px;
+  /* Thick accent border with thin gold inner line — like physical PF2e spell cards */
+  border: 2mm solid var(--pf-card-accent);
+  box-shadow: inset 0 0 0 1.5px var(--pf-trait-gold, #d8c483);
+  border-radius: 2.5mm;
+  padding: 0;
   box-sizing: border-box;
   cursor: default;
   font-size: 7pt;
+  font-family: var(--pf-body-font, system-ui, sans-serif);
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 0;
   overflow: hidden;
+  background: var(--pf-card-paper, #ffffff);
+  color: var(--pf-card-ink, #15120f);
+  /* Default accent colour — overridden per theme class */
+  --pf-card-accent: var(--pf-maroon, #5e0000);
+}
+
+/* ── Tradition / category theme classes ─────────────────── */
+.themeArcane {
+  --pf-card-accent: var(--pf-tradition-arcane, #7a1f1f);
+}
+.themeDivine {
+  --pf-card-accent: var(--pf-tradition-divine, #1d4f8f);
+}
+.themeOccult {
+  --pf-card-accent: var(--pf-tradition-occult, #5b2a86);
+}
+.themePrimal {
+  --pf-card-accent: var(--pf-tradition-primal, #0f7a3a);
+}
+.themeFocus {
+  --pf-card-accent: var(--pf-tradition-focus, #2a5a6e);
+}
+.themeSpell {
+  --pf-card-accent: var(--pf-maroon, #5e0000);
+}
+.themeAction {
+  --pf-card-accent: var(--pf-accent-action, #1a4a6e);
+}
+.themeFeat {
+  --pf-card-accent: var(--pf-accent-feat, #4a3a6e);
+}
+.themeWeapon {
+  --pf-card-accent: var(--pf-accent-weapon, #6e2a2a);
+}
+.themeEquipment {
+  --pf-card-accent: var(--pf-accent-equipment, #8a5a2b);
+}
+.themeSummary {
+  --pf-card-accent: var(--pf-accent-summary, #3a4a3a);
+}
+.themeReminder {
+  --pf-card-accent: var(--pf-accent-reminder, #4a5a4a);
 }
 
 .card.selected {
@@ -29,12 +74,60 @@
 
 .card[role='button']:hover {
   border-color: #0066cc;
+  box-shadow: inset 0 0 0 1.5px rgba(0, 102, 204, 0.4);
 }
 
 .card[role='button']:focus-visible {
   outline: 2px solid #0066cc;
 }
 
+/* ── Tradition / type tab (hidden — border colour carries the tradition signal) ─ */
+.traditionTab {
+  display: none;
+}
+
+/* ── Card header ────────────────────────────────────────── */
+/* Fixed height so the title always lands at the same position across cards.
+   No border-bottom here: the separator rule is rendered as a separate
+   .headerRule element so it can be inset from the card edges. */
+.cardHeader {
+  height: calc(9mm - 2mm);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 8px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+/* Inset horizontal rule between header and card body. Margins trim it on
+   each side so it doesn't run edge-to-edge like a full-bleed border. */
+.headerRule {
+  height: 0;
+  border-top: 1pt solid var(--pf-card-rule, #1e1a16);
+  margin: 0 8px;
+  flex-shrink: 0;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+/* ── Card body (padded content area below header) ────────── */
+.cardBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 3px 8px 5px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ── Legacy topBand kept for compat if referenced elsewhere ─ */
 .topBand {
   display: flex;
   justify-content: space-between;
@@ -68,11 +161,53 @@
   color: #555;
 }
 
+/* Title no longer has flex:1 — that moves to titleGroup so the action-cost
+   icon stays hugged to the title text, not floating to the right. */
 .title {
-  font-size: 11pt;
-  font-weight: 700;
-  line-height: 1.2;
+  font-family: var(--pf-title-font, 'Oswald', 'Arial Narrow', system-ui, sans-serif);
+  font-size: 10pt;
+  font-weight: 600;
+  line-height: 1.1;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  min-width: 0;
+  flex: 0 1 auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Wraps title text + inline action cost together on the left; flex:1 pushes
+   the rank label to the far right, matching the physical card layout:
+   [BLINDNESS ◆◆              SPELL 3] */
+.titleGroup {
+  display: flex;
+  align-items: center;
+  gap: 2px;
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Action cost icon placed inline after title text */
+.titleActionCost {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Rank / type label: right-aligned, e.g. "SPELL 3" or "CANTRIP 1" — same
+   size and weight as the title so the two ends of the header line read as a
+   matched pair. */
+.cardRank {
+  font-family: var(--pf-title-font, 'Oswald', 'Arial Narrow', system-ui, sans-serif);
+  font-size: 10pt;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  flex-shrink: 0;
+  color: var(--pf-card-ink, #15120f);
 }
 
 .backBadge {
@@ -91,6 +226,8 @@
   white-space: nowrap;
   flex-shrink: 0;
 }
+
+/* Subtitle line below title (hidden in print for spell cards -- see .forPrint below) */
 
 .splitBadge {
   display: inline-block;
@@ -138,8 +275,8 @@
   flex-direction: column;
   gap: 1px;
   font-size: 6.5pt;
-  line-height: 1.4;
-  color: #333;
+  line-height: 1.22;
+  color: var(--pf-card-ink, #15120f);
 }
 
 .actionRange {
@@ -156,55 +293,108 @@
 }
 
 .subtitle {
-  font-size: 8pt;
-  color: #444;
+  font-size: 6.5pt;
+  color: #555;
 }
 
+/* Trait pills: individual gold borders; margin-right:-1px merges adjacent
+   borders into a single gold hairline so same-row pills read as one group.
+   row-gap:0 keeps wrapped rows touching — the shared top/bottom borders create
+   the visual connection between lines.  No container background — gold only
+   appears where pills are. */
 .traits {
   display: flex;
   flex-wrap: wrap;
-  gap: 2px;
-  margin: 1px 0;
+  column-gap: 0;
+  row-gap: 0;
+  margin: 2px 0;
+  line-height: 1;
+  width: fit-content;
+  max-width: 100%;
 }
 
 .trait {
-  font-size: 6pt;
+  display: inline-flex;
+  align-items: center;
+  min-height: 11px;
+  padding: 1px 5px 0;
+  border: 1px solid var(--pf-trait-gold, #d8c483);
+  margin-right: -1px; /* merge right+left borders of adjacent pills */
+  background: var(--pf-maroon, #5e0000);
+  color: #fff;
+  font-size: 5.5pt;
+  font-weight: 700;
+  line-height: 1;
   text-transform: uppercase;
-  border: 1px solid #333;
-  border-radius: 2px;
-  padding: 0 3px;
-  background: #f0f0f0;
   letter-spacing: 0.03em;
+  white-space: nowrap;
+  border-radius: 0;
+}
+
+.trait.uncommon {
+  background: var(--pf-rarity-uncommon, #c45500);
+}
+.trait.rare {
+  background: var(--pf-rarity-rare, #0c1466);
+}
+.trait.unique {
+  background: var(--pf-rarity-unique, #54166e);
 }
 
 .field {
-  font-size: 7.5pt;
+  font-size: 6.6pt;
+  line-height: 1.24;
 }
 
 .fieldLabel {
-  font-weight: 600;
+  font-weight: 800;
+  font-family: var(--pf-title-font, system-ui, sans-serif);
+  font-size: 6pt;
   text-transform: uppercase;
-  font-size: 6.5pt;
-  margin-right: 3px;
+  letter-spacing: 0.02em;
+  margin-right: 2px;
 }
 
 .outcomeField {
-  font-size: 7.5pt;
-  line-height: 1.35;
+  font-size: 6.6pt;
+  line-height: 1.24;
 }
 
+/* Inline bold label — Critical Success The target takes... */
 .outcomeLabel {
-  display: block;
-  font-weight: 700;
-  font-size: 7pt;
+  display: inline;
+  font-weight: 800;
+  font-family: var(--pf-title-font, 'Oswald', system-ui, sans-serif);
+  font-size: 6pt;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  margin-right: 2px;
 }
 
 .extraSection {
-  font-size: 7pt;
-  line-height: 1.35;
-  border-top: 0.5pt solid rgba(0, 0, 0, 0.15);
+  font-size: 6.6pt;
+  line-height: 1.24;
+  border-top: 0.5pt solid rgba(0, 0, 0, 0.18);
   padding-top: 2px;
   margin-top: 1px;
+}
+
+/* Heightened entries get a stronger rule separation */
+.heightened {
+  font-size: 6.6pt;
+  line-height: 1.24;
+  border-top: 1pt solid var(--pf-card-rule, #1e1a16);
+  padding-top: 2px;
+  margin-top: 3px;
+}
+
+/* Suppress top border on the first section of a continuation card.
+   Uses !important to override .heightened / .extraSection border-top without
+   needing a compound selector (which trips VS Code's CSS language service). */
+.noBorderTop {
+  border-top: none !important;
+  margin-top: 0 !important;
+  padding-top: 0 !important;
 }
 
 .runeBodyPlaceholder {
@@ -237,17 +427,25 @@
   margin-bottom: 2px;
 }
 
+/* Spell / action metadata block — stacked rows with bold labels */
 .spellMeta {
   display: flex;
-  flex-wrap: wrap;
-  gap: 2px 8px;
-  font-size: 6.5pt;
-  line-height: 1.4;
-  color: #333;
+  flex-direction: column;
+  gap: 0;
+  font-size: 6.6pt;
+  line-height: 1.24;
+  color: var(--pf-card-ink, #15120f);
+  padding-bottom: 3px;
+  border-bottom: 1pt solid var(--pf-card-rule, #1e1a16);
+  margin-bottom: 1px;
 }
 
 .spellMetaLabel {
-  font-weight: 700;
+  font-weight: 800;
+  font-family: var(--pf-title-font, system-ui, sans-serif);
+  font-size: 6pt;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
   margin-right: 2px;
 }
 .skillTopField {
@@ -273,9 +471,9 @@
 }
 
 .summary {
-  font-size: 7.5pt;
-  line-height: 1.4;
-  color: #111;
+  font-size: 6.8pt;
+  line-height: 1.26;
+  color: var(--pf-card-ink, #15120f);
   white-space: pre-line;
 }
 
@@ -284,7 +482,7 @@
   flex-wrap: wrap;
   gap: 3px;
   margin-top: 4px;
-  border-top: 1px solid #ccc;
+  border-top: 1pt solid var(--pf-card-rule, #1e1a16);
   padding-top: 3px;
 }
 
@@ -311,6 +509,16 @@
   font-size: 6.5pt;
   font-weight: 600;
   white-space: nowrap;
+}
+
+/* Inline write-in blank used inside the Defense metadata row: "DC ___ basic Reflex" */
+.inlineDcBlank {
+  display: inline-block;
+  width: 20px;
+  height: 0;
+  border-bottom: 1pt solid var(--pf-card-ink, #15120f);
+  vertical-align: bottom;
+  margin: 0 2px 2px;
 }
 
 .blankBox {
@@ -355,6 +563,7 @@
   font-size: 5.5pt;
   color: #888;
   text-align: right;
+  padding-top: 1px;
 }
 
 .sourceFooter a {
@@ -369,8 +578,8 @@
 /* Merged passive feats */
 .mergedChildren {
   margin-top: 4px;
-  border-top: 1px solid #ddd;
-  padding-top: 4px;
+  border-top: 1pt solid var(--pf-card-rule, #1e1a16);
+  padding-top: 3px;
 }
 
 .mergedChildrenLabel {
@@ -474,72 +683,81 @@
   cursor: default;
 }
 
-.forPrint .title {
-  font-size: 10pt;
+/* Hide AoN source link and spell subtitle in print */
+.forPrint .sourceFooter {
+  display: none;
 }
 
-/* Upscale body text for sparse print cards that have room to breathe */
+/* Spell subtitle is redundant in print (tradition is in tab, rank in header) */
+.forPrint .subtitleSpell {
+  display: none;
+}
+
+/* Upscale body text for sparse print cards that have room to breathe.
+   title and cardRank are intentionally excluded -- the header has a fixed
+   7mm height so the title must always render at 10pt. */
 .scaleLg .summary,
 .scaleLg .field,
 .scaleLg .outcomeField,
-.scaleLg .extraSection {
-  font-size: 11pt;
-  line-height: 1.35;
+.scaleLg .extraSection,
+.scaleLg .heightened {
+  font-size: 8.5pt;
+  line-height: 1.32;
 }
 .scaleLg .fieldLabel {
-  font-size: 9.5pt;
+  font-size: 7.5pt;
 }
 .scaleLg .outcomeLabel {
-  font-size: 9.5pt;
+  font-size: 7.5pt;
 }
-.scaleLg .trait {
+/* .trait and .traits are NOT in scale overrides — always render at base size */
+.scaleLg .subtitle {
   font-size: 8pt;
 }
-.scaleLg .subtitle {
-  font-size: 10pt;
+.scaleLg .spellMeta {
+  font-size: 8pt;
 }
 
 .scaleMd .summary,
 .scaleMd .field,
 .scaleMd .outcomeField,
-.scaleMd .extraSection {
-  font-size: 9.5pt;
-  line-height: 1.35;
+.scaleMd .extraSection,
+.scaleMd .heightened {
+  font-size: 7.8pt;
+  line-height: 1.28;
 }
 .scaleMd .fieldLabel {
-  font-size: 8pt;
-}
-.scaleMd .outcomeLabel {
-  font-size: 8.5pt;
-}
-.scaleMd .trait {
   font-size: 7pt;
 }
+.scaleMd .outcomeLabel {
+  font-size: 7.5pt;
+}
 .scaleMd .subtitle {
-  font-size: 9pt;
+  font-size: 7.5pt;
 }
 
 .scaleSm .summary,
 .scaleSm .field,
 .scaleSm .outcomeField,
-.scaleSm .extraSection {
-  font-size: 8.5pt;
-  line-height: 1.35;
+.scaleSm .extraSection,
+.scaleSm .heightened {
+  font-size: 7.4pt;
+  line-height: 1.26;
 }
 .scaleSm .fieldLabel {
-  font-size: 7.5pt;
+  font-size: 6.8pt;
 }
 .scaleSm .subtitle {
-  font-size: 8pt;
+  font-size: 7pt;
 }
 
-/* Downscale body text for dense print cards */
 .scaleDense .summary,
 .scaleDense .field,
 .scaleDense .outcomeField,
-.scaleDense .extraSection {
-  font-size: 7pt;
-  line-height: 1.3;
+.scaleDense .extraSection,
+.scaleDense .heightened {
+  font-size: 5.8pt;
+  line-height: 1.18;
 }
 .scaleDense .fieldLabel {
   font-size: 6pt;
@@ -547,7 +765,7 @@
 .scaleDense .outcomeLabel {
   font-size: 6.5pt;
 }
-.scaleDense .trait {
+.scaleDense .spellMeta {
   font-size: 5.5pt;
 }
 .scaleDense .subtitle {

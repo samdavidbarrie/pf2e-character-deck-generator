@@ -1,7 +1,96 @@
 import { splitOverflowCards } from '../generation/generateDeck';
-import type { ActionCost, CardModel } from '../model/cards';
-import { ACTION_COST_LABEL, CATEGORY_COLOR, TEML_RANKS } from '../model/cards';
+import type { ActionCost, CardCategory, CardModel } from '../model/cards';
+import { ACTION_COST_LABEL, TEML_RANKS } from '../model/cards';
 import styles from './CardPreview.module.css';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PF2e card visual helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Extract tradition name from subtitle strings like "Rank 3 · Arcane" or "Focus Spell · Primal". */
+function parseTradition(subtitle: string | undefined): string {
+  if (!subtitle) return '';
+  const after = subtitle.split('·').pop()?.trim().toLowerCase() ?? '';
+  return after;
+}
+
+const TRADITION_CLASS: Record<string, string> = {
+  arcane: styles.themeArcane,
+  divine: styles.themeDivine,
+  occult: styles.themeOccult,
+  primal: styles.themePrimal,
+};
+
+const TRADITION_LABEL: Record<string, string> = {
+  arcane: 'Arcane',
+  divine: 'Divine',
+  occult: 'Occult',
+  primal: 'Primal',
+};
+
+interface CardTabInfo {
+  tabLabel: string;
+  themeClass: string;
+}
+
+function getCardTabInfo(card: CardModel): CardTabInfo {
+  if (card.category === 'spell' || card.category === 'focus-spell') {
+    const tradition = parseTradition(card.subtitle);
+    if (TRADITION_LABEL[tradition]) {
+      return { tabLabel: TRADITION_LABEL[tradition], themeClass: TRADITION_CLASS[tradition] };
+    }
+    if (card.category === 'focus-spell') {
+      return { tabLabel: 'Focus', themeClass: styles.themeFocus };
+    }
+    return { tabLabel: 'Spell', themeClass: styles.themeSpell };
+  }
+
+  const categoryTab: Partial<Record<CardCategory, CardTabInfo>> = {
+    'basic-action': { tabLabel: 'Action', themeClass: styles.themeAction },
+    'skill-action': { tabLabel: 'Action', themeClass: styles.themeAction },
+    'feat-action': { tabLabel: 'Feat', themeClass: styles.themeFeat },
+    'feat-passive': { tabLabel: 'Feat', themeClass: styles.themeFeat },
+    reaction: { tabLabel: 'Reaction', themeClass: styles.themeAction },
+    'free-action': { tabLabel: 'Free', themeClass: styles.themeAction },
+    weapon: { tabLabel: 'Weapon', themeClass: styles.themeWeapon },
+    equipment: { tabLabel: 'Equipment', themeClass: styles.themeEquipment },
+    summary: { tabLabel: '', themeClass: styles.themeSummary },
+    reminder: { tabLabel: '', themeClass: styles.themeReminder },
+    manual: { tabLabel: '', themeClass: '' },
+  };
+  return categoryTab[card.category] ?? { tabLabel: '', themeClass: '' };
+}
+
+function getRankLabel(card: CardModel): string {
+  // Continuation cards don't need a rank — the front card carries that info.
+  if (card.continuationOf) return '';
+
+  const isCantrip = card.rules.traits.some((t) => t.toLowerCase() === 'cantrip');
+  if (card.category === 'spell') {
+    if (isCantrip) return 'Cantrip'; // rank varies by caster level; left blank for pencil-in
+    return card.rules.rank !== undefined ? `Spell ${card.rules.rank}` : 'Spell';
+  }
+  if (card.category === 'focus-spell') {
+    if (isCantrip) return 'Cantrip';
+    return card.rules.rank !== undefined ? `Focus ${card.rules.rank}` : 'Focus';
+  }
+  if (card.category === 'equipment' && card.rules.level !== undefined) {
+    return `Item ${card.rules.level}`;
+  }
+  // Feats: include the feat's own minimum level (filled by AoN enrichment).
+  if (card.category === 'feat-action' || card.category === 'feat-passive') {
+    return card.rules.level !== undefined ? `Feat ${card.rules.level}` : 'Feat';
+  }
+  const labelMap: Partial<Record<CardCategory, string>> = {
+    'basic-action': 'Action',
+    'skill-action': 'Skill',
+    reaction: 'Reaction',
+    'free-action': 'Free',
+    weapon: 'Weapon',
+    equipment: 'Equipment',
+  };
+  return labelMap[card.category] ?? '';
+}
 
 interface Props {
   card: CardModel;
@@ -178,7 +267,7 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
         ...(card.rules.extraSections?.flatMap((s) => [s.heading ?? '', s.body ?? '']) ?? []),
       ].join('').length +
       card.rules.traits.length * 20;
-    if (allChars > 650) return styles.scaleDense;
+    if (allChars > 750) return styles.scaleDense;
     const hasOutcomes = !!(
       card.rules.criticalSuccess ||
       card.rules.success ||
@@ -196,7 +285,8 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
     let fields = card.writableFields;
     if (isSpellCard) {
       fields = fields.filter((f) => {
-        if (f.label === 'Spell DC') return defenseIsSave;
+        // Spell DC is now shown inline in the Defense metadata row
+        if (f.label === 'Spell DC') return false;
         if (f.label === 'Spell Attack') return card.rules.spellAttack === true;
         return true;
       });
@@ -207,290 +297,389 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
     return fields;
   })();
 
+  const { tabLabel, themeClass } = getCardTabInfo(card);
+  const rankLabel = getRankLabel(card);
+  // Show action cost inline in the title row for all cards except equipment activations
+  // (where the cost is shown in the Activate metadata line instead).
+  const showActionCostInTitle =
+    !!card.rules.actionCost && card.rules.actionCost !== 'passive' && card.category !== 'equipment';
+
+  // Rarity-aware trait class: uncommon / rare / unique get coloured pill styles
+  const rarityTraits = new Set(['uncommon', 'rare', 'unique']);
+
   return (
     <div
-      className={`${styles.card} ${selected ? styles.selected : ''} ${forPrint ? styles.forPrint : ''} ${!card.print.include && !forPrint ? styles.hidden : ''} ${scaleClass}`}
-      style={{ backgroundColor: CATEGORY_COLOR[card.category] }}
+      className={[
+        styles.card,
+        themeClass,
+        selected ? styles.selected : '',
+        forPrint ? styles.forPrint : '',
+        !card.print.include && !forPrint ? styles.hidden : '',
+        scaleClass,
+      ]
+        .filter(Boolean)
+        .join(' ')}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
       onKeyDown={onClick ? (e) => e.key === 'Enter' && onClick() : undefined}
       aria-pressed={selected}
     >
-      <div className={styles.topBand}>
-        {onToggleInclude && (
-          <button
-            className={`${styles.includeToggle} ${card.print.include ? styles.toggleIncluded : styles.toggleExcluded}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleInclude();
-            }}
-            aria-label={card.print.include ? 'Hide from print' : 'Include in print'}
-            title={card.print.include ? 'Hide from print' : 'Include in print'}
-          >
-            {card.print.include ? '✓' : '–'}
-          </button>
-        )}
-        <span className={styles.title}>
-          {card.continuationOf && <span className={styles.backBadge}>↩</span>}
-          {card.title}
-          {splitCount > 1 && <span className={styles.splitBadge}>×{splitCount}</span>}
-        </span>
-        <span className={styles.metaRight}>
-          {card.rules.actionCost && <ActionCostDisplay cost={card.rules.actionCost} />}
-        </span>
-      </div>
+      {/* Tradition / category coloured tab */}
+      {tabLabel && <div className={styles.traditionTab}>{tabLabel}</div>}
 
-      {card.subtitle && <div className={styles.subtitle}>{card.subtitle}</div>}
-
-      {card.rules.traits.length > 0 && (
-        <div className={styles.traits}>
-          {card.rules.traits.map((t) => (
-            <span key={t} className={styles.trait}>
-              {t}
+      {/* Card header: TITLE ◆◆  SPELL 3 */}
+      <div className={styles.cardHeader}>
+        <div className={styles.titleRow}>
+          {onToggleInclude && (
+            <button
+              className={`${styles.includeToggle} ${card.print.include ? styles.toggleIncluded : styles.toggleExcluded}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleInclude();
+              }}
+              aria-label={card.print.include ? 'Hide from print' : 'Include in print'}
+              title={card.print.include ? 'Hide from print' : 'Include in print'}
+            >
+              {card.print.include ? '✓' : '–'}
+            </button>
+          )}
+          <div className={styles.titleGroup}>
+            <span className={styles.title}>
+              {card.continuationOf && <span className={styles.backBadge}>↩</span>}
+              {card.title}
+              {splitCount > 1 && <span className={styles.splitBadge}>×{splitCount}</span>}
             </span>
-          ))}
-        </div>
-      )}
-
-      {(hasItemLevel ||
-        card.rules.usage ||
-        card.rules.bulk ||
-        card.rules.activateTag ||
-        card.rules.price) && (
-        <div className={styles.itemMeta}>
-          {/* Row 1: Item; Usage; Bulk */}
-          {(hasItemLevel || card.rules.usage || card.rules.bulk) && (
-            <div>
-              {hasItemLevel && (
-                <>
-                  <span className={styles.spellMetaLabel}>Item</span> {card.rules.level}
-                </>
-              )}
-              {card.rules.usage && (
-                <>
-                  {hasItemLevel && '; '}
-                  <span className={styles.spellMetaLabel}>Usage</span> {card.rules.usage}
-                </>
-              )}
-              {card.rules.bulk && (
-                <>
-                  {(hasItemLevel || card.rules.usage) && '; '}
-                  <span className={styles.spellMetaLabel}>Bulk</span> {card.rules.bulk}
-                </>
-              )}
-            </div>
-          )}
-          {/* Row 2: Activate; Price */}
-          {((card.rules.activateTag && card.rules.actionCost) || card.rules.price) && (
-            <div>
-              {card.rules.activateTag && card.rules.actionCost && (
-                <>
-                  <span className={styles.spellMetaLabel}>Activate</span>{' '}
-                  <ActionCostDisplay cost={card.rules.actionCost} /> {card.rules.activateTag}
-                </>
-              )}
-              {card.rules.price && (
-                <>
-                  {card.rules.activateTag && card.rules.actionCost && '; '}
-                  <span className={styles.spellMetaLabel}>Price</span> {card.rules.price}
-                </>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {card.rules.trigger && (
-        <div className={styles.field}>
-          <span className={styles.fieldLabel}>Trigger</span> {card.rules.trigger}
-        </div>
-      )}
-      {card.rules.requirements && (
-        <div className={styles.field}>
-          <span className={styles.fieldLabel}>Requirements</span> {card.rules.requirements}
-        </div>
-      )}
-      {card.rules.frequency && (
-        <div className={styles.field}>
-          <span className={styles.fieldLabel}>Frequency</span> {card.rules.frequency}
-        </div>
-      )}
-
-      {(card.rules.range ||
-        card.rules.area ||
-        card.rules.targets ||
-        card.rules.defense ||
-        card.rules.duration) && (
-        <div className={styles.spellMeta}>
-          {card.rules.range && (
-            <span>
-              <span className={styles.spellMetaLabel}>Range</span> {card.rules.range}
-            </span>
-          )}
-          {card.rules.area && (
-            <span>
-              <span className={styles.spellMetaLabel}>Area</span> {card.rules.area}
-            </span>
-          )}
-          {card.rules.targets && (
-            <span>
-              <span className={styles.spellMetaLabel}>Targets</span> {card.rules.targets}
-            </span>
-          )}
-          {card.rules.defense && (
-            <span>
-              <span className={styles.spellMetaLabel}>Defense</span> {card.rules.defense}
-            </span>
-          )}
-          {card.rules.duration && (
-            <span>
-              <span className={styles.spellMetaLabel}>Duration</span> {card.rules.duration}
-            </span>
-          )}
-        </div>
-      )}
-
-      {skillLabel && (
-        <div className={styles.skillTopField}>
-          <span className={styles.skillTopLabel}>{skillLabel}:</span>
-          <span className={styles.skillTopSign}>+</span>
-          <span className={styles.skillTopBlank} />
-        </div>
-      )}
-
-      <div className={styles.summary}>{renderBold(card.rules.summary)}</div>
-
-      {card.rules.criticalSuccess && (
-        <div className={styles.outcomeField}>
-          <span className={styles.outcomeLabel}>Critical Success</span>
-          {renderBold(card.rules.criticalSuccess)}
-        </div>
-      )}
-      {card.rules.success && (
-        <div className={styles.outcomeField}>
-          <span className={styles.outcomeLabel}>Success</span>
-          {renderBold(card.rules.success)}
-        </div>
-      )}
-      {card.rules.failure && (
-        <div className={styles.outcomeField}>
-          <span className={styles.outcomeLabel}>Failure</span>
-          {renderBold(card.rules.failure)}
-        </div>
-      )}
-      {card.rules.criticalFailure && (
-        <div className={styles.outcomeField}>
-          <span className={styles.outcomeLabel}>Critical Failure</span>
-          {renderBold(card.rules.criticalFailure)}
-        </div>
-      )}
-
-      {card.rules.extraSections?.map((sec, i) => (
-        <div key={i} className={styles.extraSection}>
-          {sec.heading && <span className={styles.outcomeLabel}>{sec.heading}</span>}
-          {sec.body ? (
-            renderBold(sec.body)
-          ) : (
-            <span className={styles.runeBodyPlaceholder}>See AoN ↗</span>
-          )}
-        </div>
-      ))}
-
-      {card.mergedChildren && card.mergedChildren.length > 0 && (
-        <div className={styles.mergedChildren}>
-          <div className={styles.mergedChildrenLabel}>Also applies</div>
-          {card.mergedChildren.map((child) => (
-            <div key={child.name} className={styles.mergedChild}>
-              <span className={styles.mergedChildName}>
-                {child.name}
-                {child.level !== undefined && (
-                  <span className={styles.mergedChildLevel}> (lv{child.level})</span>
-                )}
+            {showActionCostInTitle && (
+              <span className={styles.titleActionCost}>
+                <ActionCostDisplay cost={card.rules.actionCost!} />
               </span>
-              {child.summary && <span className={styles.mergedChildSummary}>{child.summary}</span>}
-            </div>
-          ))}
+            )}
+          </div>
+          {rankLabel && <span className={styles.cardRank}>{rankLabel}</span>}
         </div>
-      )}
+      </div>
+      <div className={styles.headerRule} />
 
-      {card.mergedInto && !forPrint && (
-        <div className={styles.mergedIntoBadge}>↗ Merged into: {card.mergedInto}</div>
-      )}
+      {/* Padded content body */}
+      <div className={styles.cardBody}>
+        {/* Subtitle — hidden for feat cards (rank label carries type+level) and
+            in print for spell cards (tradition tab + rank replace it). */}
+        {(() => {
+          const isFeatCard = card.category === 'feat-action' || card.category === 'feat-passive';
+          if (!card.subtitle || isFeatCard) return null;
+          return (
+            <div className={`${styles.subtitle}${isSpellCard ? ` ${styles.subtitleSpell}` : ''}`}>
+              {card.subtitle}
+            </div>
+          );
+        })()}
 
-      {(() => {
-        const skillRows = effectiveWritableFields.filter((f) => f.type === 'skill-row');
-        const otherFields = effectiveWritableFields.filter((f) => f.type !== 'skill-row');
-        return (
-          <>
-            {skillRows.length > 0 && (
-              <div className={styles.skillTable}>
-                <div className={styles.skillColumnHeader}>
-                  <span className={styles.skillName} />
-                  <span className={styles.skillTeml}>T&nbsp;E&nbsp;M&nbsp;L</span>
-                  <span className={styles.skillTotalHeader}>Bonus</span>
-                </div>
-                {skillRows.map((f) => {
-                  const rankIndex = TEML_RANKS.indexOf(f.rank as (typeof TEML_RANKS)[number]);
-                  const circles = TEML_RANKS.map((_, i) => (i <= rankIndex ? '●' : '○')).join('');
-                  return (
-                    <div key={f.id} className={styles.skillRow}>
-                      <span className={styles.skillName}>{f.label}</span>
-                      <span className={styles.skillTeml}>{circles}</span>
-                      <span className={styles.skillTotal} />
-                    </div>
-                  );
-                })}
+        {card.rules.traits.length > 0 && (
+          <div className={styles.traits}>
+            {card.rules.traits.map((t) => {
+              const lower = t.toLowerCase();
+              const rarityClass = rarityTraits.has(lower) ? styles[lower] : '';
+              return (
+                <span key={t} className={[styles.trait, rarityClass].filter(Boolean).join(' ')}>
+                  {t}
+                </span>
+              );
+            })}
+          </div>
+        )}
+
+        {(hasItemLevel ||
+          card.rules.usage ||
+          card.rules.bulk ||
+          card.rules.activateTag ||
+          card.rules.price) && (
+          <div className={styles.itemMeta}>
+            {/* Row 1: Item; Usage; Bulk */}
+            {(hasItemLevel || card.rules.usage || card.rules.bulk) && (
+              <div>
+                {hasItemLevel && (
+                  <>
+                    <span className={styles.spellMetaLabel}>Item</span> {card.rules.level}
+                  </>
+                )}
+                {card.rules.usage && (
+                  <>
+                    {hasItemLevel && '; '}
+                    <span className={styles.spellMetaLabel}>Usage</span> {card.rules.usage}
+                  </>
+                )}
+                {card.rules.bulk && (
+                  <>
+                    {(hasItemLevel || card.rules.usage) && '; '}
+                    <span className={styles.spellMetaLabel}>Bulk</span> {card.rules.bulk}
+                  </>
+                )}
               </div>
             )}
+            {/* Row 2: Activate; Price */}
+            {((card.rules.activateTag && card.rules.actionCost) || card.rules.price) && (
+              <div>
+                {card.rules.activateTag && card.rules.actionCost && (
+                  <>
+                    <span className={styles.spellMetaLabel}>Activate</span>{' '}
+                    <ActionCostDisplay cost={card.rules.actionCost} /> {card.rules.activateTag}
+                  </>
+                )}
+                {card.rules.price && (
+                  <>
+                    {card.rules.activateTag && card.rules.actionCost && '; '}
+                    <span className={styles.spellMetaLabel}>Price</span> {card.rules.price}
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
-            {otherFields.length > 0 && (
-              <div className={styles.writableFields}>
-                {otherFields.map((f) => {
-                  if (f.type === 'section') {
+        {card.rules.trigger && (
+          <div className={styles.field}>
+            <span className={styles.fieldLabel}>Trigger</span> {card.rules.trigger}
+          </div>
+        )}
+        {card.rules.requirements && (
+          <div className={styles.field}>
+            <span className={styles.fieldLabel}>Requirements</span> {card.rules.requirements}
+          </div>
+        )}
+        {card.rules.frequency && (
+          <div className={styles.field}>
+            <span className={styles.fieldLabel}>Frequency</span> {card.rules.frequency}
+          </div>
+        )}
+
+        {(card.rules.range ||
+          card.rules.area ||
+          card.rules.targets ||
+          card.rules.defense ||
+          card.rules.duration) &&
+          !card.continuationOf && (
+            <div className={styles.spellMeta}>
+              {card.rules.range && (
+                <span>
+                  <span className={styles.spellMetaLabel}>Range</span> {card.rules.range}
+                </span>
+              )}
+              {card.rules.area && (
+                <span>
+                  <span className={styles.spellMetaLabel}>Area</span> {card.rules.area}
+                </span>
+              )}
+              {card.rules.targets && (
+                <span>
+                  <span className={styles.spellMetaLabel}>Targets</span> {card.rules.targets}
+                </span>
+              )}
+              {card.rules.defense && (
+                <span>
+                  <span className={styles.spellMetaLabel}>Defense</span>{' '}
+                  {defenseIsSave ? (
+                    <>
+                      DC <span className={styles.inlineDcBlank} /> {card.rules.defense}
+                    </>
+                  ) : (
+                    card.rules.defense
+                  )}
+                </span>
+              )}
+              {card.rules.duration && (
+                <span>
+                  <span className={styles.spellMetaLabel}>Duration</span> {card.rules.duration}
+                </span>
+              )}
+            </div>
+          )}
+
+        {skillLabel && (
+          <div className={styles.skillTopField}>
+            <span className={styles.skillTopLabel}>{skillLabel}:</span>
+            <span className={styles.skillTopSign}>+</span>
+            <span className={styles.skillTopBlank} />
+          </div>
+        )}
+
+        {card.rules.summary && (
+          <div className={styles.summary}>{renderBold(card.rules.summary)}</div>
+        )}
+
+        {card.rules.criticalSuccess && (
+          <div className={styles.outcomeField}>
+            <span className={styles.outcomeLabel}>Critical Success</span>
+            {renderBold(card.rules.criticalSuccess)}
+          </div>
+        )}
+        {card.rules.success && (
+          <div className={styles.outcomeField}>
+            <span className={styles.outcomeLabel}>Success</span>
+            {renderBold(card.rules.success)}
+          </div>
+        )}
+        {card.rules.failure && (
+          <div className={styles.outcomeField}>
+            <span className={styles.outcomeLabel}>Failure</span>
+            {renderBold(card.rules.failure)}
+          </div>
+        )}
+        {card.rules.criticalFailure && (
+          <div className={styles.outcomeField}>
+            <span className={styles.outcomeLabel}>Critical Failure</span>
+            {renderBold(card.rules.criticalFailure)}
+          </div>
+        )}
+
+        {card.rules.extraSections?.map((sec, i) => {
+          const isHeightened = sec.heading?.toLowerCase() === 'heightened';
+          // On continuation cards suppress the top border on the first section
+          // — without preceding content the border looks like a stray line.
+          const suppressBorder = !!card.continuationOf && i === 0;
+          const sectionClass = [
+            isHeightened ? styles.heightened : styles.extraSection,
+            suppressBorder ? styles.noBorderTop : '',
+          ]
+            .filter(Boolean)
+            .join(' ');
+
+          if (isHeightened && sec.body) {
+            // Split body into individual "Heightened (Nth) …" entries and
+            // render each on its own line with the label styled inline.
+            // The heading is intentionally omitted — each entry carries its
+            // own "Heightened (Nth)" prefix so there is no duplication.
+            const entries = sec.body
+              .split(/(?=\bHeightened\s*\()/)
+              .map((e) => e.trim())
+              .filter(Boolean);
+            return (
+              <div key={i} className={sectionClass}>
+                {entries.map((entry, j) => {
+                  const m = /^(Heightened\s*\([^)]+\))\s*([\s\S]*)$/.exec(entry);
+                  if (m) {
                     return (
-                      <div key={f.id} className={styles.sectionDivider}>
-                        {f.label}
+                      <div key={j}>
+                        <span className={styles.outcomeLabel}>{m[1]}</span> {renderBold(m[2])}
                       </div>
                     );
                   }
-                  return (
-                    <div
-                      key={f.id}
-                      className={`${styles.writableField} ${styles[`size-${f.size ?? 'md'}`]}`}
-                    >
-                      <span className={styles.writableLabel}>{f.label}:</span>
-                      {f.type === 'checkboxes' && f.boxes ? (
-                        <span className={styles.checkboxes}>
-                          {Array.from({ length: f.boxes }).map((_, i) => (
-                            <span key={i} className={styles.checkbox}>
-                              □
-                            </span>
-                          ))}
-                        </span>
-                      ) : f.type === 'notes' ? (
-                        <span className={styles.notesLine}>______________________</span>
-                      ) : (
-                        <span className={styles.blankBox}>
-                          {' '.repeat(f.size === 'lg' ? 20 : f.size === 'md' ? 12 : 6)}
-                        </span>
-                      )}
-                    </div>
-                  );
+                  return <div key={j}>{renderBold(entry)}</div>;
                 })}
               </div>
-            )}
-          </>
-        );
-      })()}
+            );
+          }
 
-      {card.source.aonUrl && !forPrint && (
-        <div className={styles.sourceFooter}>
-          <a href={card.source.aonUrl} target="_blank" rel="noopener noreferrer" tabIndex={-1}>
-            AoN ↗
-          </a>
-        </div>
-      )}
+          return (
+            <div key={i} className={sectionClass}>
+              {sec.heading && <span className={styles.outcomeLabel}>{sec.heading}</span>}
+              {sec.body ? (
+                renderBold(sec.body)
+              ) : (
+                <span className={styles.runeBodyPlaceholder}>See AoN ↗</span>
+              )}
+            </div>
+          );
+        })}
+
+        {card.mergedChildren && card.mergedChildren.length > 0 && (
+          <div className={styles.mergedChildren}>
+            <div className={styles.mergedChildrenLabel}>Also applies</div>
+            {card.mergedChildren.map((child) => (
+              <div key={child.name} className={styles.mergedChild}>
+                <span className={styles.mergedChildName}>
+                  {child.name}
+                  {child.level !== undefined && (
+                    <span className={styles.mergedChildLevel}> (lv{child.level})</span>
+                  )}
+                </span>
+                {child.summary && (
+                  <span className={styles.mergedChildSummary}>{child.summary}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {card.mergedInto && !forPrint && (
+          <div className={styles.mergedIntoBadge}>↗ Merged into: {card.mergedInto}</div>
+        )}
+
+        {(() => {
+          const skillRows = effectiveWritableFields.filter((f) => f.type === 'skill-row');
+          const otherFields = effectiveWritableFields.filter((f) => f.type !== 'skill-row');
+          return (
+            <>
+              {skillRows.length > 0 && (
+                <div className={styles.skillTable}>
+                  <div className={styles.skillColumnHeader}>
+                    <span className={styles.skillName} />
+                    <span className={styles.skillTeml}>T&nbsp;E&nbsp;M&nbsp;L</span>
+                    <span className={styles.skillTotalHeader}>Bonus</span>
+                  </div>
+                  {skillRows.map((f) => {
+                    const rankIndex = TEML_RANKS.indexOf(f.rank as (typeof TEML_RANKS)[number]);
+                    const circles = TEML_RANKS.map((_, i) => (i <= rankIndex ? '●' : '○')).join('');
+                    return (
+                      <div key={f.id} className={styles.skillRow}>
+                        <span className={styles.skillName}>{f.label}</span>
+                        <span className={styles.skillTeml}>{circles}</span>
+                        <span className={styles.skillTotal} />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {otherFields.length > 0 && (
+                <div className={styles.writableFields}>
+                  {otherFields.map((f) => {
+                    if (f.type === 'section') {
+                      return (
+                        <div key={f.id} className={styles.sectionDivider}>
+                          {f.label}
+                        </div>
+                      );
+                    }
+                    return (
+                      <div
+                        key={f.id}
+                        className={`${styles.writableField} ${styles[`size-${f.size ?? 'md'}`]}`}
+                      >
+                        <span className={styles.writableLabel}>{f.label}:</span>
+                        {f.type === 'checkboxes' && f.boxes ? (
+                          <span className={styles.checkboxes}>
+                            {Array.from({ length: f.boxes }).map((_, i) => (
+                              <span key={i} className={styles.checkbox}>
+                                □
+                              </span>
+                            ))}
+                          </span>
+                        ) : f.type === 'notes' ? (
+                          <span className={styles.notesLine}>______________________</span>
+                        ) : (
+                          <span className={styles.blankBox}>
+                            {' '.repeat(f.size === 'lg' ? 20 : f.size === 'md' ? 12 : 6)}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          );
+        })()}
+
+        {card.source.aonUrl && !forPrint && (
+          <div className={styles.sourceFooter}>
+            <a href={card.source.aonUrl} target="_blank" rel="noopener noreferrer" tabIndex={-1}>
+              AoN ↗
+            </a>
+          </div>
+        )}
+      </div>
+      {/* end cardBody */}
     </div>
   );
 }

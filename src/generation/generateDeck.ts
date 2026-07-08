@@ -142,12 +142,12 @@ function splitOverflowOnce(cards: CardModel[]): CardModel[] {
     const extraSectionsText = (extraSections ?? []).reduce((n, s) => n + s.body.length, 0);
     const hasExtraSections = (extraSections?.length ?? 0) > 0 && extraSectionsText > 0;
 
-    // Split only when the combined text genuinely won't fit on one card (~700 chars
-    // is roughly the practical limit for a 63×88 mm card at 7 pt body text).
-    if (hasOutcomes && summary.length + outcomesLength > 700) {
+    // Split only when the combined text genuinely won't fit on one card (~850 chars
+    // is roughly the practical limit for a 63×88 mm card at 6–7 pt body text).
+    if (hasOutcomes && summary.length + outcomesLength > 850) {
       // If the summary itself is too long, truncate it at a sentence boundary so
       // the front card doesn't overflow even after outcomes are moved to the back.
-      const SUMMARY_LIMIT = 600;
+      const SUMMARY_LIMIT = 680;
       let frontSummary = summary;
       let spilloverSummary = '';
       if (summary.length > SUMMARY_LIMIT) {
@@ -190,16 +190,30 @@ function splitOverflowOnce(cards: CardModel[]): CardModel[] {
         },
         userEdits: { edited: false },
       });
-    } else if (hasExtraSections && summary.length + extraSectionsText > 700) {
-      // Front: summary + rune names note, no extra section bodies
+    } else if (hasExtraSections && summary.length + extraSectionsText > 850) {
+      // If the summary is long, truncate it so the front card doesn't overflow
+      // even after extra sections are moved to the back.  Any spillover summary
+      // text travels with the extra sections onto the back card.
+      const SUMMARY_LIMIT = 680;
+      let frontSummary = summary;
+      let spilloverSummary = '';
+      if (summary.length > SUMMARY_LIMIT) {
+        let breakAt = summary.lastIndexOf('. ', SUMMARY_LIMIT);
+        if (breakAt < SUMMARY_LIMIT * 0.4) breakAt = summary.lastIndexOf(' ', SUMMARY_LIMIT);
+        if (breakAt <= 0) breakAt = SUMMARY_LIMIT;
+        frontSummary = summary.slice(0, breakAt + 1).trim();
+        spilloverSummary = summary.slice(breakAt + 1).trim();
+      }
+      // Front: (truncated) summary, no extra section bodies
       result.push({
         ...card,
         rules: {
           ...card.rules,
+          summary: frontSummary,
           extraSections: undefined,
         },
       });
-      // Back: extra sections only
+      // Back: any spillover summary + extra sections
       result.push({
         ...card,
         id: `${card.id}-back`,
@@ -208,7 +222,7 @@ function splitOverflowOnce(cards: CardModel[]): CardModel[] {
         writableFields: [],
         rules: {
           ...card.rules,
-          summary: '',
+          summary: spilloverSummary,
           traits: [],
           trigger: undefined,
           requirements: undefined,
@@ -220,10 +234,10 @@ function splitOverflowOnce(cards: CardModel[]): CardModel[] {
         },
         userEdits: { edited: false },
       });
-    } else if (!hasOutcomes && !hasExtraSections && summary.length > 600) {
+    } else if (!hasOutcomes && !hasExtraSections && summary.length > 800) {
       // Long plain summary — find the last sentence end before the threshold and
       // split there. Front shows the first chunk; back shows the rest.
-      const THRESHOLD = 600;
+      const THRESHOLD = 800;
       let breakAt = summary.lastIndexOf('. ', THRESHOLD);
       if (breakAt < THRESHOLD * 0.4) breakAt = summary.lastIndexOf(' ', THRESHOLD);
       if (breakAt <= 0) breakAt = THRESHOLD;

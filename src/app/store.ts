@@ -250,6 +250,50 @@ export const useAppStore = create<AppState>((set, get) => ({
         cards = [...cardById.values()];
       }
 
+      // For polymorph / incarnate spell cards, insert a blank form-stats
+      // companion card immediately after each one so the player can fill in
+      // their chosen form's statistics during preparation.
+      const FORM_TRAITS = new Set(['polymorph', 'incarnate']);
+      const withCompanions: CardModel[] = [];
+      for (const card of cards) {
+        withCompanions.push(card);
+        const needsCompanion =
+          (card.category === 'spell' || card.category === 'focus-spell') &&
+          !card.continuationOf &&
+          card.rules.traits.some((t) => FORM_TRAITS.has(t.toLowerCase()));
+        if (needsCompanion) {
+          // Guard against duplicates on re-enrichment
+          const companionKey = `${card.stableKey}-form-stats`;
+          const alreadyExists = project.cards.some((c) => c.stableKey === companionKey);
+          if (!alreadyExists) {
+            withCompanions.push({
+              id: `${card.id}-form-stats`,
+              stableKey: companionKey,
+              title: `${card.title} — Form Stats`,
+              subtitle: 'Fill in during preparation',
+              category: 'manual',
+              source: { system: 'manual', originalName: card.title },
+              rules: {
+                traits: [],
+                summary: 'Record your chosen form’s statistics here during daily preparation.',
+              },
+              writableFields: [
+                { id: crypto.randomUUID(), label: 'AC', type: 'blank', size: 'sm' },
+                { id: crypto.randomUUID(), label: 'Temp HP', type: 'blank', size: 'sm' },
+                { id: crypto.randomUUID(), label: 'Speed', type: 'blank', size: 'sm' },
+                { id: crypto.randomUUID(), label: 'Athletics', type: 'blank', size: 'sm' },
+                { id: crypto.randomUUID(), label: 'Attack bonus', type: 'blank', size: 'sm' },
+                { id: crypto.randomUUID(), label: 'Damage', type: 'blank', size: 'md' },
+                { id: crypto.randomUUID(), label: 'Notes', type: 'notes', size: 'lg' },
+              ],
+              print: { include: true, priority: card.print.priority, size: 'standard' },
+              userEdits: { edited: false },
+            });
+          }
+        }
+      }
+      cards = withCompanions;
+
       // Enrich weapon property rune descriptions from AoN
       const runeMap = await fetchRuneDescriptions(cards);
       if (runeMap.size > 0) {
