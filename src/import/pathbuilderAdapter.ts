@@ -396,6 +396,26 @@ export function parsePathbuilder(json: unknown): CharacterModel {
   // --- Class DC ---
   const classDC = num(get(build, 'proficiencies', 'classDC'));
 
+  // --- Resistances / Weaknesses / Immunities ---
+  // Pathbuilder exports these as string arrays, e.g. ["electricity 5", "fire 10"]
+  function parseDefenseEntries(raw: unknown[]): Array<{ type: string; value: number }> {
+    return raw.flatMap((s) => {
+      if (typeof s !== 'string') return [];
+      const parts = s.trim().split(/\s+/);
+      const last = parts[parts.length - 1];
+      const value = parseFloat(last);
+      if (!isNaN(value) && parts.length > 1) {
+        return [{ type: parts.slice(0, -1).join(' '), value }];
+      }
+      return [];
+    });
+  }
+  const resistances = parseDefenseEntries(arr<unknown>(get(build, 'resistances')));
+  const weaknesses = parseDefenseEntries(arr<unknown>(get(build, 'weaknesses')));
+  const immunities = arr<string>(get(build, 'immunities')).filter(
+    (s) => typeof s === 'string' && s.length > 0,
+  );
+
   // --- Build result ---
   return {
     source: 'pathbuilder',
@@ -410,10 +430,18 @@ export function parsePathbuilder(json: unknown): CharacterModel {
     subclass: str(get(build, 'subclass')),
     abilities,
     abilityMods,
-    defenses: { ac, hp, perception, saves },
+    defenses: { ac, hp, perception, saves, resistances, weaknesses, immunities },
     speeds,
     languages,
     senses,
+    traits: [
+      str(get(build, 'sizeName')),
+      str(get(build, 'ancestry')),
+      str(get(build, 'heritage')),
+    ].filter((t): t is string => !!t),
+    deity: str(get(build, 'deity')),
+    age: str(get(build, 'age')),
+    gender: str(get(build, 'gender')),
     proficiencies: {
       skills: [...skills, ...loreSkills],
       classDC,

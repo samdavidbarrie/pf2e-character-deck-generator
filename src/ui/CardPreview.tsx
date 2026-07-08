@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import { splitOverflowCards } from '../generation/generateDeck';
 import type { ActionCost, CardCategory, CardModel } from '../model/cards';
 import { ACTION_COST_LABEL, TEML_RANKS } from '../model/cards';
@@ -306,6 +307,7 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
 
   // Rarity-aware trait class: uncommon / rare / unique get coloured pill styles
   const rarityTraits = new Set(['uncommon', 'rare', 'unique']);
+  const sizeTraits = new Set(['tiny', 'small', 'medium', 'large', 'huge', 'gargantuan']);
 
   return (
     <div
@@ -356,7 +358,12 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
               </span>
             )}
           </div>
-          {rankLabel && <span className={styles.cardRank}>{rankLabel}</span>}
+          {rankLabel && !card.rankBlank && <span className={styles.cardRank}>{rankLabel}</span>}
+          {card.rankBlank && (
+            <span className={styles.cardRankBlank}>
+              Level <span className={styles.rankBlankLine} />
+            </span>
+          )}
         </div>
       </div>
       <div className={styles.headerRule} />
@@ -379,9 +386,13 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
           <div className={styles.traits}>
             {card.rules.traits.map((t) => {
               const lower = t.toLowerCase();
-              const rarityClass = rarityTraits.has(lower) ? styles[lower] : '';
+              const traitClass = rarityTraits.has(lower)
+                ? styles[lower]
+                : sizeTraits.has(lower)
+                  ? styles.size
+                  : '';
               return (
-                <span key={t} className={[styles.trait, rarityClass].filter(Boolean).join(' ')}>
+                <span key={t} className={[styles.trait, traitClass].filter(Boolean).join(' ')}>
                   {t}
                 </span>
               );
@@ -606,6 +617,75 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
         )}
 
         {(() => {
+          // ── Two-column layout ────────────────────────────────────────────
+          if (card.layout === 'quadrant') {
+            const qf = (n: 1 | 2 | 3 | 4) =>
+              effectiveWritableFields.filter((f) => f.quadrant === n);
+
+            // Minor fields get smaller label + shorter blank
+            const MINOR_LABELS = new Set(['Temp HP', 'Shield HP']);
+
+            const renderHpField = (f: (typeof effectiveWritableFields)[number]) => {
+              const isMinor = MINOR_LABELS.has(f.label);
+              return (
+                <div key={f.id} className={isMinor ? styles.hpFieldMinor : styles.hpField}>
+                  <span className={styles.hpLabel}>{f.label}</span>
+                  <span className={isMinor ? styles.blankSm : styles.blankFull} />
+                </div>
+              );
+            };
+
+            const circles = (rank: string | undefined) => {
+              const idx = TEML_RANKS.indexOf(rank as (typeof TEML_RANKS)[number]);
+              return TEML_RANKS.map((_, i) => (i <= idx ? '●' : '○')).join('');
+            };
+
+            return (
+              <div className={styles.twoColBody}>
+                {/* ── Left column: HP → saves ── */}
+                <div className={styles.twoColLeft}>
+                  {qf(1).map(renderHpField)}
+                  <div className={styles.saveTable}>
+                    {qf(3).map((f) => (
+                      <Fragment key={f.id}>
+                        {f.label === 'Perception' && <div className={styles.saveTableSep} />}
+                        <span className={styles.saveLabel}>{f.label}</span>
+                        <span className={styles.saveTeml}>
+                          {f.type === 'skill-row' ? circles(f.rank) : ''}
+                        </span>
+                        <span className={styles.saveBlank} />
+                      </Fragment>
+                    ))}
+                  </div>
+                </div>
+
+                {/* ── Right column: defence → speed/senses ── */}
+                <div className={styles.twoColRight}>
+                  {qf(2).map(renderHpField)}
+                  {(() => {
+                    const blanks = qf(4).filter((f) => f.type !== 'display');
+                    const notes = qf(4).filter((f) => f.type === 'display');
+                    return (
+                      <>
+                        {blanks.map(renderHpField)}
+                        {notes.length > 0 && (
+                          <div className={styles.notesBlock}>
+                            {notes.map((f) => (
+                              <div key={f.id} className={styles.sensesNote}>
+                                {f.value}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+            );
+          }
+
+          // ── Standard layout ──────────────────────────────────────────────
           const skillRows = effectiveWritableFields.filter((f) => f.type === 'skill-row');
           const otherFields = effectiveWritableFields.filter((f) => f.type !== 'skill-row');
           return (
@@ -638,6 +718,14 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
                       return (
                         <div key={f.id} className={styles.sectionDivider}>
                           {f.label}
+                        </div>
+                      );
+                    }
+                    if (f.type === 'display') {
+                      return (
+                        <div key={f.id} className={styles.displayField}>
+                          <span className={styles.displayLabel}>{f.label}:</span>
+                          <span className={styles.displayValue}>{f.value}</span>
                         </div>
                       );
                     }

@@ -31,6 +31,11 @@ export function skillField(label: string, rank: ProficiencyRank): WritableField 
   return { id: crypto.randomUUID(), label, type: 'skill-row', rank };
 }
 
+/** A display-only text field — renders as a labelled value, no blank for writing. */
+export function displayField(label: string, value: string): WritableField {
+  return { id: crypto.randomUUID(), label, type: 'display', value };
+}
+
 // Re-export nextId for templates that need a unique card id
 export { nextId };
 

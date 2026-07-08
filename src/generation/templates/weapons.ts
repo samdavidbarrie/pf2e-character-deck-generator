@@ -86,7 +86,7 @@ function inferGroup(attack: CharacterAttack): string | undefined {
 }
 
 function buildMainCard(attack: CharacterAttack): CardModel {
-  const displayName = attack.display ?? attack.name;
+  const title = attack.name.replace(/^special\s+unarmed\s+/i, '').trim();
   const die = attack.damageDice ?? 'd?';
   const type = normaliseDamageType(attack.damageType ?? '');
 
@@ -108,8 +108,7 @@ function buildMainCard(attack: CharacterAttack): CardModel {
   const traits = [...new Set([...attack.traits, 'Attack'])];
 
   return defaultCard({
-    title: displayName,
-    subtitle: attack.isUnarmed ? 'Unarmed Attack' : 'Weapon',
+    title,
     category: 'weapon',
     stableKey: buildStableKey('weapon', attack.name),
     source: { system: 'generated', runes: attack.runes },
@@ -127,9 +126,7 @@ function buildMainCard(attack: CharacterAttack): CardModel {
 function buildRuneCard(runeName: string): CardModel {
   return defaultCard({
     // Use the bare rune name (e.g. "Astral") so the AoN lookup matches exactly.
-    // The subtitle "Property Rune" provides the context.
     title: runeName,
-    subtitle: 'Property Rune',
     // 'equipment' routes the card through the full equipment enrichment pipeline
     // (variant matching, usage, price, activateTag, activation section splitting).
     category: 'equipment',

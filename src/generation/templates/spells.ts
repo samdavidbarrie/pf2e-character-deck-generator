@@ -36,15 +36,15 @@ function buildSpellCard(spell: CharacterSpell, isFocus: boolean): CardModel {
     : buildStableKey('spell', spell.tradition ?? 'unknown', `rank-${spell.rank}`, spell.name);
 
   const subtitle = isFocus
-    ? `Focus Spell · ${spell.tradition ?? ''}`
-    : `Rank ${spell.rank} · ${spell.tradition ?? ''}`;
+    ? undefined
+    : `Rank ${spell.rank} · ${spell.tradition ?? ''}`
+        .trim()
+        .replace(/^·\s*|·\s*$/g, '')
+        .trim() || undefined;
 
   return defaultCard({
     title: spell.name,
-    subtitle: subtitle
-      .trim()
-      .replace(/^·\s*|·\s*$/g, '')
-      .trim(),
+    subtitle,
     category,
     stableKey,
     source: {
