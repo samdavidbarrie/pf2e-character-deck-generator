@@ -96,7 +96,9 @@ function getRankLabel(card: CardModel): string {
     'creature-summary': 'Creature',
     'creature-skill': 'Skills',
     'creature-attack': 'Attack',
-    'creature-action': 'Action',
+    // Creature-action cards may be passive (familiar abilities, passive companion
+    // features) — show 'Passive' when there is no action cost.
+    'creature-action': card.rules.actionCost ? 'Action' : 'Passive',
   };
   return labelMap[card.category] ?? '';
 }

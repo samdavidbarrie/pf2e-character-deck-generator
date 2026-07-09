@@ -4,6 +4,13 @@
  */
 
 import type { ActionCost, CardCategory, CardModel } from '../model/cards';
+import type {
+  AbilityKey,
+  CharacterAction,
+  CharacterAttack,
+  LinkedCreature,
+  ProficiencyRank,
+} from '../model/character';
 import { buildEquipmentDescription, filterEquipmentDescription } from './equipmentVariantMatcher';
 
 /** Direct endpoint — override with VITE_AON_PROXY_URL to route through a CORS proxy. */
@@ -681,6 +688,304 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
   }
 
   return { ...card, rules, source, subtitle, writableFields };
+}
+
+// ---------------------------------------------------------------------------
+// Animal companion enrichment
+// ---------------------------------------------------------------------------
+
+interface CompanionAonData {
+  aonUrl?: string;
+  traits: string[];
+  size?: string;
+  attacks: CharacterAttack[];
+  abilityMods: Partial<Record<AbilityKey, number>>;
+  hp?: number;
+  trainedSkills: string[];
+  senses: string[];
+  speed?: number;
+  special?: string;
+  supportBenefit?: string;
+  advancedManeuver?: {
+    name: string;
+    actionCost: string;
+    traits: string[];
+    description: string;
+  };
+}
+
+function capitalizeFirst(s: string): string {
+  if (!s) return s;
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/**
+ * Parse the AoN companion entry text (after HTML stripping) into structured data.
+ *
+ * AoN companion text is split by ' --- ':
+ *   parts[0] = intro  (traits, source, description)
+ *   parts[1] = stats block (Size, Melee, Str/Dex/…, Hit Points, Skill, Senses,
+ *              Speed, Special, Support Benefit, Advanced Maneuver name)
+ *   parts[2+] = advanced maneuver action description
+ */
+function parseCompanionText(rawText: string, rawTraits: string[]): CompanionAonData {
+  const plain = stripHtml(rawText);
+  const parts = plain.split(' --- ');
+  // The stats block is always parts[1] when there is more than one section;
+  // fall back to the full text if the separator is absent.
+  const statsText = parts.length >= 2 ? parts[1] : plain;
+  const maneuverText = parts.length >= 3 ? parts.slice(2).join(' --- ') : '';
+
+  // ── Attacks ──────────────────────────────────────────────────────────────
+  // Format: "Melee <icon_stripped> name (traits), Damage NdM type"
+  const attacks: CharacterAttack[] = [];
+  const attackRe =
+    /Melee\s+(?:\S+\s+)?(\w+(?:\s+\w+)?)\s*\(([^)]*)\),\s*Damage\s+([\d]+d[\d]+)\s+([\w]+)/gi;
+  let m: RegExpExecArray | null;
+  while ((m = attackRe.exec(statsText)) !== null) {
+    const name = capitalizeFirst(m[1].trim().toLowerCase());
+    const traits = m[2]
+      .split(',')
+      .map((t) => capitalizeFirst(t.trim()))
+      .filter(Boolean);
+    attacks.push({
+      name,
+      traits: [...traits, 'Unarmed'],
+      damageDice: m[3],
+      damageType: capitalizeFirst(m[4]),
+      isUnarmed: true,
+    });
+  }
+
+  // ── Ability modifiers ────────────────────────────────────────────────────
+  const statsM =
+    /Str\s*([+-]\d+),\s*Dex\s*([+-]\d+),\s*Con\s*([+-]\d+),\s*Int\s*([+-]\d+),\s*Wis\s*([+-]\d+),\s*Cha\s*([+-]\d+)/i.exec(
+      statsText,
+    );
+  const abilityMods: Partial<Record<AbilityKey, number>> = {};
+  if (statsM) {
+    abilityMods.str = parseInt(statsM[1], 10);
+    abilityMods.dex = parseInt(statsM[2], 10);
+    abilityMods.con = parseInt(statsM[3], 10);
+    abilityMods.int = parseInt(statsM[4], 10);
+    abilityMods.wis = parseInt(statsM[5], 10);
+    abilityMods.cha = parseInt(statsM[6], 10);
+  }
+
+  // ── HP ───────────────────────────────────────────────────────────────────
+  const hpM = /Hit Points\s+(\d+)/i.exec(statsText);
+  const hp = hpM ? parseInt(hpM[1], 10) : undefined;
+
+  // ── Size ─────────────────────────────────────────────────────────────────
+  const sizeM = /Size\s+(\w+)/i.exec(statsText);
+  const size = sizeM ? capitalizeFirst(sizeM[1]) : undefined;
+
+  // ── Skills ───────────────────────────────────────────────────────────────
+  const skillM = /Skills?\s+([\w\s,()]+?)(?=\s+(?:Senses|Speed|Special|Support|Advanced)|$)/i.exec(
+    statsText,
+  );
+  const trainedSkills = skillM
+    ? skillM[1]
+        .split(',')
+        .map((s) => capitalizeFirst(s.trim()))
+        .filter(Boolean)
+    : [];
+
+  // ── Senses ───────────────────────────────────────────────────────────────
+  const sensesM = /Senses\s+(.+?)(?=\s+Speed\s+\d|\s+Special\s|\s+Support\s|\s+Advanced\s|$)/i.exec(
+    statsText,
+  );
+  const senses = sensesM
+    ? sensesM[1]
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : [];
+
+  // ── Speed ─────────────────────────────────────────────────────────────────
+  const speedM = /Speed\s+(\d+)\s*(?:feet|foot)/i.exec(statsText);
+  const speed = speedM ? parseInt(speedM[1], 10) : undefined;
+
+  // ── Special ability ───────────────────────────────────────────────────────
+  const specialM = /Special\s+(.+?)(?=\s+Support Benefit\s|\s+Advanced Maneuver\s|$)/is.exec(
+    statsText,
+  );
+  const special = specialM ? specialM[1].trim() : undefined;
+
+  // ── Support benefit ───────────────────────────────────────────────────────
+  const supportM = /Support Benefit\s+(.+?)(?=\s+Advanced Maneuver\s|$)/is.exec(statsText);
+  const supportBenefit = supportM ? supportM[1].trim() : undefined;
+
+  // ── Advanced maneuver name ────────────────────────────────────────────────
+  const advNameM = /Advanced Maneuver\s+([\w\s']+?)(?:\s+---|\s*$)/is.exec(statsText);
+  const maneuverName = advNameM ? advNameM[1].trim() : undefined;
+
+  // ── Advanced maneuver description ─────────────────────────────────────────
+  let advancedManeuver: CompanionAonData['advancedManeuver'] | undefined;
+  if (maneuverName && maneuverText) {
+    // Try to extract traits listed before "Source" in the maneuver header.
+    const traitM = /^[\w\s']+?\s+([\w,\s]+?)\s+Source/i.exec(maneuverText);
+    const maneuverTraits = traitM
+      ? traitM[1]
+          .split(/[,\s]+/)
+          .map((t) => capitalizeFirst(t.trim()))
+          .filter(Boolean)
+      : [];
+    // Description follows "Source … pg. N" metadata.
+    const descM = /Source\s+.+?pg\.\s*\d+\s*([\s\S]+)$/i.exec(maneuverText);
+    const description = descM ? descM[1].trim() : maneuverText.trim();
+    advancedManeuver = {
+      name: maneuverName,
+      actionCost: '1',
+      traits: maneuverTraits,
+      description,
+    };
+  }
+
+  return {
+    aonUrl: undefined,
+    traits: rawTraits.map(capitalizeFirst),
+    size,
+    attacks,
+    abilityMods,
+    hp,
+    trainedSkills,
+    senses,
+    speed,
+    special,
+    supportBenefit,
+    advancedManeuver,
+  };
+}
+
+async function fetchAnimalCompanionFromAon(animalName: string): Promise<CompanionAonData | null> {
+  // Try the specific Companion type first.  If the AoN index uses a different
+  // type label, fall back to a name-only search and filter by URL pattern.
+  const buildBody = (filter?: object) => ({
+    query: {
+      bool: {
+        must: [{ term: { 'name.keyword': animalName } }],
+        ...(filter ? { filter: [filter] } : {}),
+      },
+    },
+    _source: ['name', 'type', 'text', 'trait', 'url'],
+    size: 5,
+  });
+
+  const attempts = [
+    // Most likely type name
+    buildBody({ terms: { type: ['Companion', 'Animal Companion'] } }),
+    // Broader fallback — pick the hit whose URL contains 'Companions'
+    buildBody(),
+  ];
+
+  for (const body of attempts) {
+    try {
+      const res = await fetch(AON_ES, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) continue;
+      const json = (await res.json()) as {
+        hits?: { hits?: Array<{ _source: Record<string, unknown> }> };
+      };
+      const hits = json.hits?.hits ?? [];
+      if (hits.length === 0) continue;
+      // Prefer hits whose URL indicates a companion page.
+      const hit =
+        hits.find((h) => ((h._source.url as string) ?? '').toLowerCase().includes('companions')) ??
+        hits[0];
+      const parsed = parseCompanionText(
+        (hit._source.text as string) ?? '',
+        (hit._source.trait as string[]) ?? [],
+      );
+      const rawUrl = hit._source.url as string | undefined;
+      return { ...parsed, aonUrl: rawUrl ? `${AON_BASE}${rawUrl}` : undefined };
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
+/**
+ * Enrich animal companions in the character's linked creatures with data
+ * fetched from AoN (attacks, stats, special, support benefit, advanced maneuver).
+ * Companions that already have full stats are skipped.
+ * Enrichment is best-effort — failures are silently skipped per creature.
+ */
+export async function enrichLinkedCreaturesFromAon(
+  linkedCreatures: LinkedCreature[],
+): Promise<{ creatures: LinkedCreature[]; changed: boolean }> {
+  let changed = false;
+  const result: LinkedCreature[] = [];
+
+  for (const creature of linkedCreatures) {
+    if (creature.kind !== 'animal-companion' || !creature.subtype || creature.hasFullStats) {
+      result.push(creature);
+      continue;
+    }
+
+    const data = await fetchAnimalCompanionFromAon(creature.subtype);
+    if (!data) {
+      result.push(creature);
+      continue;
+    }
+
+    // Build CharacterAction entries from the companion's ability sections.
+    const actions: CharacterAction[] = [];
+    if (data.special) {
+      actions.push({
+        name: 'Special Ability',
+        actionCost: 'passive',
+        traits: ['Animal'],
+        summary: data.special,
+      });
+    }
+    if (data.supportBenefit) {
+      actions.push({
+        name: 'Support',
+        actionCost: '1',
+        traits: ['Animal'],
+        summary: data.supportBenefit,
+      });
+    }
+    if (data.advancedManeuver) {
+      actions.push({
+        name: data.advancedManeuver.name,
+        actionCost: data.advancedManeuver.actionCost,
+        traits: data.advancedManeuver.traits,
+        summary: data.advancedManeuver.description,
+      });
+    }
+
+    const updated: LinkedCreature = {
+      ...creature,
+      hasFullStats: true,
+      traits:
+        data.traits.length > 0
+          ? [...new Set(['Animal', 'Companion', ...data.traits])]
+          : creature.traits,
+      size: data.size ?? creature.size,
+      hp: data.hp ?? creature.hp,
+      senses: data.senses.length > 0 ? data.senses : creature.senses,
+      speed: data.speed ?? creature.speed,
+      abilityMods:
+        Object.keys(data.abilityMods).length > 0 ? data.abilityMods : creature.abilityMods,
+      skills:
+        data.trainedSkills.length > 0
+          ? data.trainedSkills.map((s) => ({ skill: s, rank: 'trained' as ProficiencyRank }))
+          : creature.skills,
+      attacks: data.attacks.length > 0 ? data.attacks : creature.attacks,
+      actions: actions.length > 0 ? actions : creature.actions,
+    };
+
+    result.push(updated);
+    changed = true;
+  }
+
+  return { creatures: result, changed };
 }
 
 // ---------------------------------------------------------------------------

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { generateDeck, type GenerationWarning } from '../generation/generateDeck';
+import { generateCreatureCards } from '../generation/templates/creatures';
 import { detectSource } from '../import/detectSource';
 import { parsePathbuilder } from '../import/pathbuilderAdapter';
 import { validateImport, type ValidationResult } from '../import/validateImport';
@@ -10,6 +11,7 @@ import {
   applyAonDataToCard,
   applyRuneDescriptions,
   detectFeatMerges,
+  enrichLinkedCreaturesFromAon,
   fetchAonData,
   fetchRuneDescriptions,
 } from '../rules/aonEnrichment';
@@ -300,6 +302,52 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
       cards = withCompanions;
 
+      // Enrich animal companions (and familiars) from AoN — fetch attacks,
+      // stats, special abilities, support benefit and advanced maneuver.
+      const linkedCreatures = project.character.linkedCreatures ?? [];
+      let enrichedCharacter = project.character;
+      if (linkedCreatures.length > 0) {
+        const { creatures: enrichedCreatures, changed } =
+          await enrichLinkedCreaturesFromAon(linkedCreatures);
+        if (changed) {
+          // Preserve any user edits keyed by stableKey before regeneration.
+          const userEditsByKey = new Map<string, CardModel['userEdits']>();
+          for (const card of cards) {
+            if (card.category.startsWith('creature-') && card.userEdits.edited) {
+              userEditsByKey.set(card.stableKey, card.userEdits);
+            }
+          }
+
+          // Regenerate creature cards from the enriched creature data.
+          const newCreatureCards: CardModel[] = [];
+          enrichedCreatures.forEach((creature, i) => {
+            const generated = generateCreatureCards(creature, i);
+            newCreatureCards.push(
+              ...generated.map((card) => {
+                const saved = userEditsByKey.get(card.stableKey);
+                return saved ? { ...card, userEdits: saved } : card;
+              }),
+            );
+          });
+
+          // Splice new creature cards in place of old ones, before reminder cards.
+          const nonCreature = cards.filter((c) => !c.category.startsWith('creature-'));
+          const firstReminderIdx = nonCreature.findIndex(
+            (c) => c.category === 'reminder' || c.category === 'manual',
+          );
+          cards =
+            firstReminderIdx === -1
+              ? [...nonCreature, ...newCreatureCards]
+              : [
+                  ...nonCreature.slice(0, firstReminderIdx),
+                  ...newCreatureCards,
+                  ...nonCreature.slice(firstReminderIdx),
+                ];
+
+          enrichedCharacter = { ...project.character, linkedCreatures: enrichedCreatures };
+        }
+      }
+
       // Enrich weapon property rune descriptions from AoN
       const runeMap = await fetchRuneDescriptions(cards);
       if (runeMap.size > 0) {
@@ -317,6 +365,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({
         project: {
           ...project,
+          character: enrichedCharacter,
           cards,
           updatedAt: new Date().toISOString(),
         },
