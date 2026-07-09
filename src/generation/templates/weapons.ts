@@ -2,6 +2,7 @@ import type { CardModel } from '../../model/cards';
 import type { CharacterAttack, CharacterModel } from '../../model/character';
 import { SUMMARY_PLACEHOLDER } from '../../rules/aonEnrichment';
 import { buildStableKey } from '../../rules/nameNormalization';
+import { computeEffectiveItemLevel } from '../../rules/weaponPricing';
 import { defaultCard } from './_helpers';
 
 // ---------------------------------------------------------------------------
@@ -62,7 +63,7 @@ const NAME_TO_GROUP: Record<string, string> = {
   dart: 'dart',
 };
 
-// Damage type abbreviation → readable label
+// ---------------------------------------------------------------------------
 const DAMAGE_TYPE_LABEL: Record<string, string> = {
   S: 'Slashing',
   P: 'Piercing',
@@ -177,8 +178,15 @@ function buildMainCard(attack: CharacterAttack): CardModel {
   // Runes line: fundamental runes first, then property runes
   const allRunes = [...(attack.fundamentalRunes ?? []), ...(attack.runes ?? [])];
   const runeNote = allRunes.length > 0 ? `Runes: ${allRunes.join(', ')}` : '';
-  const summaryParts = ['Hit: + ___', damageLine, ...extraLines, runeNote].filter(Boolean);
+  const materialNote = attack.material ? `Material: ${attack.material}` : '';
+  const summaryParts = ['Hit: + ___', damageLine, ...extraLines, runeNote, materialNote].filter(
+    Boolean,
+  );
   const summary = summaryParts.join('\n');
+
+  // Effective item level from fundamental runes AND material (pre-enrichment;
+  // AoN will supply or raise the base weapon level if this is undefined).
+  const itemLevel = computeEffectiveItemLevel(attack.fundamentalRunes ?? [], attack.material);
 
   // Merge base traits + traits granted by property runes, deduplicated.
   // For named unarmed attacks (monk stances / ki powers), seed from the
@@ -210,6 +218,7 @@ function buildMainCard(attack: CharacterAttack): CardModel {
       actionCost: '1',
       traits,
       summary,
+      ...(itemLevel !== undefined ? { level: itemLevel } : {}),
       ...(range ? { range } : {}),
       ...(extraSections.length > 0 ? { extraSections } : {}),
     },

@@ -1,7 +1,22 @@
+/**
+ * Registers --title-len as a typed integer so CSS calc() can divide by it.
+ * Each title span sets this via an inline style; clamp() then scales the
+ * font-size down for long titles without any JavaScript measurement.
+ *
+ * Calibration: 195 ÷ 19 ≈ 10pt (threshold), 195 ÷ 22 ≈ 8.9pt ("HORIZON THUNDER SPHERE")
+ */
+@property --title-len {
+  syntax: '<integer>';
+  inherits: false;
+  initial-value: 10;
+}
+
 .card {
   text-align: left;
-  width: 100%;
-  aspect-ratio: 63 / 88;
+  width: 63mm;
+  height: 88mm;
+  min-width: 63mm;
+  min-height: 88mm;
   /* Thick accent border with thin gold inner line — like physical PF2e spell cards */
   border: 2mm solid var(--pf-card-accent);
   box-shadow: inset 0 0 0 1.5px var(--pf-trait-gold, #d8c483);
@@ -57,6 +72,18 @@
 }
 .themeReminder {
   --pf-card-accent: var(--pf-accent-reminder, #4a5a4a);
+}
+.themeCreature {
+  --pf-card-accent: var(--pf-accent-creature, #2a5a3a);
+}
+
+/* Inline writable blank — rendered in place of ___ in card body text. */
+.inlineBlank {
+  display: inline-block;
+  min-width: 2.2em;
+  border-bottom: 0.8pt solid currentColor;
+  vertical-align: -2pt;
+  margin: 0 1pt;
 }
 
 .card.selected {
@@ -165,7 +192,8 @@
    icon stays hugged to the title text, not floating to the right. */
 .title {
   font-family: var(--pf-title-font, 'Oswald', 'Arial Narrow', system-ui, sans-serif);
-  font-size: 10pt;
+  /* Scale down long titles. Threshold: 16 chars = 10pt, longer scales proportionally. */
+  font-size: clamp(5pt, calc(160pt / var(--title-len)), 10pt);
   font-weight: 600;
   line-height: 1.1;
   text-transform: uppercase;
@@ -174,7 +202,15 @@
   flex: 0 1 auto;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
+  text-overflow: clip;
+}
+
+/* Very long titles (40+ chars): wrap to two lines at a readable size rather
+   than squishing to 4–5pt. Two lines at 7pt fit in the 7mm card header. */
+.title[data-long] {
+  white-space: normal;
+  font-size: 7pt;
+  text-overflow: clip;
 }
 
 /* Wraps title text + inline action cost together on the left; flex:1 pushes
@@ -586,6 +622,32 @@
   min-width: 80px;
 }
 
+/* User-typed notes section — appears at the bottom of any card that has notes. */
+.userNotes {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  border-top: 0.5pt dotted #aaa;
+  padding-top: 2px;
+  margin-top: auto;
+}
+
+.userNotesLabel {
+  font-size: 5.5pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #666;
+}
+
+.userNotesContent {
+  font-size: 6pt;
+  color: var(--pf-card-ink, #15120f);
+  font-style: italic;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .checkboxes {
   display: flex;
   gap: 2px;
@@ -733,8 +795,7 @@
 
 /* Print overrides applied via forPrint class */
 .forPrint {
-  width: 63mm;
-  height: 88mm;
+  /* Dimensions are already set on .card; this class adds print-specific behaviour. */
   font-size: 7pt;
   page-break-inside: avoid;
   cursor: default;

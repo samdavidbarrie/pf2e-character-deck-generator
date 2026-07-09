@@ -50,7 +50,6 @@ export function generateSummaryCards(char: CharacterModel): CardModel[] {
 
         // Q2 — Defence (top-right)
         { ...blankField('AC', 'sm'), quadrant: 2 },
-        { ...blankField('Shield HP', 'sm'), quadrant: 2 },
 
         // Q3 — Saves & Perception (bottom-left, TEML rows)
         { ...skillField('Fort', fortRank), quadrant: 3 },

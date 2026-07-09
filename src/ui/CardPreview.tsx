@@ -8,11 +8,10 @@ import styles from './CardPreview.module.css';
 // PF2e card visual helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Extract tradition name from subtitle strings like "Rank 3 · Arcane" or "Focus Spell · Primal". */
-function parseTradition(subtitle: string | undefined): string {
-  if (!subtitle) return '';
-  const after = subtitle.split('·').pop()?.trim().toLowerCase() ?? '';
-  return after;
+/** Derive tradition from a spell card's traits. */
+function traditionFromTraits(traits: string[]): string {
+  const known = new Set(['arcane', 'divine', 'occult', 'primal']);
+  return traits.find((t) => known.has(t.toLowerCase()))?.toLowerCase() ?? '';
 }
 
 const TRADITION_CLASS: Record<string, string> = {
@@ -36,7 +35,7 @@ interface CardTabInfo {
 
 function getCardTabInfo(card: CardModel): CardTabInfo {
   if (card.category === 'spell' || card.category === 'focus-spell') {
-    const tradition = parseTradition(card.subtitle);
+    const tradition = traditionFromTraits(card.rules.traits);
     if (TRADITION_LABEL[tradition]) {
       return { tabLabel: TRADITION_LABEL[tradition], themeClass: TRADITION_CLASS[tradition] };
     }
@@ -58,6 +57,10 @@ function getCardTabInfo(card: CardModel): CardTabInfo {
     summary: { tabLabel: '', themeClass: styles.themeSummary },
     reminder: { tabLabel: '', themeClass: styles.themeReminder },
     manual: { tabLabel: '', themeClass: '' },
+    'creature-summary': { tabLabel: 'Creature', themeClass: styles.themeCreature },
+    'creature-skill': { tabLabel: 'Creature', themeClass: styles.themeCreature },
+    'creature-attack': { tabLabel: 'Creature', themeClass: styles.themeCreature },
+    'creature-action': { tabLabel: 'Creature', themeClass: styles.themeCreature },
   };
   return categoryTab[card.category] ?? { tabLabel: '', themeClass: '' };
 }
@@ -73,9 +76,15 @@ function getRankLabel(card: CardModel): string {
   }
   if (card.category === 'focus-spell') {
     if (isCantrip) return 'Cantrip';
-    return card.rules.rank !== undefined ? `Focus ${card.rules.rank}` : 'Focus';
+    // Focus spells have no fixed rank — they scale with the character's level.
+    return 'Focus';
   }
   if (card.category === 'equipment' && card.rules.level !== undefined) {
+    return `Item ${card.rules.level}`;
+  }
+  // Weapons with a known item level (from runes/material/AoN base) show it
+  // in the top-right corner just like equipment cards do.
+  if (card.category === 'weapon' && card.rules.level !== undefined) {
     return `Item ${card.rules.level}`;
   }
   // Feats: include the feat's own minimum level (filled by AoN enrichment).
@@ -89,6 +98,12 @@ function getRankLabel(card: CardModel): string {
     'free-action': 'Free',
     weapon: 'Weapon',
     equipment: 'Equipment',
+    'creature-summary': 'Creature',
+    'creature-skill': 'Skills',
+    'creature-attack': 'Attack',
+    // Creature-action cards may be passive (familiar abilities, passive companion
+    // features) — show 'Passive' when there is no action cost.
+    'creature-action': card.rules.actionCost ? 'Action' : 'Passive',
   };
   return labelMap[card.category] ?? '';
 }
@@ -190,17 +205,20 @@ const INLINE_ACTION_ICONS: [string, string][] = [
 ].filter(([, src]) => src) as [string, string][];
 
 const INLINE_ACTION_SPLIT_RE = new RegExp(
-  `(\\*\\*[^*]+\\*\\*|${INLINE_ACTION_ICONS.map(([s]) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`,
+  `(\\*\\*[^*]+\\*\\*|_{3,}|${INLINE_ACTION_ICONS.map(([s]) => s.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')).join('|')})`,
   'g',
 );
 
-/** Render text with **bold** markers as <strong> and Unicode action symbols as icon images. */
+/** Render text with **bold** markers as <strong>, ___ sequences as inline blanks, and Unicode action symbols as icon images. */
 function renderBold(text: string): React.ReactNode {
   const parts = text.split(INLINE_ACTION_SPLIT_RE);
   if (parts.length === 1) return text;
   return parts.map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**')) {
       return <strong key={i}>{part.slice(2, -2)}</strong>;
+    }
+    if (/^_{3,}$/.test(part)) {
+      return <span key={i} className={styles.inlineBlank} />;
     }
     const icon = INLINE_ACTION_ICONS.find(([s]) => s === part);
     if (icon) {
@@ -221,6 +239,16 @@ function ActionCostDisplay({ cost }: { cost: ActionCost }) {
   if (icon) {
     return <img src={icon} className={styles.actionIcon} alt={ACTION_COST_LABEL[cost]} />;
   }
+  // "2+" actions: show the 2-action image followed by a "+" indicator.
+  if (cost === '2+') {
+    const twoIcon = ACTION_ICON['2'];
+    return (
+      <span className={styles.actionRange}>
+        {twoIcon && <img src={twoIcon} className={styles.actionIcon} alt="2 actions" />}
+        <span className={styles.actionRangeDash}>+</span>
+      </span>
+    );
+  }
   const range = ACTION_RANGE_PARTS[cost];
   if (range) {
     return (
@@ -238,6 +266,8 @@ function ActionCostDisplay({ cost }: { cost: ActionCost }) {
 export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude }: Props) {
   const splitCount = !forPrint && !card.continuationOf ? splitOverflowCards([card]).length : 1;
 
+  // Title font scaling is handled in CSS via the --title-len custom property.
+
   // For spell cards, only show Spell DC when defense is a save, Spell Attack when it's a
   // spell-attack roll. If neither applies (e.g. auto-hit spells like Force Barrage) hide both.
   const isSpellCard = card.category === 'spell' || card.category === 'focus-spell';
@@ -248,7 +278,9 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
 
   // For skill-action cards, show the relevant skill above the summary and remove it from the bottom.
   const isSkillAction = card.category === 'skill-action' && !card.continuationOf;
-  const hasItemLevel = card.category === 'equipment' && card.rules.level !== undefined;
+  // Item level always shows in the top-right corner via getRankLabel; never
+  // duplicate it in the metadata row.
+  const hasItemLevel = false;
   const skillLabel = isSkillAction ? (SKILL_FOR_ACTION[card.title] ?? 'Skill') : null;
 
   // Scale body text to match card density — applied in both deck-builder and print views
@@ -355,7 +387,11 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
             </button>
           )}
           <div className={styles.titleGroup}>
-            <span className={styles.title}>
+            <span
+              className={styles.title}
+              style={{ '--title-len': card.title.length } as React.CSSProperties}
+              data-long={card.title.length >= 40 ? '' : undefined}
+            >
               {card.continuationOf && <span className={styles.backBadge}>↩</span>}
               {card.title}
               {splitCount > 1 && <span className={styles.splitBadge}>×{splitCount}</span>}
@@ -697,7 +733,10 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
 
           // ── Standard layout ──────────────────────────────────────────────
           const skillRows = effectiveWritableFields.filter((f) => f.type === 'skill-row');
-          const otherFields = effectiveWritableFields.filter((f) => f.type !== 'skill-row');
+          // Notes-type fields are rendered via the dedicated userNotes section below.
+          const otherFields = effectiveWritableFields.filter(
+            (f) => f.type !== 'skill-row' && f.type !== 'notes',
+          );
           return (
             <>
               {skillRows.length > 0 && (
@@ -753,9 +792,7 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
                               </span>
                             ))}
                           </span>
-                        ) : f.type === 'notes' ? (
-                          <span className={styles.notesLine}>______________________</span>
-                        ) : (
+                        ) : f.type === 'notes' ? null : ( // Should not be reached — notes are filtered out of otherFields.
                           <span className={styles.blankBox}>
                             {' '.repeat(f.size === 'lg' ? 20 : f.size === 'md' ? 12 : 6)}
                           </span>
@@ -774,6 +811,14 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
             <a href={card.source.aonUrl} target="_blank" rel="noopener noreferrer" tabIndex={-1}>
               AoN ↗
             </a>
+          </div>
+        )}
+
+        {/* User notes — shown on ALL card types when the notes textarea has content. */}
+        {card.userEdits.notes && (
+          <div className={styles.userNotes}>
+            <span className={styles.userNotesLabel}>Notes</span>
+            <span className={styles.userNotesContent}>{card.userEdits.notes}</span>
           </div>
         )}
       </div>

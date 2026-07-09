@@ -1,0 +1,365 @@
+{
+  "success": true,
+  "build": {
+    "name": "Vassora Morgethai ",
+    "class": "Druid",
+    "dualClass": null,
+    "level": 7,
+    "xp": 0,
+    "ancestry": "Elf",
+    "heritage": "Ancient Elf",
+    "background": "Borderlands Pioneer",
+    "alignment": "N",
+    "gender": "Female",
+    "age": "263",
+    "deity": "Green Faith",
+    "size": 2,
+    "sizeName": "Medium",
+    "keyability": "wis",
+    "languages": ["Common", "Draconic", "Elven", "Fey", "Jotun"],
+    "rituals": [],
+    "resistances": [],
+    "inventorMods": [],
+    "abilities": {
+      "str": 10,
+      "dex": 18,
+      "con": 12,
+      "int": 16,
+      "wis": 20,
+      "cha": 10,
+      "breakdown": {
+        "ancestryFree": ["Wis"],
+        "ancestryBoosts": ["Dex", "Int"],
+        "ancestryFlaws": ["Con"],
+        "backgroundBoosts": ["Wis", "Dex"],
+        "classBoosts": ["Wis"],
+        "mapLevelledBoosts": {
+          "1": ["Dex", "Wis", "Con", "Int"],
+          "2": ["Con"],
+          "3": ["Int"],
+          "4": ["Dex"],
+          "5": ["Wis"],
+          "7": ["Wis"]
+        }
+      }
+    },
+    "attributes": {
+      "ancestryhp": 6,
+      "classhp": 8,
+      "bonushp": 0,
+      "bonushpPerLevel": 0,
+      "speed": 30,
+      "speedBonus": 5
+    },
+    "proficiencies": {
+      "classDC": 2,
+      "perception": 4,
+      "fortitude": 4,
+      "reflex": 4,
+      "will": 4,
+      "heavy": 0,
+      "medium": 2,
+      "light": 2,
+      "unarmored": 2,
+      "advanced": 0,
+      "martial": 0,
+      "simple": 2,
+      "unarmed": 2,
+      "castingArcane": 2,
+      "castingDivine": 0,
+      "castingOccult": 0,
+      "castingPrimal": 4,
+      "acrobatics": 2,
+      "arcana": 2,
+      "athletics": 2,
+      "crafting": 2,
+      "deception": 0,
+      "diplomacy": 2,
+      "intimidation": 0,
+      "medicine": 4,
+      "nature": 6,
+      "occultism": 2,
+      "performance": 0,
+      "religion": 2,
+      "society": 0,
+      "stealth": 2,
+      "survival": 4,
+      "thievery": 0,
+      "piloting": 0,
+      "computers": 0
+    },
+    "mods": {},
+    "feats": [
+      ["Animal Companion", null, "Awarded Feat", 1],
+      ["Shield Block", null, "Awarded Feat", 1],
+      ["Train Animal", null, "Awarded Feat", 1],
+      ["Additional Lore", null, "Awarded Feat", 1],
+      ["Alchemical Crafting", null, "Awarded Feat", 2],
+      ["Storm Born", null, "Awarded Feat", 2],
+      ["Additional Companion", null, "Awarded Feat", 4],
+      ["Ancient Elf", null, "Heritage", 1, "Heritage Feat", "parentChoice", null],
+      [
+        "Wizard Dedication",
+        null,
+        "Archetype Feat",
+        1,
+        "Heritage FeatMultitalented",
+        "childChoice",
+        "Heritage Feat"
+      ],
+      ["Animal Empathy", null, "Class Feat", 1, "Druid voice of nature", "standardChoice", null],
+      ["Elven Lore", null, "Ancestry Feat", 1, "Elf Feat 1", "standardChoice", null],
+      ["Natural Medicine", null, "Skill Feat", 2, "Skill Feat 2", "standardChoice", null],
+      ["Order Explorer", null, "Class Feat", 2, "Druid Feat 2", "standardChoice", null],
+      [
+        "Herbalist Dedication",
+        null,
+        "Archetype Feat",
+        2,
+        "Free Archetype 2",
+        "standardChoice",
+        null
+      ],
+      ["Fresh Ingredients", null, "General Feat", 3, "General Feat 3", "standardChoice", null],
+      ["Cat Fall", null, "Skill Feat", 4, "Skill Feat 4", "standardChoice", null],
+      ["Order Magic", null, "Class Feat", 4, "Druid Feat 4", "standardChoice", null],
+      [
+        "Basic Wizard Spellcasting",
+        null,
+        "Archetype Feat",
+        4,
+        "Free Archetype 4",
+        "standardChoice",
+        null
+      ],
+      ["Nimble Elf", null, "Ancestry Feat", 5, "Elf Feat 5", "standardChoice", null],
+      ["Ward Medic", null, "Skill Feat", 6, "Skill Feat 6", "standardChoice", null],
+      ["Mature Animal Companion", null, "Class Feat", 6, "Druid Feat 6", "standardChoice", null],
+      ["Basic Arcana", null, "Archetype Feat", 6, "Free Archetype 6", "parentChoice", null],
+      [
+        "Reach Spell",
+        null,
+        "Wizard Feat",
+        6,
+        "Basic ArcanaFree Archetype 6",
+        "childChoice",
+        "Free Archetype 6"
+      ],
+      ["Recognize Spell", null, "General Feat", 7, "General Feat 7", "standardChoice", null]
+    ],
+    "specials": [
+      "Anathema",
+      "Animal Order",
+      "Wildsong",
+      "Voice of Nature",
+      "Low-Light Vision",
+      "School of Ars Grammatica",
+      "Storm Order",
+      "Perception Expertise",
+      "Fortitude Expertise",
+      "Storm Order",
+      "Reflex Expertise",
+      "Expert Spellcaster",
+      "Ancient Elf"
+    ],
+    "lores": [
+      ["Wilderness Type", 2],
+      ["Elf", 6]
+    ],
+    "equipmentContainers": {
+      "38a748b6-915b-4d29-99cf-1a61aa248f9b": {
+        "containerName": "Backpack",
+        "bagOfHolding": false,
+        "backpack": true,
+        "augmentations": false
+      }
+    },
+    "equipment": [
+      ["Primal Symbol", 1, "Invested"],
+      ["Healer's Toolkit", 1, "Invested"],
+      ["Bedroll", 1, "38a748b6-915b-4d29-99cf-1a61aa248f9b", "Invested"],
+      ["Waterskin", 1, "38a748b6-915b-4d29-99cf-1a61aa248f9b", "Invested"],
+      ["Rations", 2, "38a748b6-915b-4d29-99cf-1a61aa248f9b", "Invested"],
+      ["Animal Call", 1, "Invested"],
+      ["Torch", 5, "38a748b6-915b-4d29-99cf-1a61aa248f9b", "Invested"],
+      ["Backpack", 1, "Invested"],
+      ["Tent (Pup)", 1, "38a748b6-915b-4d29-99cf-1a61aa248f9b", "Invested"],
+      ["Chalk", 10, "38a748b6-915b-4d29-99cf-1a61aa248f9b", "Invested"],
+      ["Soap", 1, "38a748b6-915b-4d29-99cf-1a61aa248f9b", "Invested"],
+      ["Flint and Steel", 1, "38a748b6-915b-4d29-99cf-1a61aa248f9b", "Invested"],
+      ["Rope", 1, "38a748b6-915b-4d29-99cf-1a61aa248f9b", "Invested"],
+      ["Flower Press", 1, "Invested"]
+    ],
+    "specificProficiencies": { "trained": [], "expert": [], "master": [], "legendary": [] },
+    "weapons": [
+      {
+        "name": "Sickle",
+        "qty": 1,
+        "prof": "simple",
+        "die": "d4",
+        "pot": 0,
+        "str": "",
+        "mat": null,
+        "display": "Sickle",
+        "runes": [],
+        "damageType": "S",
+        "attack": 13,
+        "damageBonus": 0,
+        "extraDamage": [],
+        "increasedDice": false,
+        "isInventor": false,
+        "grade": ""
+      },
+      {
+        "name": "Staff",
+        "qty": 1,
+        "prof": "simple",
+        "die": "d4",
+        "pot": 0,
+        "str": "",
+        "mat": null,
+        "display": "Staff",
+        "runes": [],
+        "damageType": "B",
+        "attack": 9,
+        "damageBonus": 0,
+        "extraDamage": [],
+        "increasedDice": false,
+        "isInventor": false,
+        "grade": ""
+      }
+    ],
+    "money": { "cp": 0, "sp": 4, "gp": 3, "pp": 0 },
+    "armor": [
+      {
+        "name": "Leather Armor",
+        "qty": 1,
+        "prof": "light",
+        "pot": 0,
+        "res": "",
+        "mat": null,
+        "display": "Leather",
+        "worn": true,
+        "runes": [],
+        "grade": ""
+      },
+      {
+        "name": "Wooden Shield",
+        "qty": 1,
+        "prof": "shield",
+        "pot": 0,
+        "res": "",
+        "mat": null,
+        "display": "",
+        "worn": true,
+        "runes": [],
+        "grade": ""
+      }
+    ],
+    "spellCasters": [
+      {
+        "name": "Druid",
+        "magicTradition": "primal",
+        "spellcastingType": "prepared",
+        "ability": "wis",
+        "proficiency": 4,
+        "focusPoints": 0,
+        "innate": false,
+        "perDay": [5, 3, 3, 3, 2, 0, 0, 0, 0, 0, 0],
+        "spells": [
+          {
+            "spellLevel": 0,
+            "list": [
+              "Tangle Vine",
+              "Slashing Gust",
+              "Know the Way",
+              "Protect Companion",
+              "Healing Plaster"
+            ]
+          },
+          { "spellLevel": 1, "list": ["Jump", "Interposing Earth", "Hydraulic Push"] },
+          { "spellLevel": 2, "list": ["Loose Time's Arrow", "Heal", "Heal"] },
+          { "spellLevel": 3, "list": ["Lightning Bolt", "Blindness", "Envenom Companion"] },
+          { "spellLevel": 4, "list": ["Wall of Fire", "Grasping Earth"] }
+        ],
+        "prepared": [],
+        "blendedSpells": []
+      },
+      {
+        "name": "Archetype Wizard",
+        "magicTradition": "arcane",
+        "spellcastingType": "prepared",
+        "ability": "int",
+        "proficiency": 2,
+        "focusPoints": 0,
+        "innate": false,
+        "perDay": [2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        "spells": [
+          { "spellLevel": 0, "list": ["Detect Magic", "Message", "Shield", "Telekinetic Hand"] },
+          { "spellLevel": 1, "list": ["Force Barrage", "Illusory Disguise"] }
+        ],
+        "prepared": [
+          { "spellLevel": 0, "list": ["Shield", "Detect Magic"] },
+          { "spellLevel": 1, "list": ["Force Barrage"] },
+          { "spellLevel": 2, "list": ["Dispel Magic"] }
+        ],
+        "blendedSpells": []
+      }
+    ],
+    "focusPoints": 2,
+    "focus": {
+      "primal": {
+        "wis": {
+          "abilityBonus": 5,
+          "proficiency": 4,
+          "itemBonus": 0,
+          "focusCantrips": [],
+          "focusSpells": ["Heal Animal", "Tempest Surge"]
+        }
+      }
+    },
+    "formula": [
+      {
+        "type": "Herbalist",
+        "known": [
+          "Antidote (Lesser)",
+          "Antiplague (Lesser)",
+          "Eagle Eye Elixir (Lesser)",
+          "Elixir of Life (Minor)"
+        ]
+      }
+    ],
+    "acTotal": {
+      "acProfBonus": 9,
+      "acAbilityBonus": 4,
+      "acItemBonus": 1,
+      "acTotal": 24,
+      "shieldBonus": "2"
+    },
+    "pets": [
+      {
+        "type": "Animal Companion",
+        "name": "Galador - Mature Bear",
+        "equipment": [],
+        "animal": "Bear",
+        "mature": true,
+        "incredible": false,
+        "incredibleType": "Nimble",
+        "specializations": [],
+        "armor": "Barding, Heavy"
+      },
+      {
+        "type": "Animal Companion",
+        "name": "Rusco - Mature Cat",
+        "equipment": [],
+        "animal": "Cat",
+        "mature": true,
+        "incredible": false,
+        "incredibleType": "Nimble",
+        "specializations": [],
+        "armor": "Barding, Light"
+      }
+    ],
+    "familiars": []
+  }
+}

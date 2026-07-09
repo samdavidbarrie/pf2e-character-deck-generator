@@ -1,14 +1,18 @@
 import type { ActionCost } from '../model/cards';
 import type {
   AbilityKey,
+  CharacterAction,
   CharacterAttack,
   CharacterEquipment,
   CharacterFeat,
   CharacterModel,
   CharacterSpell,
+  CreatureKind,
+  LinkedCreature,
   ProficiencyRank,
   SkillProficiency,
 } from '../model/character';
+import { EIDOLON_REGISTRY } from './eidolonRegistry';
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -125,6 +129,224 @@ function parseFeatEntry(entry: unknown, defaultType: CharacterFeat['type']): Cha
     };
   }
   return null;
+}
+
+// ---------------------------------------------------------------------------
+// Linked creature detection
+// ---------------------------------------------------------------------------
+
+const PF2E_SKILL_SET = new Set([
+  'acrobatics',
+  'arcana',
+  'athletics',
+  'crafting',
+  'deception',
+  'diplomacy',
+  'intimidation',
+  'medicine',
+  'nature',
+  'occultism',
+  'performance',
+  'religion',
+  'society',
+  'stealth',
+  'survival',
+  'thievery',
+]);
+
+/**
+ * Summoner class features and proficiency entries that appear in `specials`
+ * but are NOT eidolon actions. Used to filter the specials list.
+ */
+const SUMMONER_NON_ACTION_SPECIALS = new Set([
+  'Manifest Eidolon',
+  'Instant Manifestation',
+  'Act Together',
+  'Share Senses',
+  'Link Spells',
+  'Evolution Feat',
+  'Shared Vigilance',
+  'Unlimited Signature Spells',
+  'Expert Spellcaster',
+  'Master Spellcaster',
+  'Simple Weapon Expertise',
+  'Weapon Specialization',
+  'Greater Eidolon Specialization',
+  'Defensive Robes',
+  'Twin Juggernauts',
+  'Shared Reflexes',
+  'Shared Resolve',
+  'Eidolon Unarmed Expertise',
+  'Eidolon Weapon Specialization',
+  'Eidolon Symbiosis',
+  'Eidolon Defensive Expertise',
+  'Eidolon Unarmed Mastery',
+  'Eidolon Defensive Mastery',
+  'Eidolon Transcendence',
+]);
+
+function isEidolonNonAction(special: string): boolean {
+  const lower = special.toLowerCase();
+  return (
+    SUMMONER_NON_ACTION_SPECIALS.has(special) ||
+    /\beidolon$/.test(lower) || // ends in " eidolon" — type identifier
+    /^eidolon\s/.test(lower) || // starts with "eidolon " — proficiency feature
+    /^shared\s/.test(lower) || // starts with "shared " — summoner feature
+    PF2E_SKILL_SET.has(lower) // skill name — granted to eidolon, not an action
+  );
+}
+
+function parseLinkedCreatures(
+  build: Record<string, unknown>,
+  specialsArr: string[],
+): LinkedCreature[] {
+  const creatures: LinkedCreature[] = [];
+
+  // --- Eidolon (Summoner class) ---
+  const charClass = str(get(build, 'class'));
+  if (charClass === 'Summoner') {
+    const eidolonTypeEntry = specialsArr.find((s) => /\beidolon$/i.test(s.trim()));
+    if (eidolonTypeEntry) {
+      // "Beast Eidolon" → subtype = "Beast"
+      const subtype = eidolonTypeEntry.replace(/\s+Eidolon$/i, '').trim() || undefined;
+
+      // Summoner convention in Pathbuilder: the deity field holds the eidolon's name.
+      const eidolonName = str(get(build, 'deity')) ?? eidolonTypeEntry;
+
+      // Extract eidolon-trained skills from specials (e.g. granted via Skilled Partner).
+      // These supplement (and may overlap with) the registry base skills.
+      const specialsTrainedSkills = new Set(
+        specialsArr.filter((s) => PF2E_SKILL_SET.has(s.toLowerCase())).map((s) => s.toLowerCase()),
+      );
+
+      // Build a set of feat names so we can exclude them from eidolon actions.
+      // Prevents ancestry/heritage feats in specials (e.g. "Versatile Human")
+      // from being treated as eidolon abilities.
+      const featNames = new Set(
+        arr<unknown>(get(build, 'feats')).flatMap((f) => {
+          const name = Array.isArray(f) ? str(f[0]) : str(get(f as object, 'name'));
+          return name ? [name] : [];
+        }),
+      );
+
+      // Resolve the registry entry for this eidolon type.
+      const registryKey = subtype?.toLowerCase() ?? '';
+      const entry = EIDOLON_REGISTRY[registryKey];
+
+      // Traits: Eidolon + registry extra traits (or fall back to just the subtype label).
+      const eidolonTraits = ['Eidolon', ...(entry?.extraTraits ?? (subtype ? [subtype] : []))];
+
+      // Skills: merge registry base skills with specials-derived trained skills.
+      const baseSkillNames = new Set((entry?.skills ?? []).map((s) => s.toLowerCase()));
+      const eidolonSkills: SkillProficiency[] = [
+        ...new Set([...baseSkillNames, ...specialsTrainedSkills]),
+      ].map((s) => ({
+        skill: s.charAt(0).toUpperCase() + s.slice(1),
+        rank: 'trained' as ProficiencyRank,
+      }));
+
+      // Attacks: use registry when available.
+      // Primary attacks carry NO preset traits or dice — the player chooses
+      // from the four standard primary options at character creation.
+      // Secondary attacks are always 1d6 Agile Finesse per the rules.
+      const eidolonAttacks: CharacterAttack[] = entry
+        ? entry.attacks.map((a) => ({
+            name: a.name,
+            damageType: a.damageType,
+            traits: a.role === 'secondary' ? ['Agile', 'Finesse', 'Unarmed'] : ['Unarmed'],
+            damageDice: a.role === 'secondary' ? 'd6' : undefined,
+            isUnarmed: true,
+          }))
+        : [];
+
+      // Actions: when a registry entry exists, use its canonical abilities.
+      // For unknown types, fall back to specials-based detection.
+      const eidolonActions: CharacterAction[] = entry
+        ? entry.abilities.map((a): CharacterAction => ({
+            name: a.name,
+            actionCost: a.actionCost,
+            traits: a.traits,
+          }))
+        : specialsArr
+            .filter((s) => !isEidolonNonAction(s))
+            .filter((s) => !featNames.has(s))
+            .map((s): CharacterAction => ({
+              name: s,
+              actionCost: '2',
+              traits: ['Eidolon'],
+            }));
+
+      creatures.push({
+        id: crypto.randomUUID(),
+        name: eidolonName,
+        kind: 'eidolon' as CreatureKind,
+        subtype,
+        traits: eidolonTraits,
+        hasFullStats: false,
+        senses: entry?.senses,
+        languages: entry?.languages,
+        skills: eidolonSkills.length > 0 ? eidolonSkills : undefined,
+        attacks: eidolonAttacks.length > 0 ? eidolonAttacks : undefined,
+        actions: eidolonActions.length > 0 ? eidolonActions : undefined,
+      });
+    }
+  }
+
+  // --- Pets (animal companions) ---
+  const petsRaw = arr<unknown>(get(build, 'pets'));
+  for (const pet of petsRaw) {
+    if (typeof pet !== 'object' || pet === null) continue;
+    const name = str(get(pet, 'name')) ?? str(get(pet, 'animal')) ?? 'Animal Companion';
+    const hasStats = !!(get(pet, 'hp') !== undefined || get(pet, 'ac') !== undefined);
+    const petSkills: SkillProficiency[] = arr<unknown>(get(pet, 'skills')).flatMap((s) => {
+      if (typeof s === 'string') return [{ skill: s, rank: 'trained' as ProficiencyRank }];
+      const skillName = str(get(s, 'name')) ?? str(get(s, 'skill'));
+      if (!skillName) return [];
+      return [{ skill: skillName, rank: rankFromValue(get(s, 'rank')) }];
+    });
+    creatures.push({
+      id: crypto.randomUUID(),
+      name,
+      kind: 'animal-companion' as CreatureKind,
+      subtype: str(get(pet, 'animal')) ?? str(get(pet, 'species')),
+      traits: ['Animal', 'Companion'],
+      hasFullStats: hasStats,
+      hp: num(get(pet, 'hp')),
+      ac: num(get(pet, 'ac')),
+      saves: {
+        fortitude: num(get(pet, 'saves', 'fort')) ?? num(get(pet, 'fort')),
+        reflex: num(get(pet, 'saves', 'ref')) ?? num(get(pet, 'ref')),
+        will: num(get(pet, 'saves', 'will')) ?? num(get(pet, 'will')),
+      },
+      speed: num(get(pet, 'speed')),
+      skills: petSkills.length > 0 ? petSkills : undefined,
+    });
+  }
+
+  // --- Familiars ---
+  const familiarsRaw = arr<unknown>(get(build, 'familiars'));
+  for (const fam of familiarsRaw) {
+    if (typeof fam !== 'object' || fam === null) continue;
+    const name = str(get(fam, 'name')) ?? 'Familiar';
+    const abilityNames = arr<string>(get(fam, 'abilities'));
+    const famActions: CharacterAction[] = abilityNames
+      .filter(Boolean)
+      .map((ability): CharacterAction => ({
+        name: ability,
+        actionCost: 'passive',
+        traits: ['Familiar'],
+      }));
+    creatures.push({
+      id: crypto.randomUUID(),
+      name,
+      kind: 'familiar' as CreatureKind,
+      traits: ['Familiar'],
+      hasFullStats: false,
+      actions: famActions.length > 0 ? famActions : undefined,
+    });
+  }
+
+  return creatures;
 }
 
 // ---------------------------------------------------------------------------
@@ -327,6 +549,7 @@ export function parsePathbuilder(json: unknown): CharacterModel {
       })(),
       notes: str(get(w, 'notes')),
       isUnarmed: str(get(w, 'prof')) === 'unarmed',
+      material: str(get(w, 'mat')) || undefined,
     });
   }
 
@@ -426,6 +649,8 @@ export function parsePathbuilder(json: unknown): CharacterModel {
     (s) => typeof s === 'string' && s.length > 0,
   );
 
+  const linkedCreatures = parseLinkedCreatures(build, specialsArr);
+
   // --- Build result ---
   return {
     source: 'pathbuilder',
@@ -463,6 +688,7 @@ export function parsePathbuilder(json: unknown): CharacterModel {
     attacks,
     equipment,
     actions: [],
+    linkedCreatures: linkedCreatures.length > 0 ? linkedCreatures : undefined,
     rawSource: json,
   };
 }

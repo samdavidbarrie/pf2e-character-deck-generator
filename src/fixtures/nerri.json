@@ -1,0 +1,523 @@
+{
+  "success": true,
+  "build": {
+    "name": "Nerri Whesterwill",
+    "class": "Wizard",
+    "dualClass": null,
+    "level": 7,
+    "xp": 0,
+    "ancestry": "Human",
+    "heritage": "Aiuvarin",
+    "background": "Scholar of the Ancients",
+    "alignment": "N",
+    "gender": "Female",
+    "age": "Not set",
+    "deity": "Nethys",
+    "size": 2,
+    "sizeName": "Medium",
+    "keyability": "int",
+    "languages": ["Common", "Draconic", "Elven", "Empyrean", "Jotun", "Thassilonian ", "Varisian"],
+    "rituals": [],
+    "resistances": [],
+    "inventorMods": [],
+    "abilities": {
+      "str": 10,
+      "dex": 16,
+      "con": 16,
+      "int": 20,
+      "wis": 14,
+      "cha": 10,
+      "breakdown": {
+        "ancestryFree": ["Int", "Dex"],
+        "ancestryBoosts": [],
+        "ancestryFlaws": [],
+        "backgroundBoosts": ["Int", "Con"],
+        "classBoosts": ["Int"],
+        "mapLevelledBoosts": {
+          "1": ["Con", "Int", "Dex", "Wis"],
+          "2": ["Dex"],
+          "3": ["Con"],
+          "4": ["Wis"],
+          "5": ["Int"],
+          "7": ["Int"]
+        }
+      }
+    },
+    "attributes": {
+      "ancestryhp": 8,
+      "classhp": 6,
+      "bonushp": 0,
+      "bonushpPerLevel": 0,
+      "speed": 25,
+      "speedBonus": 0
+    },
+    "proficiencies": {
+      "classDC": 2,
+      "perception": 2,
+      "fortitude": 2,
+      "reflex": 4,
+      "will": 4,
+      "heavy": 0,
+      "medium": 0,
+      "light": 0,
+      "unarmored": 2,
+      "advanced": 0,
+      "martial": 0,
+      "simple": 2,
+      "unarmed": 2,
+      "castingArcane": 4,
+      "castingDivine": 0,
+      "castingOccult": 2,
+      "castingPrimal": 0,
+      "acrobatics": 2,
+      "arcana": 6,
+      "athletics": 0,
+      "crafting": 4,
+      "deception": 0,
+      "diplomacy": 2,
+      "intimidation": 0,
+      "medicine": 2,
+      "nature": 0,
+      "occultism": 2,
+      "performance": 0,
+      "religion": 0,
+      "society": 2,
+      "stealth": 2,
+      "survival": 0,
+      "thievery": 2,
+      "piloting": 0,
+      "computers": 0
+    },
+    "mods": {
+      "Arcana": { "Item Bonus": 1 },
+      "Athletics": { "Item Bonus": 2 },
+      "Medicine": { "Item Bonus": 1 },
+      "Fortitude": { "Item Bonus": 1 },
+      "Reflex": { "Item Bonus": 1 },
+      "Will": { "Item Bonus": 1 }
+    },
+    "feats": [
+      ["Familiar", null, "Awarded Feat", 1],
+      ["Quick Identification", null, "Awarded Feat", 1],
+      ["Magical Shorthand", null, "Awarded Feat", 1],
+      ["Prescient Planner", null, "Awarded Feat", 3],
+      ["Aiuvarin", null, "Heritage", 1, "Heritage Feat", "standardChoice", null],
+      [
+        "Widen Spell",
+        null,
+        "Class Feat",
+        1,
+        "Wizard FeatWizard Universalist",
+        "standardChoice",
+        null
+      ],
+      ["Natural Ambition", null, "Ancestry Feat", 1, "Human Feat 1", "parentChoice", null],
+      [
+        "Spellbook Prodigy",
+        null,
+        "Class Feat",
+        1,
+        "Natural Ambition Class FeatHuman Feat 1",
+        "childChoice",
+        "Human Feat 1"
+      ],
+      ["Glean Contents", null, "Skill Feat", 2, "Skill Feat 2", "standardChoice", null],
+      ["Conceal Spell", null, "Class Feat", 2, "Wizard Feat 2", "standardChoice", null],
+      [
+        "Loremaster Dedication",
+        null,
+        "Archetype Feat",
+        2,
+        "Free Archetype 2",
+        "standardChoice",
+        null
+      ],
+      ["Magical Crafting", null, "General Feat", 3, "General Feat 3", "standardChoice", null],
+      ["Orthographic Mastery", null, "Skill Feat", 4, "Skill Feat 4", "standardChoice", null],
+      ["Counterspell", null, "Class Feat", 4, "Wizard Feat 4", "standardChoice", null],
+      ["Loremaster's Etude", null, "Archetype Feat", 4, "Free Archetype 4", "standardChoice", null],
+      ["Elven Instincts", null, "Ancestry Feat", 5, "Human Feat 5", "standardChoice", null],
+      ["Recognize Spell", null, "Skill Feat", 6, "Skill Feat 6", "standardChoice", null],
+      ["Split Slot", null, "Class Feat", 6, "Wizard Feat 6", "standardChoice", null],
+      [
+        "Magical Edification",
+        null,
+        "Archetype Feat",
+        6,
+        "Free Archetype 6",
+        "standardChoice",
+        null
+      ],
+      ["Quick Recognition", null, "General Feat", 7, "General Feat 7", "standardChoice", null]
+    ],
+    "specials": [
+      "Arcane School: School of Unified Magical Theory",
+      "Arcane Thesis: Improved Familiar Attunement",
+      "Arcane Bond",
+      "Drain Bonded Item",
+      "Spellbook",
+      "Wizard Spellcasting",
+      "Low-Light Vision",
+      "Reflex Expertise",
+      "Expert Spellcaster",
+      "Aiuvarin"
+    ],
+    "lores": [
+      ["Thassilon", 2],
+      ["Loremaster", 2]
+    ],
+    "equipmentContainers": {
+      "c0c4b602-db0c-47c7-94ab-ed78d54d43b8": {
+        "containerName": "Backpack",
+        "bagOfHolding": false,
+        "backpack": true,
+        "augmentations": false
+      },
+      "c739c071-87a7-49dc-b75b-3039e359626b": {
+        "containerName": "Scroll Bandolier",
+        "bagOfHolding": false,
+        "backpack": false,
+        "augmentations": false
+      },
+      "dd9c5a49-475f-485e-8506-1dc3bfac9d4c": {
+        "containerName": "Bag of Holding",
+        "bagOfHolding": true,
+        "backpack": false,
+        "augmentations": false
+      }
+    },
+    "equipment": [
+      ["Chellish wine", 3, "dd9c5a49-475f-485e-8506-1dc3bfac9d4c", "Invested"],
+      ["Firestarter Pellets", 3, "Invested"],
+      ["Artisan's Toolkit", 1, "dd9c5a49-475f-485e-8506-1dc3bfac9d4c", "Invested"],
+      ["Oil", 1, "c0c4b602-db0c-47c7-94ab-ed78d54d43b8", "Invested"],
+      ["Signal Whistle", 1, "Invested"],
+      ["Ring of Wizardry (Type I)", 1, "Invested"],
+      ["Backfire Mantle", 1, "Invested"],
+      ["Basic Crafter's Book", 1, "c0c4b602-db0c-47c7-94ab-ed78d54d43b8", "Invested"],
+      ["Lantern (Hooded)", 1, "Invested"],
+      ["Fishing Tackle", 1, "dd9c5a49-475f-485e-8506-1dc3bfac9d4c", "Invested"],
+      ["Torch", 5, "c0c4b602-db0c-47c7-94ab-ed78d54d43b8", "Invested"],
+      ["Gem powder", 1, "Invested"],
+      ["Scroll of Illusory Object", 1, "c739c071-87a7-49dc-b75b-3039e359626b", "Invested"],
+      ["Spellbook (Blank)", 1, "Invested"],
+      ["Scroll of Vampiric Feast", 1, "c739c071-87a7-49dc-b75b-3039e359626b", "Invested"],
+      ["Writing Set", 1, "c0c4b602-db0c-47c7-94ab-ed78d54d43b8", "Invested"],
+      ["Soap", 1, "c0c4b602-db0c-47c7-94ab-ed78d54d43b8", "Invested"],
+      ["Scroll of Translate", 1, "c739c071-87a7-49dc-b75b-3039e359626b", "Invested"],
+      ["1\/4 of Vorell's Notes", 2, "dd9c5a49-475f-485e-8506-1dc3bfac9d4c", "Invested"],
+      ["Rubbing Set", 1, "c0c4b602-db0c-47c7-94ab-ed78d54d43b8", "Invested"],
+      ["Healer's Toolkit", 1, "Invested"],
+      ["Mirror", 1, "c0c4b602-db0c-47c7-94ab-ed78d54d43b8", "Invested"],
+      ["Fire-Jump Ring", 1, "Invested"],
+      ["Aeon Stone (Pearly White Spindle)", 1, "Invested"],
+      ["Rope", 1, "c0c4b602-db0c-47c7-94ab-ed78d54d43b8", "Invested"],
+      ["Faux Foxglove Signet ring", 1, "Invested"],
+      ["Cloak of Feline Rest", 1, "Invested"],
+      [
+        "Wand of Shardstorm (1st-Rank Spell)",
+        1,
+        "c739c071-87a7-49dc-b75b-3039e359626b",
+        "Invested"
+      ],
+      ["Mold from Misgivings", 1, "dd9c5a49-475f-485e-8506-1dc3bfac9d4c", "Invested"],
+      ["Formula Book (Blank)", 1, "c0c4b602-db0c-47c7-94ab-ed78d54d43b8", "Invested"],
+      ["Thieves' Toolkit", 1, "Invested"],
+      ["Staff of Fire", 1, "Invested"],
+      ["Aether Appendage", 1, "Invested"],
+      ["Waterskin", 1, "c0c4b602-db0c-47c7-94ab-ed78d54d43b8", "Invested"],
+      ["Runestone", 4, "Invested"],
+      ["Flint and Steel", 1, "c0c4b602-db0c-47c7-94ab-ed78d54d43b8", "Invested"],
+      ["Scroll of Breathe Fire", 1, "c739c071-87a7-49dc-b75b-3039e359626b", "Invested"],
+      ["Bedroll", 1, "c0c4b602-db0c-47c7-94ab-ed78d54d43b8", "Invested"],
+      ["Healing Potion (Lesser)", 2, "Invested"],
+      ["Necromantic Jar", 1, "dd9c5a49-475f-485e-8506-1dc3bfac9d4c", "Invested"],
+      ["Wand of Mystic Armor", 1, "c739c071-87a7-49dc-b75b-3039e359626b", "Invested"],
+      ["Rations", 2, "c0c4b602-db0c-47c7-94ab-ed78d54d43b8", "Invested"],
+      ["Chalk", 9, "c0c4b602-db0c-47c7-94ab-ed78d54d43b8", "Invested"],
+      ["Writing Set (Extra Ink and Paper)", 1, "c0c4b602-db0c-47c7-94ab-ed78d54d43b8", "Invested"],
+      ["Healer's Gloves", 1, "Invested"]
+    ],
+    "specificProficiencies": { "trained": [], "expert": [], "master": [], "legendary": [] },
+    "weapons": [
+      {
+        "name": "War Razor",
+        "qty": 1,
+        "prof": "martial",
+        "die": "d4",
+        "pot": 1,
+        "str": "striking",
+        "mat": null,
+        "display": "+1 Striking War Razor",
+        "runes": [],
+        "damageType": "S",
+        "attack": 4,
+        "damageBonus": 0,
+        "extraDamage": [],
+        "increasedDice": false,
+        "isInventor": false,
+        "grade": ""
+      },
+      {
+        "name": "Dagger",
+        "qty": 1,
+        "prof": "simple",
+        "die": "d4",
+        "pot": 0,
+        "str": "",
+        "mat": "Silver (Low-Grade)",
+        "display": "Silver (Low-Grade) Dagger",
+        "runes": [],
+        "damageType": "P",
+        "attack": 12,
+        "damageBonus": 0,
+        "extraDamage": [],
+        "increasedDice": false,
+        "isInventor": false,
+        "grade": ""
+      },
+      {
+        "name": "Dagger",
+        "qty": 1,
+        "prof": "simple",
+        "die": "d4",
+        "pot": 1,
+        "str": "striking",
+        "mat": "Cold Iron (Low-Grade)",
+        "display": "+1 Striking Returning Cold Iron (Low-Grade) Dagger",
+        "runes": ["Returning"],
+        "damageType": "P",
+        "attack": 13,
+        "damageBonus": 0,
+        "extraDamage": [],
+        "increasedDice": false,
+        "isInventor": false,
+        "grade": ""
+      },
+      {
+        "name": "Staff",
+        "qty": 1,
+        "prof": "simple",
+        "die": "d4",
+        "pot": 0,
+        "str": "",
+        "mat": null,
+        "display": "Staff",
+        "runes": [],
+        "damageType": "B",
+        "attack": 9,
+        "damageBonus": 0,
+        "extraDamage": [],
+        "increasedDice": false,
+        "isInventor": false,
+        "grade": ""
+      }
+    ],
+    "money": { "cp": 1, "sp": 234, "gp": 29, "pp": 0 },
+    "armor": [
+      {
+        "name": "Explorer's Clothing",
+        "qty": 1,
+        "prof": "unarmored",
+        "pot": 1,
+        "res": "resilient",
+        "mat": null,
+        "display": "+1 Armor Resilient Explorer's Clothing",
+        "worn": true,
+        "runes": [],
+        "grade": ""
+      }
+    ],
+    "spellCasters": [
+      {
+        "name": "Wizard",
+        "magicTradition": "arcane",
+        "spellcastingType": "prepared",
+        "ability": "int",
+        "proficiency": 4,
+        "focusPoints": 0,
+        "innate": false,
+        "perDay": [6, 8, 3, 4, 2, 0, 0, 0, 0, 0, 0],
+        "spells": [
+          {
+            "spellLevel": 1,
+            "list": [
+              "Alarm",
+              "Ant Haul",
+              "Anticipate Peril",
+              "Befuddle",
+              "Breathe Fire",
+              "Enfeeble",
+              "Fear",
+              "Force Barrage",
+              "Gentle Landing",
+              "Goblin Pox",
+              "Gravitational Pull",
+              "Grease",
+              "Horizon Thunder Sphere",
+              "Hydraulic Push",
+              "Mystic Armor",
+              "Phantasmal Minion",
+              "Pocket Library",
+              "Sleep",
+              "Thoughtful Gift",
+              "Thunderstrike"
+            ]
+          },
+          {
+            "spellLevel": 2,
+            "list": [
+              "Blazing Bolt",
+              "Dispel Magic",
+              "False Vitality",
+              "Floating Flame",
+              "Gecko Grip",
+              "Invisibility",
+              "Laughing Fit",
+              "Mist",
+              "Noise Blast",
+              "See the Unseen",
+              "Translate"
+            ]
+          },
+          {
+            "spellLevel": 3,
+            "list": ["Blindness", "Cozy Cabin", "Fireball", "Hypnotize", "Locate", "Vampiric Feast"]
+          },
+          {
+            "spellLevel": 0,
+            "list": [
+              "Caustic Blast",
+              "Daze",
+              "Detect Magic",
+              "Electric Arc",
+              "Figment",
+              "Frostbite",
+              "Ignition",
+              "Light",
+              "Message",
+              "Prestidigitation",
+              "Protect Companion",
+              "Read Aura",
+              "Shield",
+              "Sigil",
+              "Telekinetic Projectile"
+            ]
+          },
+          { "spellLevel": 4, "list": ["Fly", "Translocate", "Wall of Fire"] },
+          { "spellLevel": 5, "list": ["Slither", "Toxic Cloud", "Wave of Despair"] }
+        ],
+        "prepared": [
+          {
+            "spellLevel": 0,
+            "list": [
+              "Electric Arc",
+              "Detect Magic",
+              "Shield",
+              "Telekinetic Projectile",
+              "Light",
+              "Ignition"
+            ]
+          },
+          {
+            "spellLevel": 1,
+            "list": [
+              "Hydraulic Push",
+              "Gravitational Pull",
+              "Anticipate Peril",
+              "Gentle Landing",
+              "Thoughtful Gift",
+              "Force Barrage",
+              "Thunderstrike",
+              "Breathe Fire"
+            ]
+          },
+          { "spellLevel": 2, "list": ["Mist", "Invisibility", "Floating Flame"] },
+          { "spellLevel": 3, "list": ["Fear", "Thunderstrike", "Fireball", "Vampiric Feast"] },
+          { "spellLevel": 4, "list": ["Translocate", "Wall of Fire"] }
+        ],
+        "blendedSpells": []
+      },
+      {
+        "name": "Magical Edification",
+        "magicTradition": "occult",
+        "spellcastingType": "prepared",
+        "ability": "cha",
+        "proficiency": 2,
+        "focusPoints": 0,
+        "innate": true,
+        "perDay": [3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        "spells": [{ "spellLevel": 0, "list": ["Message", "Guidance", "Sigil"] }],
+        "prepared": [],
+        "blendedSpells": []
+      },
+      {
+        "name": "fc11e127-7c47-4df5-b0d1-476413ae6d24",
+        "magicTradition": "arcane",
+        "spellcastingType": "prepared",
+        "ability": "cha",
+        "proficiency": 4,
+        "focusPoints": 0,
+        "innate": true,
+        "perDay": [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        "spells": [
+          { "spellLevel": 0, "list": [] },
+          { "spellLevel": 1, "list": ["Mystic Armor"] }
+        ],
+        "prepared": [],
+        "blendedSpells": []
+      }
+    ],
+    "focusPoints": 2,
+    "focus": {
+      "arcane": {
+        "int": {
+          "abilityBonus": 5,
+          "proficiency": 4,
+          "itemBonus": 0,
+          "focusCantrips": [],
+          "focusSpells": ["Hand of the Apprentice"]
+        }
+      },
+      "Unassigned": {
+        "General": {
+          "abilityBonus": 0,
+          "proficiency": 0,
+          "itemBonus": 0,
+          "focusCantrips": [],
+          "focusSpells": ["Loremaster's Etude"]
+        }
+      }
+    },
+    "formula": [
+      {
+        "type": "other",
+        "known": [
+          "Ring of Discretion",
+          "Runestone",
+          "Cloak of Feline Rest",
+          "Armor Resilient",
+          "Healing Potion (Lesser)",
+          "Healing Potion (Minor)"
+        ]
+      }
+    ],
+    "acTotal": {
+      "acProfBonus": 9,
+      "acAbilityBonus": 3,
+      "acItemBonus": 1,
+      "acTotal": 23,
+      "shieldBonus": null
+    },
+    "pets": [],
+    "familiars": [
+      {
+        "type": "Familiar",
+        "name": "Familiar (Smudge)",
+        "equipment": [],
+        "specific": null,
+        "abilities": ["Speech", "Flier", "Skilled"]
+      }
+    ]
+  }
+}

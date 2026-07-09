@@ -2,6 +2,8 @@
 
 A local-first tool for turning a Pathfinder 2e character export into printable character cards.
 
+**[Try it live →](https://samdavidbarrie.github.io/pf2e-character-deck-generator/)**
+
 The goal is to let a Pathfinder 2e character be represented by a small physical “deck” of cards: combat summaries, skill references, actions, feats, spells, equipment, and other table-use reminders. Cards are designed to be printed on A4 paper, cut out, sleeved, and filled in with pencil where values change during play.
 
 ## What it does

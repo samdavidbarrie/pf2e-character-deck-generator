@@ -72,6 +72,8 @@ export interface CharacterAttack {
   group?: string;
   notes?: string;
   isUnarmed?: boolean;
+  /** Material of the weapon, e.g. "Cold Iron (Low-Grade)", "Silver (Standard)". */
+  material?: string;
 }
 
 export interface CharacterEquipment {
@@ -94,6 +96,45 @@ export interface CharacterAction {
   frequency?: string;
   summary?: string;
   sourceRef?: string;
+}
+
+export type CreatureKind = 'eidolon' | 'animal-companion' | 'familiar' | 'pet' | 'other';
+
+export interface LinkedCreature {
+  id: string;
+  name: string;
+  kind: CreatureKind;
+  /** E.g. "Beast", "Dragon" for eidolons; animal species for companions. */
+  subtype?: string;
+  /** Display traits, e.g. ["Huge", "Eidolon", "Beast"]. */
+  traits: string[];
+  size?: string;
+  /**
+   * True when the import provided structured combat stats (HP, AC, saves, etc.).
+   * False when only partial data is available (e.g. eidolon inferred from summoner specials).
+   */
+  hasFullStats: boolean;
+
+  // Combat stats — absent if partial
+  hp?: number;
+  ac?: number;
+  saves?: {
+    fortitude?: number;
+    fortitudeRank?: ProficiencyRank;
+    reflex?: number;
+    reflexRank?: ProficiencyRank;
+    will?: number;
+    willRank?: ProficiencyRank;
+  };
+  perceptionRank?: ProficiencyRank;
+  speed?: number;
+  senses?: string[];
+  languages?: string[];
+  abilityMods?: Partial<Record<AbilityKey, number>>;
+
+  skills?: SkillProficiency[];
+  attacks?: CharacterAttack[];
+  actions?: CharacterAction[];
 }
 
 export interface CharacterModel {
@@ -158,6 +199,7 @@ export interface CharacterModel {
   attacks: CharacterAttack[];
   equipment: CharacterEquipment[];
   actions: CharacterAction[];
+  linkedCreatures?: LinkedCreature[];
 
   rawSource: unknown;
 }

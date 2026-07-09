@@ -5,12 +5,20 @@ import { validateImport } from '../import/validateImport';
 import { importProjectJson } from '../storage/exportProject';
 import styles from './ImportScreen.module.css';
 
+import alaseJson from '../fixtures/alase.json';
+import dolthionJson from '../fixtures/dolthion.json';
 import hanaeJson from '../fixtures/hanae.json';
 import hikariJson from '../fixtures/hikari.json';
+import nerriJson from '../fixtures/nerri.json';
+import vassoraJson from '../fixtures/vassora.json';
 
 const DEV_FIXTURES = [
   { label: 'Hikari — Monk lv11 (no spellcaster)', json: hikariJson },
   { label: 'Hanae — Sorcerer lv11 (arcane + focus)', json: hanaeJson },
+  { label: 'Alase — Summoner lv20 (Beast Eidolon)', json: alaseJson },
+  { label: 'Nerri — Wizard lv7 (familiar)', json: nerriJson },
+  { label: 'Vassora — Druid lv7 (two animal companions)', json: vassoraJson },
+  { label: 'Dolthion — Fighter lv20 (armored)', json: dolthionJson },
 ];
 
 export function ImportScreen() {
@@ -207,22 +215,22 @@ export function ImportScreen() {
           )}
         </section>
 
-        {import.meta.env.DEV && (
-          <section className={styles.devFixtures}>
-            <strong>Dev: load test character</strong>
-            <div className={styles.devFixtureButtons}>
-              {DEV_FIXTURES.map((f) => (
-                <button
-                  key={f.label}
-                  className={styles.secondaryButton}
-                  onClick={() => handleJson(f.json)}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
+        {/* {(import.meta.env.DEV || true) && ( */}
+
+        <section className={styles.devFixtures}>
+          <strong>Dev: load test character</strong>
+          <div className={styles.devFixtureButtons}>
+            {DEV_FIXTURES.map((f) => (
+              <button
+                key={f.label}
+                className={styles.secondaryButton}
+                onClick={() => handleJson(f.json)}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </section>
 
         <section className={styles.helpSection}>
           <h2>How to export from Pathbuilder 2e</h2>
