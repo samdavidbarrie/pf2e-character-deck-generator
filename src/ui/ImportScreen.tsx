@@ -215,7 +215,8 @@ export function ImportScreen() {
           )}
         </section>
 
-        {(import.meta.env.DEV || true) && (
+        {/* {(import.meta.env.DEV || true) && ( */}
+        {true && (
           <section className={styles.devFixtures}>
             <strong>Dev: load test character</strong>
             <div className={styles.devFixtureButtons}>
