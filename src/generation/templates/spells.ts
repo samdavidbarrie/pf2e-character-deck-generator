@@ -37,10 +37,25 @@ function buildSpellCard(spell: CharacterSpell, isFocus: boolean): CardModel {
 
   // Include the tradition as a trait so the card tab colour works without
   // relying on a subtitle. Capitalise to match AoN trait casing.
-  const traditionTrait = spell.tradition
-    ? spell.tradition.charAt(0).toUpperCase() + spell.tradition.slice(1)
-    : null;
-  const traits = [...spell.traits, ...(traditionTrait ? [traditionTrait] : [])];
+  // Filter out synthetic Pathbuilder values like "Unassigned" that aren't real
+  // PF2e tradition names.
+  const REAL_TRADITIONS = new Set(['arcane', 'divine', 'occult', 'primal']);
+  const traditionTrait =
+    spell.tradition && REAL_TRADITIONS.has(spell.tradition.toLowerCase())
+      ? spell.tradition.charAt(0).toUpperCase() + spell.tradition.slice(1)
+      : null;
+
+  // Rank-0 non-focus spells are always cantrips.
+  // Focus cantrips are focus spells with focusCost === 0.
+  // Focus spells with focusCost >= 1 are NOT cantrips even though their rank is 0.
+  const spellIsCantrip =
+    (!isFocus && spell.rank === 0) || (isFocus && (spell.focusCost ?? 1) === 0);
+  const hasCantripTrait = spell.traits.some((t) => t.toLowerCase() === 'cantrip');
+  const extraTraits = [
+    ...(traditionTrait ? [traditionTrait] : []),
+    ...(spellIsCantrip && !hasCantripTrait ? ['Cantrip'] : []),
+  ];
+  const traits = [...spell.traits, ...extraTraits];
 
   return defaultCard({
     title: spell.name,

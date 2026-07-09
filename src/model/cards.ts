@@ -18,7 +18,7 @@ export type CardCategory =
   | 'creature-action';
 
 export type ActionCost =
-  'free' | 'reaction' | '1' | '2' | '3' | '1-2' | '1-3' | '2-3' | 'variable' | 'passive';
+  'free' | 'reaction' | '1' | '2' | '3' | '1-2' | '1-3' | '2-3' | 'variable' | 'passive' | '2+';
 
 export type WritableFieldType =
   'blank' | 'checkboxes' | 'counter' | 'notes' | 'skill-row' | 'section' | 'display';
@@ -132,6 +132,7 @@ export const ACTION_COST_LABEL: Record<ActionCost, string> = {
   '2-3': '◆◆–◆◆◆',
   variable: '◆?',
   passive: '',
+  '2+': '◆◆ +',
 };
 
 export const CATEGORY_LABEL: Record<CardCategory, string> = {

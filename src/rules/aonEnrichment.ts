@@ -49,6 +49,8 @@ export interface AonData {
   level?: number;
   prerequisite?: string;
   url?: string;
+  /** Source book(s) the entry comes from, used to prefer remastered over legacy versions. */
+  source?: string[];
   /** Equipment-specific fields populated from AoN. */
   usage?: string; // e.g. "held in 1 hand"
   bulk?: string; // e.g. "L"
@@ -236,6 +238,15 @@ function mapActionCost(raw: string | undefined): ActionCost | undefined {
   if (isOne(s) && isThree(s)) return '1-3';
   if (isOne(s) && isTwo(s)) return '1-2';
   if (isTwo(s) && isThree(s)) return '2-3';
+  // "Two Actions to X rounds/minutes" — variable-duration spell; show minimum cost + plus.
+  if (
+    isTwo(s) &&
+    s.includes(' to ') &&
+    !isThree(s) &&
+    (s.includes('round') || s.includes('minute') || s.includes('hour'))
+  ) {
+    return '2+';
+  }
   if (s.includes(' to ') || s.includes('varies') || s.includes('variable')) return 'variable';
   // Single cost — match bare digit or word
   if (
@@ -326,6 +337,7 @@ async function fetchBatch(names: string[]): Promise<AonData[]> {
       'usage',
       'bulk',
       'price_raw',
+      'source',
     ],
     size: Math.min(names.length * 3, 200),
   };
@@ -394,6 +406,7 @@ async function fetchBatch(names: string[]): Promise<AonData[]> {
       bulk,
       priceRaw: (s['price_raw'] as string | undefined) || undefined,
       activateTag: activateTagMatch?.[1]?.trim() || undefined,
+      source: (s['source'] as string[] | undefined) ?? undefined,
     };
   });
 }
@@ -426,6 +439,22 @@ export async function fetchAonData(
   // Key by "category:title" so that a name shared across categories (e.g. "Perfect
   // Strike" as both a feat and a focus spell) each gets its own correctly-typed entry.
   const result = new Map<string, AonData>();
+
+  // Deprioritise known legacy-only source books so that remastered equivalents
+  // rank first.  Using a blocklist rather than a whitelist means future remaster
+  // books are automatically preferred without needing code changes.
+  const LEGACY_SOURCES = new Set([
+    'Core Rulebook',
+    "Advanced Player's Guide",
+    'Secrets of Magic',
+    'Gamemastery Guide',
+    'Book of the Dead',
+    'Dark Archive',
+    'Treasure Vault',
+    'Grand Bazaar',
+  ]);
+  const isLegacy = (c: AonData) => (c.source ?? []).some((s) => LEGACY_SOURCES.has(s));
+
   for (const card of cards) {
     const key = `${card.category}:${card.title}`;
     if (result.has(key)) continue;
@@ -442,6 +471,11 @@ export async function fetchAonData(
         ? (candidates.find((c) => preferred.includes(c.aonType) && c.priceRaw) ??
           candidates.find((c) => c.priceRaw))
         : undefined) ??
+      // Prefer non-legacy content with the right document type.
+      candidates.find((c) => preferred.includes(c.aonType) && !isLegacy(c)) ??
+      // Then any non-legacy content (right name, different type).
+      candidates.find((c) => !isLegacy(c)) ??
+      // Fall back to legacy content with the right type, then any legacy.
       candidates.find((c) => preferred.includes(c.aonType)) ??
       candidates[0];
     result.set(key, best);
@@ -623,6 +657,11 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
       // Merge AoN weapon traits with the generated 'Attack' trait; AoN doesn't
       // include 'Attack' as a trait but it's needed for the table-use pill.
       rules.traits = [...new Set([...data.traits, 'Attack'])];
+    } else if (card.category === 'spell' || card.category === 'focus-spell') {
+      // AoN provides full game traits (Attack, Fire, Concentrate, etc.).
+      // We added tradition + cantrip during generation for tab colouring;
+      // merge both sets so neither is lost.
+      rules.traits = [...new Set([...data.traits, ...rules.traits])];
     } else if (rules.traits.length === 0) {
       rules.traits = data.traits;
     }

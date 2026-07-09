@@ -1,4 +1,4 @@
-import { Fragment } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { splitOverflowCards } from '../generation/generateDeck';
 import type { ActionCost, CardCategory, CardModel } from '../model/cards';
 import { ACTION_COST_LABEL, TEML_RANKS } from '../model/cards';
@@ -76,7 +76,8 @@ function getRankLabel(card: CardModel): string {
   }
   if (card.category === 'focus-spell') {
     if (isCantrip) return 'Cantrip';
-    return card.rules.rank !== undefined ? `Focus ${card.rules.rank}` : 'Focus';
+    // Focus spells have no fixed rank — they scale with the character's level.
+    return 'Focus';
   }
   if (card.category === 'equipment' && card.rules.level !== undefined) {
     return `Item ${card.rules.level}`;
@@ -238,6 +239,16 @@ function ActionCostDisplay({ cost }: { cost: ActionCost }) {
   if (icon) {
     return <img src={icon} className={styles.actionIcon} alt={ACTION_COST_LABEL[cost]} />;
   }
+  // "2+" actions: show the 2-action image followed by a "+" indicator.
+  if (cost === '2+') {
+    const twoIcon = ACTION_ICON['2'];
+    return (
+      <span className={styles.actionRange}>
+        {twoIcon && <img src={twoIcon} className={styles.actionIcon} alt="2 actions" />}
+        <span className={styles.actionRangeDash}>+</span>
+      </span>
+    );
+  }
   const range = ACTION_RANGE_PARTS[cost];
   if (range) {
     return (
@@ -254,6 +265,53 @@ function ActionCostDisplay({ cost }: { cost: ActionCost }) {
 
 export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude }: Props) {
   const splitCount = !forPrint && !card.continuationOf ? splitOverflowCards([card]).length : 1;
+
+  // Shrink the title font-size in print preview if the text overflows its container.
+  // Only applied for forPrint cards; deck-builder cards keep the ellipsis behaviour.
+  const titleRef = useRef<HTMLSpanElement>(null);
+  const [titleFontOverride, setTitleFontOverride] = useState<string | undefined>();
+  useEffect(() => {
+    if (!forPrint) {
+      setTitleFontOverride(undefined);
+      return;
+    }
+    let cancelled = false;
+    void document.fonts.ready.then(() => {
+      if (cancelled) return;
+      const el = titleRef.current;
+      if (!el) return;
+      // Reset any previously applied override so we measure at the natural font size.
+      el.style.fontSize = '';
+
+      // Canvas measurement is accurate to the loaded font and unaffected by
+      // overflow:hidden clipping or flex-shrink sizing.
+      // document.fonts.ready ensures Oswald is loaded before we measure.
+      const compStyle = getComputedStyle(el);
+      const available = el.getBoundingClientRect().width;
+      if (available === 0) return;
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.font = compStyle.font;
+      const letterSpacingPx = parseFloat(compStyle.letterSpacing) || 0;
+      // Measure uppercased text (CSS text-transform:uppercase is visual only).
+      const text = card.title.toUpperCase();
+      const textWidth = ctx.measureText(text).width + letterSpacingPx * text.length;
+
+      if (textWidth > available + 1) {
+        const curr = parseFloat(compStyle.fontSize);
+        // 0.95 buffer prevents sub-pixel rounding from re-triggering clipping.
+        const newSize = Math.max(curr * (available / textWidth) * 0.95, 5);
+        setTitleFontOverride(`${newSize.toFixed(1)}pt`);
+      } else {
+        setTitleFontOverride(undefined);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [card.title, forPrint]);
 
   // For spell cards, only show Spell DC when defense is a save, Spell Attack when it's a
   // spell-attack roll. If neither applies (e.g. auto-hit spells like Force Barrage) hide both.
@@ -374,7 +432,15 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
             </button>
           )}
           <div className={styles.titleGroup}>
-            <span className={styles.title}>
+            <span
+              ref={titleRef}
+              className={styles.title}
+              style={
+                titleFontOverride
+                  ? { fontSize: titleFontOverride, textOverflow: 'clip' }
+                  : undefined
+              }
+            >
               {card.continuationOf && <span className={styles.backBadge}>↩</span>}
               {card.title}
               {splitCount > 1 && <span className={styles.splitBadge}>×{splitCount}</span>}
