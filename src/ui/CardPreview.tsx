@@ -8,11 +8,10 @@ import styles from './CardPreview.module.css';
 // PF2e card visual helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Extract tradition name from subtitle strings like "Rank 3 · Arcane" or "Focus Spell · Primal". */
-function parseTradition(subtitle: string | undefined): string {
-  if (!subtitle) return '';
-  const after = subtitle.split('·').pop()?.trim().toLowerCase() ?? '';
-  return after;
+/** Derive tradition from a spell card's traits. */
+function traditionFromTraits(traits: string[]): string {
+  const known = new Set(['arcane', 'divine', 'occult', 'primal']);
+  return traits.find((t) => known.has(t.toLowerCase()))?.toLowerCase() ?? '';
 }
 
 const TRADITION_CLASS: Record<string, string> = {
@@ -36,7 +35,7 @@ interface CardTabInfo {
 
 function getCardTabInfo(card: CardModel): CardTabInfo {
   if (card.category === 'spell' || card.category === 'focus-spell') {
-    const tradition = parseTradition(card.subtitle);
+    const tradition = traditionFromTraits(card.rules.traits);
     if (TRADITION_LABEL[tradition]) {
       return { tabLabel: TRADITION_LABEL[tradition], themeClass: TRADITION_CLASS[tradition] };
     }
@@ -80,6 +79,11 @@ function getRankLabel(card: CardModel): string {
     return card.rules.rank !== undefined ? `Focus ${card.rules.rank}` : 'Focus';
   }
   if (card.category === 'equipment' && card.rules.level !== undefined) {
+    return `Item ${card.rules.level}`;
+  }
+  // Weapons with a known item level (from runes/material/AoN base) show it
+  // in the top-right corner just like equipment cards do.
+  if (card.category === 'weapon' && card.rules.level !== undefined) {
     return `Item ${card.rules.level}`;
   }
   // Feats: include the feat's own minimum level (filled by AoN enrichment).
@@ -261,8 +265,9 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
 
   // For skill-action cards, show the relevant skill above the summary and remove it from the bottom.
   const isSkillAction = card.category === 'skill-action' && !card.continuationOf;
-  const hasItemLevel =
-    (card.category === 'equipment' || card.category === 'weapon') && card.rules.level !== undefined;
+  // Item level always shows in the top-right corner via getRankLabel; never
+  // duplicate it in the metadata row.
+  const hasItemLevel = false;
   const skillLabel = isSkillAction ? (SKILL_FOR_ACTION[card.title] ?? 'Skill') : null;
 
   // Scale body text to match card density — applied in both deck-builder and print views

@@ -35,16 +35,15 @@ function buildSpellCard(spell: CharacterSpell, isFocus: boolean): CardModel {
     ? buildStableKey('focus-spell', spell.name)
     : buildStableKey('spell', spell.tradition ?? 'unknown', `rank-${spell.rank}`, spell.name);
 
-  const subtitle = isFocus
-    ? undefined
-    : `Rank ${spell.rank} · ${spell.tradition ?? ''}`
-        .trim()
-        .replace(/^·\s*|·\s*$/g, '')
-        .trim() || undefined;
+  // Include the tradition as a trait so the card tab colour works without
+  // relying on a subtitle. Capitalise to match AoN trait casing.
+  const traditionTrait = spell.tradition
+    ? spell.tradition.charAt(0).toUpperCase() + spell.tradition.slice(1)
+    : null;
+  const traits = [...spell.traits, ...(traditionTrait ? [traditionTrait] : [])];
 
   return defaultCard({
     title: spell.name,
-    subtitle,
     category,
     stableKey,
     source: {
@@ -54,7 +53,7 @@ function buildSpellCard(spell: CharacterSpell, isFocus: boolean): CardModel {
     },
     rules: {
       actionCost: mapCastCost(spell.actionCost),
-      traits: spell.traits,
+      traits,
       rank: spell.rank,
       summary:
         spell.summary ??

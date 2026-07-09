@@ -12,6 +12,12 @@ import type {
   ProficiencyRank,
 } from '../model/character';
 import { buildEquipmentDescription, filterEquipmentDescription } from './equipmentVariantMatcher';
+import {
+  computeMaterialPriceGp,
+  computeRunePricesGp,
+  formatGpPrice,
+  parsePriceToGp,
+} from './weaponPricing';
 
 /** Direct endpoint — override with VITE_AON_PROXY_URL to route through a CORS proxy. */
 const AON_ES =
@@ -680,11 +686,16 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
 
   // Level: for feat cards always prefer the AoN level (= feat's own minimum
   // level) over the Pathbuilder character level stored as a fallback.
-  // For all other non-equipment cards (spells, actions, etc.) only fill in
-  // if not already set — equipment level is handled in the block above.
+  // For weapons: take the max of the pre-set rune/material level and the AoN
+  // base weapon level so neither is ever lost.
+  // For all other non-equipment cards only fill in if not already set.
   const isFeat = card.category === 'feat-action' || card.category === 'feat-passive';
-  if (data.level !== undefined && (rules.level === undefined || isFeat)) {
-    rules.level = data.level;
+  if (data.level !== undefined) {
+    if (rules.level === undefined || isFeat) {
+      rules.level = data.level;
+    } else if (card.category === 'weapon') {
+      rules.level = Math.max(rules.level, data.level);
+    }
   }
 
   // For named (non-unarmed) weapon cards: apply item metadata so they render
@@ -694,7 +705,20 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
     if (!isUnarmed) {
       if (data.usage && !rules.usage) rules.usage = data.usage;
       if (data.bulk && !rules.bulk) rules.bulk = data.bulk;
-      if (data.priceRaw && !rules.price) rules.price = data.priceRaw;
+
+      // Compute total price = base weapon + fundamental rune surcharges + material surcharge.
+      // Parse rune names and material from the generated summary text.
+      if (data.priceRaw && !rules.price) {
+        const baseGp = parsePriceToGp(data.priceRaw);
+        const runeMatch = /Runes:\s+([^\n]+)/i.exec(rules.summary ?? '');
+        const runeNames = runeMatch ? runeMatch[1].split(',').map((r) => r.trim()) : [];
+        const materialMatch = /Material:\s+([^\n]+)/i.exec(rules.summary ?? '');
+        const material = materialMatch ? materialMatch[1].trim() : undefined;
+        const runeGp = computeRunePricesGp(runeNames);
+        const matGp = material ? computeMaterialPriceGp(material, data.bulk) : 0;
+        const totalGp = baseGp + runeGp + matGp;
+        rules.price = formatGpPrice(totalGp) || data.priceRaw;
+      }
     }
   }
 
