@@ -6,6 +6,7 @@ import { importProjectJson } from '../storage/exportProject';
 import styles from './ImportScreen.module.css';
 
 import alaseJson from '../fixtures/alase.json';
+import dolthionJson from '../fixtures/dolthion.json';
 import hanaeJson from '../fixtures/hanae.json';
 import hikariJson from '../fixtures/hikari.json';
 import nerriJson from '../fixtures/nerri.json';
@@ -17,6 +18,7 @@ const DEV_FIXTURES = [
   { label: 'Alase — Summoner lv20 (Beast Eidolon)', json: alaseJson },
   { label: 'Nerri — Wizard lv7 (familiar)', json: nerriJson },
   { label: 'Vassora — Druid lv7 (two animal companions)', json: vassoraJson },
+  { label: 'Dolthion — Fighter lv20 (armored)', json: dolthionJson },
 ];
 
 export function ImportScreen() {
@@ -213,7 +215,7 @@ export function ImportScreen() {
           )}
         </section>
 
-        {import.meta.env.DEV && (
+        {(import.meta.env.DEV || true) && (
           <section className={styles.devFixtures}>
             <strong>Dev: load test character</strong>
             <div className={styles.devFixtureButtons}>
