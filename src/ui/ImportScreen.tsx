@@ -216,22 +216,21 @@ export function ImportScreen() {
         </section>
 
         {/* {(import.meta.env.DEV || true) && ( */}
-        {true && (
-          <section className={styles.devFixtures}>
-            <strong>Dev: load test character</strong>
-            <div className={styles.devFixtureButtons}>
-              {DEV_FIXTURES.map((f) => (
-                <button
-                  key={f.label}
-                  className={styles.secondaryButton}
-                  onClick={() => handleJson(f.json)}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
+
+        <section className={styles.devFixtures}>
+          <strong>Dev: load test character</strong>
+          <div className={styles.devFixtureButtons}>
+            {DEV_FIXTURES.map((f) => (
+              <button
+                key={f.label}
+                className={styles.secondaryButton}
+                onClick={() => handleJson(f.json)}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </section>
 
         <section className={styles.helpSection}>
           <h2>How to export from Pathbuilder 2e</h2>
