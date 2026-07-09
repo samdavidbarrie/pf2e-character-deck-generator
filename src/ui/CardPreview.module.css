@@ -1,3 +1,16 @@
+/**
+ * Registers --title-len as a typed integer so CSS calc() can divide by it.
+ * Each title span sets this via an inline style; clamp() then scales the
+ * font-size down for long titles without any JavaScript measurement.
+ *
+ * Calibration: 195 ÷ 19 ≈ 10pt (threshold), 195 ÷ 22 ≈ 8.9pt ("HORIZON THUNDER SPHERE")
+ */
+@property --title-len {
+  syntax: '<integer>';
+  inherits: false;
+  initial-value: 10;
+}
+
 .card {
   text-align: left;
   width: 63mm;
@@ -179,7 +192,8 @@
    icon stays hugged to the title text, not floating to the right. */
 .title {
   font-family: var(--pf-title-font, 'Oswald', 'Arial Narrow', system-ui, sans-serif);
-  font-size: 10pt;
+  /* Scale down long titles. Threshold: 16 chars = 10pt, longer scales proportionally. */
+  font-size: clamp(5pt, calc(160pt / var(--title-len)), 10pt);
   font-weight: 600;
   line-height: 1.1;
   text-transform: uppercase;
@@ -188,7 +202,15 @@
   flex: 0 1 auto;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
+  text-overflow: clip;
+}
+
+/* Very long titles (40+ chars): wrap to two lines at a readable size rather
+   than squishing to 4–5pt. Two lines at 7pt fit in the 7mm card header. */
+.title[data-long] {
+  white-space: normal;
+  font-size: 7pt;
+  text-overflow: clip;
 }
 
 /* Wraps title text + inline action cost together on the left; flex:1 pushes

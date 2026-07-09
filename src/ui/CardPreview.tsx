@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment } from 'react';
 import { splitOverflowCards } from '../generation/generateDeck';
 import type { ActionCost, CardCategory, CardModel } from '../model/cards';
 import { ACTION_COST_LABEL, TEML_RANKS } from '../model/cards';
@@ -266,52 +266,7 @@ function ActionCostDisplay({ cost }: { cost: ActionCost }) {
 export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude }: Props) {
   const splitCount = !forPrint && !card.continuationOf ? splitOverflowCards([card]).length : 1;
 
-  // Shrink the title font-size in print preview if the text overflows its container.
-  // Only applied for forPrint cards; deck-builder cards keep the ellipsis behaviour.
-  const titleRef = useRef<HTMLSpanElement>(null);
-  const [titleFontOverride, setTitleFontOverride] = useState<string | undefined>();
-  useEffect(() => {
-    if (!forPrint) {
-      setTitleFontOverride(undefined);
-      return;
-    }
-    let cancelled = false;
-    void document.fonts.ready.then(() => {
-      if (cancelled) return;
-      const el = titleRef.current;
-      if (!el) return;
-      // Reset any previously applied override so we measure at the natural font size.
-      el.style.fontSize = '';
-
-      // Canvas measurement is accurate to the loaded font and unaffected by
-      // overflow:hidden clipping or flex-shrink sizing.
-      // document.fonts.ready ensures Oswald is loaded before we measure.
-      const compStyle = getComputedStyle(el);
-      const available = el.getBoundingClientRect().width;
-      if (available === 0) return;
-
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      ctx.font = compStyle.font;
-      const letterSpacingPx = parseFloat(compStyle.letterSpacing) || 0;
-      // Measure uppercased text (CSS text-transform:uppercase is visual only).
-      const text = card.title.toUpperCase();
-      const textWidth = ctx.measureText(text).width + letterSpacingPx * text.length;
-
-      if (textWidth > available + 1) {
-        const curr = parseFloat(compStyle.fontSize);
-        // 0.95 buffer prevents sub-pixel rounding from re-triggering clipping.
-        const newSize = Math.max(curr * (available / textWidth) * 0.95, 5);
-        setTitleFontOverride(`${newSize.toFixed(1)}pt`);
-      } else {
-        setTitleFontOverride(undefined);
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [card.title, forPrint]);
+  // Title font scaling is handled in CSS via the --title-len custom property.
 
   // For spell cards, only show Spell DC when defense is a save, Spell Attack when it's a
   // spell-attack roll. If neither applies (e.g. auto-hit spells like Force Barrage) hide both.
@@ -433,13 +388,9 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
           )}
           <div className={styles.titleGroup}>
             <span
-              ref={titleRef}
               className={styles.title}
-              style={
-                titleFontOverride
-                  ? { fontSize: titleFontOverride, textOverflow: 'clip' }
-                  : undefined
-              }
+              style={{ '--title-len': card.title.length } as React.CSSProperties}
+              data-long={card.title.length >= 40 ? '' : undefined}
             >
               {card.continuationOf && <span className={styles.backBadge}>↩</span>}
               {card.title}
