@@ -5,12 +5,18 @@ import { validateImport } from '../import/validateImport';
 import { importProjectJson } from '../storage/exportProject';
 import styles from './ImportScreen.module.css';
 
+import alaseJson from '../fixtures/alase.json';
 import hanaeJson from '../fixtures/hanae.json';
 import hikariJson from '../fixtures/hikari.json';
+import nerriJson from '../fixtures/nerri.json';
+import vassoraJson from '../fixtures/vassora.json';
 
 const DEV_FIXTURES = [
   { label: 'Hikari — Monk lv11 (no spellcaster)', json: hikariJson },
   { label: 'Hanae — Sorcerer lv11 (arcane + focus)', json: hanaeJson },
+  { label: 'Alase — Summoner lv20 (Beast Eidolon)', json: alaseJson },
+  { label: 'Nerri — Wizard lv7 (familiar)', json: nerriJson },
+  { label: 'Vassora — Druid lv7 (two animal companions)', json: vassoraJson },
 ];
 
 export function ImportScreen() {

@@ -1,6 +1,7 @@
 import type { CardModel } from '../model/cards';
 import type { CharacterModel } from '../model/character';
 import { generateBasicActionCards } from './templates/basicActions';
+import { generateCreatureCards } from './templates/creatures';
 import { generateEquipmentCards } from './templates/equipment';
 import { generateFeatCards } from './templates/feats';
 import { generateReminderCards } from './templates/reminders';
@@ -46,9 +47,18 @@ export function generateDeck(char: CharacterModel): GenerationResult {
   }
 
   cards.push(...generateEquipmentCards(char));
+
+  // Linked creatures (eidolons, companions, familiars)
+  const linkedCreatures = char.linkedCreatures ?? [];
+  linkedCreatures.forEach((creature, i) => {
+    cards.push(...generateCreatureCards(creature, i));
+  });
+
   cards.push(...generateReminderCards());
 
   // Sort: category → priority → level/rank ascending → alphabetical
+  // All creature-* categories share order slot 11 so that priority alone
+  // groups each creature’s cards together (face, skills, attacks, actions).
   const CATEGORY_ORDER: Record<string, number> = {
     summary: 0,
     'basic-action': 1,
@@ -61,8 +71,12 @@ export function generateDeck(char: CharacterModel): GenerationResult {
     'focus-spell': 8,
     weapon: 9,
     equipment: 10,
-    reminder: 11,
-    manual: 12,
+    'creature-summary': 11,
+    'creature-skill': 11,
+    'creature-attack': 11,
+    'creature-action': 11,
+    reminder: 12,
+    manual: 13,
   };
 
   cards.sort((a, b) => {
@@ -157,39 +171,45 @@ function splitOverflowOnce(cards: CardModel[]): CardModel[] {
         frontSummary = summary.slice(0, breakAt + 1).trim();
         spilloverSummary = summary.slice(breakAt + 1).trim();
       }
-      // Front: (truncated) summary only
-      result.push({
-        ...card,
-        rules: {
-          ...card.rules,
-          summary: frontSummary,
-          criticalSuccess: undefined,
-          success: undefined,
-          failure: undefined,
-          criticalFailure: undefined,
-        },
-      });
-      // Back: any spillover summary text + outcomes
-      result.push({
-        ...card,
-        id: `${card.id}-back`,
-        stableKey: `${card.stableKey}-back`,
-        continuationOf: card.id,
-        writableFields: [],
-        rules: {
-          ...card.rules,
-          summary: spilloverSummary,
-          traits: [],
-          trigger: undefined,
-          requirements: undefined,
-          frequency: undefined,
-          usage: undefined,
-          bulk: undefined,
-          price: undefined,
-          activateTag: undefined,
-        },
-        userEdits: { edited: false },
-      });
+      // Guard: if the front would be empty there is nothing to split off —
+      // keep the card as-is rather than emitting an empty front card.
+      if (frontSummary.length === 0) {
+        result.push(card);
+      } else {
+        // Front: (truncated) summary only
+        result.push({
+          ...card,
+          rules: {
+            ...card.rules,
+            summary: frontSummary,
+            criticalSuccess: undefined,
+            success: undefined,
+            failure: undefined,
+            criticalFailure: undefined,
+          },
+        });
+        // Back: any spillover summary text + outcomes
+        result.push({
+          ...card,
+          id: `${card.id}-back`,
+          stableKey: `${card.stableKey}-back`,
+          continuationOf: card.id,
+          writableFields: [],
+          rules: {
+            ...card.rules,
+            summary: spilloverSummary,
+            traits: [],
+            trigger: undefined,
+            requirements: undefined,
+            frequency: undefined,
+            usage: undefined,
+            bulk: undefined,
+            price: undefined,
+            activateTag: undefined,
+          },
+          userEdits: { edited: false },
+        });
+      }
     } else if (hasExtraSections && summary.length + extraSectionsText > 850) {
       // If the summary is long, truncate it so the front card doesn't overflow
       // even after extra sections are moved to the back.  Any spillover summary
@@ -204,36 +224,43 @@ function splitOverflowOnce(cards: CardModel[]): CardModel[] {
         frontSummary = summary.slice(0, breakAt + 1).trim();
         spilloverSummary = summary.slice(breakAt + 1).trim();
       }
-      // Front: (truncated) summary, no extra section bodies
-      result.push({
-        ...card,
-        rules: {
-          ...card.rules,
-          summary: frontSummary,
-          extraSections: undefined,
-        },
-      });
-      // Back: any spillover summary + extra sections
-      result.push({
-        ...card,
-        id: `${card.id}-back`,
-        stableKey: `${card.stableKey}-back`,
-        continuationOf: card.id,
-        writableFields: [],
-        rules: {
-          ...card.rules,
-          summary: spilloverSummary,
-          traits: [],
-          trigger: undefined,
-          requirements: undefined,
-          frequency: undefined,
-          usage: undefined,
-          bulk: undefined,
-          price: undefined,
-          activateTag: undefined,
-        },
-        userEdits: { edited: false },
-      });
+      // Guard: if the front would be empty (this card is already a continuation
+      // with no summary, only extraSections), don't split — emitting an empty
+      // front card would cascade across all 5 passes creating blank cards.
+      if (frontSummary.length === 0) {
+        result.push(card);
+      } else {
+        // Front: (truncated) summary, no extra section bodies
+        result.push({
+          ...card,
+          rules: {
+            ...card.rules,
+            summary: frontSummary,
+            extraSections: undefined,
+          },
+        });
+        // Back: any spillover summary + extra sections
+        result.push({
+          ...card,
+          id: `${card.id}-back`,
+          stableKey: `${card.stableKey}-back`,
+          continuationOf: card.id,
+          writableFields: [],
+          rules: {
+            ...card.rules,
+            summary: spilloverSummary,
+            traits: [],
+            trigger: undefined,
+            requirements: undefined,
+            frequency: undefined,
+            usage: undefined,
+            bulk: undefined,
+            price: undefined,
+            activateTag: undefined,
+          },
+          userEdits: { edited: false },
+        });
+      }
     } else if (!hasOutcomes && !hasExtraSections && summary.length > 800) {
       // Long plain summary — find the last sentence end before the threshold and
       // split there. Front shows the first chunk; back shows the rest.
@@ -243,28 +270,33 @@ function splitOverflowOnce(cards: CardModel[]): CardModel[] {
       if (breakAt <= 0) breakAt = THRESHOLD;
       const front = summary.slice(0, breakAt + 1).trim();
       const back = summary.slice(breakAt + 1).trim();
-      result.push({ ...card, rules: { ...card.rules, summary: front } });
-      result.push({
-        ...card,
-        id: `${card.id}-back`,
-        stableKey: `${card.stableKey}-back`,
-        continuationOf: card.id,
-        writableFields: [],
-        rules: {
-          ...card.rules,
-          summary: back,
-          traits: [],
-          trigger: undefined,
-          requirements: undefined,
-          frequency: undefined,
-          usage: undefined,
-          bulk: undefined,
-          price: undefined,
-          activateTag: undefined,
-          level: undefined,
-        },
-        userEdits: { edited: false },
-      });
+      // Guard: don't create an empty back card.
+      if (back.length === 0) {
+        result.push(card);
+      } else {
+        result.push({ ...card, rules: { ...card.rules, summary: front } });
+        result.push({
+          ...card,
+          id: `${card.id}-back`,
+          stableKey: `${card.stableKey}-back`,
+          continuationOf: card.id,
+          writableFields: [],
+          rules: {
+            ...card.rules,
+            summary: back,
+            traits: [],
+            trigger: undefined,
+            requirements: undefined,
+            frequency: undefined,
+            usage: undefined,
+            bulk: undefined,
+            price: undefined,
+            activateTag: undefined,
+            level: undefined,
+          },
+          userEdits: { edited: false },
+        });
+      }
     } else {
       result.push(card);
     }

@@ -58,6 +58,10 @@ function getCardTabInfo(card: CardModel): CardTabInfo {
     summary: { tabLabel: '', themeClass: styles.themeSummary },
     reminder: { tabLabel: '', themeClass: styles.themeReminder },
     manual: { tabLabel: '', themeClass: '' },
+    'creature-summary': { tabLabel: 'Creature', themeClass: styles.themeCreature },
+    'creature-skill': { tabLabel: 'Creature', themeClass: styles.themeCreature },
+    'creature-attack': { tabLabel: 'Creature', themeClass: styles.themeCreature },
+    'creature-action': { tabLabel: 'Creature', themeClass: styles.themeCreature },
   };
   return categoryTab[card.category] ?? { tabLabel: '', themeClass: '' };
 }
@@ -89,6 +93,10 @@ function getRankLabel(card: CardModel): string {
     'free-action': 'Free',
     weapon: 'Weapon',
     equipment: 'Equipment',
+    'creature-summary': 'Creature',
+    'creature-skill': 'Skills',
+    'creature-attack': 'Attack',
+    'creature-action': 'Action',
   };
   return labelMap[card.category] ?? '';
 }

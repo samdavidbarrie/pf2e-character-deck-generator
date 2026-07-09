@@ -11,7 +11,11 @@ export type CardCategory =
   | 'weapon'
   | 'equipment'
   | 'reminder'
-  | 'manual';
+  | 'manual'
+  | 'creature-summary'
+  | 'creature-skill'
+  | 'creature-attack'
+  | 'creature-action';
 
 export type ActionCost =
   'free' | 'reaction' | '1' | '2' | '3' | '1-2' | '1-3' | '2-3' | 'variable' | 'passive';
@@ -144,6 +148,10 @@ export const CATEGORY_LABEL: Record<CardCategory, string> = {
   equipment: 'Equipment',
   reminder: 'Reminder',
   manual: 'Custom',
+  'creature-summary': 'Creature',
+  'creature-skill': 'Creature Skills',
+  'creature-attack': 'Creature Attack',
+  'creature-action': 'Creature Action',
 };
 
 export const CATEGORY_COLOR: Record<CardCategory, string> = {
@@ -160,4 +168,8 @@ export const CATEGORY_COLOR: Record<CardCategory, string> = {
   equipment: '#e8e4d8',
   reminder: '#f8f8f2',
   manual: '#f0f0f0',
+  'creature-summary': '#d4e8d4',
+  'creature-skill': '#c8dcc8',
+  'creature-attack': '#dce4c4',
+  'creature-action': '#d0e0c8',
 };

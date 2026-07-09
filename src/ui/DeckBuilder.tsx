@@ -17,6 +17,11 @@ const CATEGORY_FILTERS: Array<{ value: string; label: string }> = [
   { value: 'focus-spell', label: 'Focus Spells' },
   { value: 'weapon', label: 'Weapons' },
   { value: 'equipment', label: 'Equipment' },
+  { value: 'creatures', label: 'Creatures' },
+  { value: 'creature-summary', label: '↳ Summary' },
+  { value: 'creature-skill', label: '↳ Skills' },
+  { value: 'creature-attack', label: '↳ Attacks' },
+  { value: 'creature-action', label: '↳ Actions' },
   { value: 'reminder', label: 'Reminders' },
   { value: 'manual', label: 'Custom' },
   { value: 'hidden', label: 'Hidden' },
@@ -47,11 +52,16 @@ export function DeckBuilder() {
 
   const filtered = cards.filter((card) => {
     if (categoryFilter === 'hidden') return !card.print.include;
+    if (categoryFilter === 'creatures') return card.category.startsWith('creature-');
     if (categoryFilter && categoryFilter !== 'all' && card.category !== categoryFilter)
       return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      if (!card.title.toLowerCase().includes(q) && !card.rules.summary.toLowerCase().includes(q)) {
+      if (
+        !card.title.toLowerCase().includes(q) &&
+        !(card.subtitle ?? '').toLowerCase().includes(q) &&
+        !card.rules.summary.toLowerCase().includes(q)
+      ) {
         return false;
       }
     }
