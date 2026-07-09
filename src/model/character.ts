@@ -72,6 +72,8 @@ export interface CharacterAttack {
   group?: string;
   notes?: string;
   isUnarmed?: boolean;
+  /** Material of the weapon, e.g. "Cold Iron (Low-Grade)", "Silver (Standard)". */
+  material?: string;
 }
 
 export interface CharacterEquipment {

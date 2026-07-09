@@ -549,6 +549,7 @@ export function parsePathbuilder(json: unknown): CharacterModel {
       })(),
       notes: str(get(w, 'notes')),
       isUnarmed: str(get(w, 'prof')) === 'unarmed',
+      material: str(get(w, 'mat')) || undefined,
     });
   }
 

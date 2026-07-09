@@ -687,6 +687,17 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
     rules.level = data.level;
   }
 
+  // For named (non-unarmed) weapon cards: apply item metadata so they render
+  // the same Item / Usage / Bulk / Price row as equipment cards.
+  if (card.category === 'weapon' && !card.continuationOf) {
+    const isUnarmed = rules.traits.some((t) => t.toLowerCase() === 'unarmed');
+    if (!isUnarmed) {
+      if (data.usage && !rules.usage) rules.usage = data.usage;
+      if (data.bulk && !rules.bulk) rules.bulk = data.bulk;
+      if (data.priceRaw && !rules.price) rules.price = data.priceRaw;
+    }
+  }
+
   return { ...card, rules, source, subtitle, writableFields };
 }
 

@@ -62,7 +62,31 @@ const NAME_TO_GROUP: Record<string, string> = {
   dart: 'dart',
 };
 
-// Damage type abbreviation → readable label
+// ---------------------------------------------------------------------------
+// Rune-effective item level
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns the minimum item level implied by the weapon's fundamental runes.
+ * Used as a pre-enrichment estimate; AoN enrichment may raise it further via
+ * the base weapon level, but never lowers a rune-set level.
+ */
+function effectiveRuneLevel(fundamentalRunes: string[]): number | undefined {
+  const LEVELS: Record<string, number> = {
+    '+1': 2,
+    '+2': 10,
+    '+3': 16,
+    striking: 4,
+    'greater striking': 12,
+    'major striking': 19,
+  };
+  let max: number | undefined;
+  for (const rune of fundamentalRunes) {
+    const lvl = LEVELS[rune.toLowerCase()];
+    if (lvl !== undefined) max = max === undefined ? lvl : Math.max(max, lvl);
+  }
+  return max;
+}
 const DAMAGE_TYPE_LABEL: Record<string, string> = {
   S: 'Slashing',
   P: 'Piercing',
@@ -177,8 +201,14 @@ function buildMainCard(attack: CharacterAttack): CardModel {
   // Runes line: fundamental runes first, then property runes
   const allRunes = [...(attack.fundamentalRunes ?? []), ...(attack.runes ?? [])];
   const runeNote = allRunes.length > 0 ? `Runes: ${allRunes.join(', ')}` : '';
-  const summaryParts = ['Hit: + ___', damageLine, ...extraLines, runeNote].filter(Boolean);
+  const materialNote = attack.material ? `Material: ${attack.material}` : '';
+  const summaryParts = ['Hit: + ___', damageLine, ...extraLines, runeNote, materialNote].filter(
+    Boolean,
+  );
   const summary = summaryParts.join('\n');
+
+  // Effective item level from fundamental runes (pre-enrichment; AoN fills base level if absent).
+  const runeLevel = effectiveRuneLevel(attack.fundamentalRunes ?? []);
 
   // Merge base traits + traits granted by property runes, deduplicated.
   // For named unarmed attacks (monk stances / ki powers), seed from the
@@ -210,6 +240,7 @@ function buildMainCard(attack: CharacterAttack): CardModel {
       actionCost: '1',
       traits,
       summary,
+      ...(runeLevel !== undefined ? { level: runeLevel } : {}),
       ...(range ? { range } : {}),
       ...(extraSections.length > 0 ? { extraSections } : {}),
     },

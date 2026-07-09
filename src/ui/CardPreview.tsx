@@ -261,7 +261,8 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
 
   // For skill-action cards, show the relevant skill above the summary and remove it from the bottom.
   const isSkillAction = card.category === 'skill-action' && !card.continuationOf;
-  const hasItemLevel = card.category === 'equipment' && card.rules.level !== undefined;
+  const hasItemLevel =
+    (card.category === 'equipment' || card.category === 'weapon') && card.rules.level !== undefined;
   const skillLabel = isSkillAction ? (SKILL_FOR_ACTION[card.title] ?? 'Skill') : null;
 
   // Scale body text to match card density — applied in both deck-builder and print views
