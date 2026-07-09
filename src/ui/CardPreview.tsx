@@ -198,17 +198,20 @@ const INLINE_ACTION_ICONS: [string, string][] = [
 ].filter(([, src]) => src) as [string, string][];
 
 const INLINE_ACTION_SPLIT_RE = new RegExp(
-  `(\\*\\*[^*]+\\*\\*|${INLINE_ACTION_ICONS.map(([s]) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`,
+  `(\\*\\*[^*]+\\*\\*|_{3,}|${INLINE_ACTION_ICONS.map(([s]) => s.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')).join('|')})`,
   'g',
 );
 
-/** Render text with **bold** markers as <strong> and Unicode action symbols as icon images. */
+/** Render text with **bold** markers as <strong>, ___ sequences as inline blanks, and Unicode action symbols as icon images. */
 function renderBold(text: string): React.ReactNode {
   const parts = text.split(INLINE_ACTION_SPLIT_RE);
   if (parts.length === 1) return text;
   return parts.map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**')) {
       return <strong key={i}>{part.slice(2, -2)}</strong>;
+    }
+    if (/^_{3,}$/.test(part)) {
+      return <span key={i} className={styles.inlineBlank} />;
     }
     const icon = INLINE_ACTION_ICONS.find(([s]) => s === part);
     if (icon) {
@@ -705,7 +708,10 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
 
           // ── Standard layout ──────────────────────────────────────────────
           const skillRows = effectiveWritableFields.filter((f) => f.type === 'skill-row');
-          const otherFields = effectiveWritableFields.filter((f) => f.type !== 'skill-row');
+          // Notes-type fields are rendered via the dedicated userNotes section below.
+          const otherFields = effectiveWritableFields.filter(
+            (f) => f.type !== 'skill-row' && f.type !== 'notes',
+          );
           return (
             <>
               {skillRows.length > 0 && (
@@ -761,9 +767,7 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
                               </span>
                             ))}
                           </span>
-                        ) : f.type === 'notes' ? (
-                          <span className={styles.notesLine}>______________________</span>
-                        ) : (
+                        ) : f.type === 'notes' ? null : ( // Should not be reached — notes are filtered out of otherFields.
                           <span className={styles.blankBox}>
                             {' '.repeat(f.size === 'lg' ? 20 : f.size === 'md' ? 12 : 6)}
                           </span>
@@ -782,6 +786,14 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
             <a href={card.source.aonUrl} target="_blank" rel="noopener noreferrer" tabIndex={-1}>
               AoN ↗
             </a>
+          </div>
+        )}
+
+        {/* User notes — shown on ALL card types when the notes textarea has content. */}
+        {card.userEdits.notes && (
+          <div className={styles.userNotes}>
+            <span className={styles.userNotesLabel}>Notes</span>
+            <span className={styles.userNotesContent}>{card.userEdits.notes}</span>
           </div>
         )}
       </div>

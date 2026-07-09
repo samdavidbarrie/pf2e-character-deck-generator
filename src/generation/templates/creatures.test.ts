@@ -424,6 +424,54 @@ describe('generateCreatureAttackCards', () => {
     expect(cards[0].rules.summary).toContain('2d6');
     expect(cards[0].rules.summary).toContain('S');
   });
+
+  it('primary eidolon attack (no damageDice, only Unarmed trait) shows 4 option choices', () => {
+    const primary = makeEidolon({
+      attacks: [{ name: 'Jaws', traits: ['Unarmed'], damageType: 'Piercing', isUnarmed: true }],
+    });
+    const cards = generateCreatureAttackCards(primary, 20);
+    expect(cards[0].rules.summary).toContain('Choose ONE primary attack option');
+    expect(cards[0].rules.summary).toContain('1d8');
+    expect(cards[0].rules.summary).toContain('fatal d10');
+    expect(cards[0].rules.summary).toContain('Piercing'); // damage type shown
+  });
+
+  it('secondary eidolon attack (d6 + Agile + Finesse + isUnarmed) shows fixed stats', () => {
+    const secondary = makeEidolon({
+      attacks: [
+        {
+          name: 'Claw',
+          traits: ['Agile', 'Finesse', 'Unarmed'],
+          damageDice: 'd6',
+          damageType: 'Slashing',
+          isUnarmed: true,
+        },
+      ],
+    });
+    const cards = generateCreatureAttackCards(secondary, 20);
+    expect(cards[0].rules.summary).toContain('d6'); // die size only, count filled by player
+    expect(cards[0].rules.summary).toContain('Slashing');
+    // Agile and Finesse appear as trait pills (rules.traits), not in the summary text
+    expect(cards[0].rules.traits).toContain('Agile');
+    expect(cards[0].rules.traits).toContain('Finesse');
+    expect(cards[0].rules.summary).not.toContain('Choose');
+  });
+
+  it('Beast Eidolon from registry has Jaws as primary and Claw as secondary', async () => {
+    const fixture = await import('../../fixtures/alase.json');
+    const char = parsePathbuilder(fixture);
+    const eidolon = char.linkedCreatures![0];
+    const attacks = eidolon.attacks!;
+    const jaws = attacks.find((a) => a.name === 'Jaws')!;
+    const claw = attacks.find((a) => a.name === 'Claw')!;
+    // Jaws is primary: no damageDice, only Unarmed trait
+    expect(jaws.damageDice).toBeUndefined();
+    expect(jaws.traits).toEqual(['Unarmed']);
+    // Claw is secondary: d6, Agile, Finesse
+    expect(claw.damageDice).toBe('d6');
+    expect(claw.traits).toContain('Agile');
+    expect(claw.traits).toContain('Finesse');
+  });
 });
 
 // ---------------------------------------------------------------------------

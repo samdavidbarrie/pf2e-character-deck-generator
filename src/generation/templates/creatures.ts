@@ -114,11 +114,39 @@ export function generateCreatureAttackCards(
   if (!creature.attacks || creature.attacks.length === 0) return [];
 
   return creature.attacks.map((attack, i) => {
-    const die = attack.damageDice ?? 'd?';
-    const type = attack.damageType ?? '';
-    const damageLine = `Damage: ___ ${die} + ___ ${type}`.trimEnd();
-    const extraLines = (attack.extraDamage ?? []).map((d) => `+${d}`);
-    const summaryParts = ['Hit: + ___', damageLine, ...extraLines].filter(Boolean);
+    const damageType = attack.damageType ?? '';
+
+    // A secondary eidolon attack is always 1d6 Agile Finesse per the rules.
+    // A primary eidolon attack has no preset dice — player chose from 4 options.
+    const isEidolonSecondary =
+      !!attack.isUnarmed &&
+      attack.damageDice === 'd6' &&
+      attack.traits.includes('Agile') &&
+      attack.traits.includes('Finesse');
+    const isEidolonPrimary =
+      !!attack.isUnarmed && !attack.damageDice && !attack.traits.includes('Agile');
+
+    let summary: string;
+    if (isEidolonPrimary) {
+      summary = [
+        `Damage type: ${damageType}`,
+        'Hit: + ___',
+        'Damage: ___ + ___',
+        'Choose ONE primary attack option:',
+        '• 1d8  (disarm / nonlethal / shove / trip)',
+        '• 1d6  (fatal d10)',
+        '• 1d6  (forceful and sweep)',
+        '• 1d6  (deadly d8 and finesse)',
+        "↳ Make your choice, edit this card's Traits, then delete these notes.",
+      ].join('\n');
+    } else if (isEidolonSecondary) {
+      summary = ['Hit: + ___', `Damage: ___ d6 + ___ ${damageType}`.trimEnd()].join('\n');
+    } else {
+      const die = attack.damageDice ?? 'd?';
+      const damageLine = `Damage: ___ ${die} + ___ ${damageType}`.trimEnd();
+      const extraLines = (attack.extraDamage ?? []).map((d) => `+${d}`);
+      summary = ['Hit: + ___', damageLine, ...extraLines].filter(Boolean).join('\n');
+    }
 
     return defaultCard({
       title: attack.name,
@@ -131,7 +159,7 @@ export function generateCreatureAttackCards(
       },
       rules: {
         traits: [...new Set([...attack.traits, 'Attack'])],
-        summary: summaryParts.join('\n'),
+        summary,
       },
       print: { include: true, priority: basePriority + i, size: 'standard' },
       writableFields: [notesField()],

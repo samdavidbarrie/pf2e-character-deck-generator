@@ -28,11 +28,16 @@ export interface EidolonAbility {
 
 /** A canonical unarmed attack template. */
 export interface EidolonAttackTemplate {
+  /** Physical form, e.g. 'Jaws', 'Claw', 'Fist'. */
   name: string;
+  /** Bludgeoning, Piercing, or Slashing. */
   damageType: string;
-  /** Base die, e.g. 'd8' (primary) or 'd6' (secondary). */
-  damageDice: string;
-  traits: string[];
+  /**
+   * 'primary': player chooses ONE of the four standard primary attack options
+   *   (see https://2e.aonprd.com/Rules.aspx?ID=1581 – Unarmed Attacks).
+   * 'secondary': always 1d6, Agile, Finesse – fixed by the rules.
+   */
+  role: 'primary' | 'secondary';
 }
 
 /** Full static data for one eidolon type. */
@@ -45,8 +50,11 @@ export interface EidolonEntry {
   senses: string[];
   languages: string[];
   /**
-   * Canonical primary and secondary attack forms.
-   * Primary is listed first (d8 die), secondary second (d6 die).
+   * One primary and one secondary attack form from the eidolon's AoN entry.
+   * Traits and dice are NOT stored here — they follow the universal rule table:
+   *   Primary: player picks one of four options (1d8 utility, 1d6 fatal d10,
+   *            1d6 forceful+sweep, 1d6 deadly d8+finesse).
+   *   Secondary: always 1d6 Agile Finesse (fixed by the rules).
    */
   attacks: EidolonAttackTemplate[];
   abilities: EidolonAbility[];
@@ -66,18 +74,8 @@ export const EIDOLON_REGISTRY: Record<string, EidolonEntry> = {
     senses: ['Darkvision'],
     languages: ['Celestial'],
     attacks: [
-      {
-        name: 'Wing',
-        damageType: 'Bludgeoning',
-        damageDice: 'd6',
-        traits: ['Agile', 'Finesse', 'Unarmed'],
-      },
-      {
-        name: 'Fist',
-        damageType: 'Bludgeoning',
-        damageDice: 'd4',
-        traits: ['Agile', 'Nonlethal', 'Unarmed'],
-      },
+      { name: 'Wing', damageType: 'Bludgeoning', role: 'primary' },
+      { name: 'Fist', damageType: 'Bludgeoning', role: 'secondary' },
     ],
     abilities: [
       {
@@ -110,18 +108,8 @@ export const EIDOLON_REGISTRY: Record<string, EidolonEntry> = {
     senses: ['Darkvision'],
     languages: [],
     attacks: [
-      {
-        name: 'Tendril',
-        damageType: 'Bludgeoning',
-        damageDice: 'd8',
-        traits: ['Unarmed'],
-      },
-      {
-        name: 'Fist',
-        damageType: 'Bludgeoning',
-        damageDice: 'd6',
-        traits: ['Agile', 'Finesse', 'Unarmed'],
-      },
+      { name: 'Tendril', damageType: 'Bludgeoning', role: 'primary' },
+      { name: 'Fist', damageType: 'Bludgeoning', role: 'secondary' },
     ],
     abilities: [
       {
@@ -154,18 +142,8 @@ export const EIDOLON_REGISTRY: Record<string, EidolonEntry> = {
     senses: ['Darkvision', 'Scent (imprecise) 30 ft.'],
     languages: [],
     attacks: [
-      {
-        name: 'Jaws',
-        damageType: 'Piercing',
-        damageDice: 'd8',
-        traits: ['Deadly d10', 'Unarmed'],
-      },
-      {
-        name: 'Claw',
-        damageType: 'Slashing',
-        damageDice: 'd6',
-        traits: ['Agile', 'Finesse', 'Unarmed'],
-      },
+      { name: 'Jaws', damageType: 'Piercing', role: 'primary' },
+      { name: 'Claw', damageType: 'Slashing', role: 'secondary' },
     ],
     abilities: [
       {
@@ -198,12 +176,8 @@ export const EIDOLON_REGISTRY: Record<string, EidolonEntry> = {
     senses: ['Darkvision'],
     languages: [],
     attacks: [
-      {
-        name: 'Fist',
-        damageType: 'Bludgeoning',
-        damageDice: 'd8',
-        traits: ['Unarmed'],
-      },
+      { name: 'Fist', damageType: 'Bludgeoning', role: 'primary' },
+      { name: 'Fist', damageType: 'Bludgeoning', role: 'secondary' },
     ],
     abilities: [
       {
@@ -236,18 +210,8 @@ export const EIDOLON_REGISTRY: Record<string, EidolonEntry> = {
     senses: ['Darkvision'],
     languages: ['Abyssal'],
     attacks: [
-      {
-        name: 'Jaws',
-        damageType: 'Piercing',
-        damageDice: 'd8',
-        traits: ['Unarmed'],
-      },
-      {
-        name: 'Claw',
-        damageType: 'Slashing',
-        damageDice: 'd6',
-        traits: ['Agile', 'Finesse', 'Unarmed'],
-      },
+      { name: 'Jaws', damageType: 'Piercing', role: 'primary' },
+      { name: 'Claw', damageType: 'Slashing', role: 'secondary' },
     ],
     abilities: [
       {
@@ -280,18 +244,8 @@ export const EIDOLON_REGISTRY: Record<string, EidolonEntry> = {
     senses: ['Darkvision'],
     languages: [],
     attacks: [
-      {
-        name: 'Tendril',
-        damageType: 'Bludgeoning',
-        damageDice: 'd8',
-        traits: ['Unarmed'],
-      },
-      {
-        name: 'Fist',
-        damageType: 'Bludgeoning',
-        damageDice: 'd6',
-        traits: ['Agile', 'Finesse', 'Unarmed'],
-      },
+      { name: 'Tendril', damageType: 'Bludgeoning', role: 'primary' },
+      { name: 'Fist', damageType: 'Bludgeoning', role: 'secondary' },
     ],
     abilities: [
       {
@@ -324,18 +278,8 @@ export const EIDOLON_REGISTRY: Record<string, EidolonEntry> = {
     senses: ['Darkvision'],
     languages: ['Draconic'],
     attacks: [
-      {
-        name: 'Jaws',
-        damageType: 'Piercing',
-        damageDice: 'd8',
-        traits: ['Deadly d8', 'Unarmed'],
-      },
-      {
-        name: 'Claw',
-        damageType: 'Slashing',
-        damageDice: 'd6',
-        traits: ['Agile', 'Unarmed'],
-      },
+      { name: 'Jaws', damageType: 'Piercing', role: 'primary' },
+      { name: 'Claw', damageType: 'Slashing', role: 'secondary' },
     ],
     abilities: [
       {
@@ -368,18 +312,8 @@ export const EIDOLON_REGISTRY: Record<string, EidolonEntry> = {
     senses: ['Low-Light Vision'],
     languages: ['Fey'],
     attacks: [
-      {
-        name: 'Wing',
-        damageType: 'Bludgeoning',
-        damageDice: 'd6',
-        traits: ['Agile', 'Finesse', 'Unarmed'],
-      },
-      {
-        name: 'Fist',
-        damageType: 'Bludgeoning',
-        damageDice: 'd4',
-        traits: ['Agile', 'Nonlethal', 'Unarmed'],
-      },
+      { name: 'Wing', damageType: 'Bludgeoning', role: 'primary' },
+      { name: 'Fist', damageType: 'Bludgeoning', role: 'secondary' },
     ],
     abilities: [
       {
@@ -412,18 +346,8 @@ export const EIDOLON_REGISTRY: Record<string, EidolonEntry> = {
     senses: ['Low-Light Vision'],
     languages: [],
     attacks: [
-      {
-        name: 'Vine',
-        damageType: 'Bludgeoning',
-        damageDice: 'd8',
-        traits: ['Unarmed'],
-      },
-      {
-        name: 'Branch',
-        damageType: 'Bludgeoning',
-        damageDice: 'd6',
-        traits: ['Agile', 'Unarmed'],
-      },
+      { name: 'Vine', damageType: 'Bludgeoning', role: 'primary' },
+      { name: 'Branch', damageType: 'Bludgeoning', role: 'secondary' },
     ],
     abilities: [
       {
@@ -456,18 +380,8 @@ export const EIDOLON_REGISTRY: Record<string, EidolonEntry> = {
     senses: ['Darkvision'],
     languages: ['Requian'],
     attacks: [
-      {
-        name: 'Jaws',
-        damageType: 'Piercing',
-        damageDice: 'd8',
-        traits: ['Unarmed'],
-      },
-      {
-        name: 'Claw',
-        damageType: 'Slashing',
-        damageDice: 'd6',
-        traits: ['Agile', 'Finesse', 'Unarmed'],
-      },
+      { name: 'Jaws', damageType: 'Piercing', role: 'primary' },
+      { name: 'Claw', damageType: 'Slashing', role: 'secondary' },
     ],
     abilities: [
       {
@@ -500,18 +414,8 @@ export const EIDOLON_REGISTRY: Record<string, EidolonEntry> = {
     senses: ['Darkvision'],
     languages: [],
     attacks: [
-      {
-        name: 'Jaws',
-        damageType: 'Piercing',
-        damageDice: 'd8',
-        traits: ['Unarmed'],
-      },
-      {
-        name: 'Claw',
-        damageType: 'Slashing',
-        damageDice: 'd6',
-        traits: ['Agile', 'Finesse', 'Unarmed'],
-      },
+      { name: 'Jaws', damageType: 'Piercing', role: 'primary' },
+      { name: 'Claw', damageType: 'Slashing', role: 'secondary' },
     ],
     abilities: [
       {
@@ -546,18 +450,8 @@ export const EIDOLON_REGISTRY: Record<string, EidolonEntry> = {
     senses: ['Darkvision'],
     languages: [],
     attacks: [
-      {
-        name: 'Spike',
-        damageType: 'Piercing',
-        damageDice: 'd8',
-        traits: ['Unarmed'],
-      },
-      {
-        name: 'Fist',
-        damageType: 'Bludgeoning',
-        damageDice: 'd6',
-        traits: ['Agile', 'Finesse', 'Unarmed'],
-      },
+      { name: 'Spike', damageType: 'Piercing', role: 'primary' },
+      { name: 'Fist', damageType: 'Bludgeoning', role: 'secondary' },
     ],
     abilities: [
       {
@@ -590,18 +484,8 @@ export const EIDOLON_REGISTRY: Record<string, EidolonEntry> = {
     senses: ['Low-Light Vision'],
     languages: [],
     attacks: [
-      {
-        name: 'Jaws',
-        damageType: 'Piercing',
-        damageDice: 'd8',
-        traits: ['Unarmed'],
-      },
-      {
-        name: 'Claws',
-        damageType: 'Slashing',
-        damageDice: 'd6',
-        traits: ['Agile', 'Unarmed'],
-      },
+      { name: 'Jaws', damageType: 'Piercing', role: 'primary' },
+      { name: 'Claws', damageType: 'Slashing', role: 'secondary' },
     ],
     abilities: [
       // Condensed-form ability (initial)

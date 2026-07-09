@@ -114,7 +114,13 @@ export const useAppStore = create<AppState>((set, get) => ({
     set((state) => {
       if (!state.project) return {};
       const cards = state.project.cards.map((c) =>
-        c.id === id ? { ...c, ...patch, userEdits: { ...c.userEdits, edited: true } } : c,
+        c.id === id
+          ? {
+              ...c,
+              ...patch,
+              userEdits: { ...c.userEdits, ...(patch.userEdits ?? {}), edited: true },
+            }
+          : c,
       );
       return { project: { ...state.project, cards, updatedAt: new Date().toISOString() } };
     }),

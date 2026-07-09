@@ -245,13 +245,16 @@ function parseLinkedCreatures(
         rank: 'trained' as ProficiencyRank,
       }));
 
-      // Attacks: use registry when available; otherwise no attacks.
+      // Attacks: use registry when available.
+      // Primary attacks carry NO preset traits or dice — the player chooses
+      // from the four standard primary options at character creation.
+      // Secondary attacks are always 1d6 Agile Finesse per the rules.
       const eidolonAttacks: CharacterAttack[] = entry
         ? entry.attacks.map((a) => ({
             name: a.name,
-            traits: a.traits,
-            damageDice: a.damageDice,
             damageType: a.damageType,
+            traits: a.role === 'secondary' ? ['Agile', 'Finesse', 'Unarmed'] : ['Unarmed'],
+            damageDice: a.role === 'secondary' ? 'd6' : undefined,
             isUnarmed: true,
           }))
         : [];
