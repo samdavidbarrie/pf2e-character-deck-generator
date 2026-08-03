@@ -177,30 +177,32 @@ function renderMarkdown(text: string): React.ReactNode {
   const lines = text.split('\n');
   return (
     <>
-      {lines.map((line, i) =>
-        line.trim() === '---' ? (
-          <hr key={i} className={styles.cardHr} />
-        ) : line.trim() === '[newcard]' ? (
-          <hr key={i} className={styles.cardSplitMark} />
-        ) : line.startsWith('> ') ? (
-          // Nested-feat reference: "> Tiger Slash ◆◆ Feat 6"
-          <span key={i} className={styles.featRef}>
-            {i > 0 && <br />}
-            {renderBold(line.slice(2))}
-          </span>
-        ) : line.startsWith('  ') ? (
-          // Indented continuation line (e.g. extra weapon damage)
-          <span key={i} className={styles.indentedLine}>
-            {i > 0 && <br />}
-            {renderBold(line.trimStart())}
-          </span>
-        ) : (
+      {lines.map((line, i) => {
+        const prevWasBlock =
+          i > 0 && (lines[i - 1].trim() === '---' || lines[i - 1].trim() === '[newcard]');
+        if (line.trim() === '---') return <hr key={i} className={styles.cardHr} />;
+        if (line.trim() === '[newcard]') return <hr key={i} className={styles.cardSplitMark} />;
+        if (line.startsWith('> '))
+          return (
+            <span key={i} className={styles.featRef}>
+              {i > 0 && !prevWasBlock && <br />}
+              {renderBold(line.slice(2))}
+            </span>
+          );
+        if (line.startsWith('  '))
+          return (
+            <span key={i} className={styles.indentedLine}>
+              {i > 0 && !prevWasBlock && <br />}
+              {renderBold(line.trimStart())}
+            </span>
+          );
+        return (
           <Fragment key={i}>
-            {i > 0 && <br />}
+            {i > 0 && !prevWasBlock && <br />}
             {renderBold(line)}
           </Fragment>
-        ),
-      )}
+        );
+      })}
     </>
   );
 }
