@@ -81,7 +81,7 @@ function buildSpellCard(spell: CharacterSpell, isFocus: boolean): CardModel {
       duration: spell.duration,
     },
     print: { include: true, priority: isFocus ? 42 : 40, size: 'standard' },
-    writableFields: [blankField('Spell DC', 'sm'), blankField('Spell Attack', 'sm')],
+    writableFields: [],
   });
 }
 

@@ -1,7 +1,7 @@
 import type { CardModel } from '../../model/cards';
 import type { CharacterModel } from '../../model/character';
 import { buildStableKey } from '../../rules/nameNormalization';
-import { blankField, defaultCard } from './_helpers';
+import { ACTION_SKILL_MAP, defaultCard } from './_helpers';
 
 interface BasicAction {
   name: string;
@@ -168,12 +168,10 @@ export function generateBasicActionCards(char: CharacterModel): CardModel[] {
           actionCost: action.actionCost,
           traits: action.traits,
           summary: action.summary,
+          ...(action.name === 'Strike' ? { bonus: 'Attack: + ___' } : {}),
         },
         print: { include: false, priority: 20, size: 'standard' },
-        writableFields:
-          action.name === 'Strike'
-            ? [blankField('Attack bonus', 'sm'), blankField('Damage', 'sm')]
-            : [],
+        writableFields: [],
       }),
     );
   }
@@ -184,6 +182,12 @@ export function generateBasicActionCards(char: CharacterModel): CardModel[] {
 
     if (!include) continue;
 
+    const skillName =
+      action.requiresSkill === 'any' || action.requiresSkill === undefined
+        ? ACTION_SKILL_MAP[action.name]
+        : action.requiresSkill;
+    const bonus = skillName ? `${skillName}: + ___` : undefined;
+
     cards.push(
       defaultCard({
         title: action.name,
@@ -193,9 +197,10 @@ export function generateBasicActionCards(char: CharacterModel): CardModel[] {
           actionCost: action.actionCost,
           traits: action.traits,
           summary: action.summary,
+          ...(bonus ? { bonus } : {}),
         },
         print: { include: action.name !== 'Recall Knowledge', priority: 25, size: 'standard' },
-        writableFields: [blankField('Skill bonus', 'sm')],
+        writableFields: [],
       }),
     );
   }

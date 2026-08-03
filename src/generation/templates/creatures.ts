@@ -207,6 +207,7 @@ export function generateCreatureActionCards(
         },
         print: { include: true, priority: basePriority + i, size: 'standard' },
         writableFields: cost ? [notesField()] : [],
+        userEdits: { edited: false },
       });
     });
 }

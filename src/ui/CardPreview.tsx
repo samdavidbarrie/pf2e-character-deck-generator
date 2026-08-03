@@ -112,76 +112,12 @@ interface Props {
   card: CardModel;
   selected?: boolean;
   onClick?: () => void;
+  /** Called instead of onClick when the user Ctrl/Cmd+clicks the card. */
+  onModifierClick?: () => void;
   forPrint?: boolean;
-  onToggleInclude?: () => void;
 }
 
 const BASE = import.meta.env.BASE_URL;
-
-/** Primary skill for each skill-action by card title. 'Skill' means multiple options. */
-const SKILL_FOR_ACTION: Record<string, string> = {
-  // Acrobatics
-  Balance: 'Acrobatics',
-  'Maneuver in Flight': 'Acrobatics',
-  Squeeze: 'Acrobatics',
-  'Tumble Through': 'Acrobatics',
-  // Athletics
-  Climb: 'Athletics',
-  Disarm: 'Athletics',
-  'Force Open': 'Athletics',
-  Grapple: 'Athletics',
-  'High Jump': 'Athletics',
-  'Long Jump': 'Athletics',
-  Shove: 'Athletics',
-  Swim: 'Athletics',
-  Trip: 'Athletics',
-  // Deception
-  'Create a Diversion': 'Deception',
-  Feint: 'Deception',
-  Impersonate: 'Deception',
-  Lie: 'Deception',
-  // Diplomacy
-  'Gather Information': 'Diplomacy',
-  'Make an Impression': 'Diplomacy',
-  Request: 'Diplomacy',
-  // Intimidation
-  Coerce: 'Intimidation',
-  Demoralize: 'Intimidation',
-  // Medicine
-  'Administer First Aid': 'Medicine',
-  'Treat Disease': 'Medicine',
-  'Treat Poison': 'Medicine',
-  'Treat Wounds': 'Medicine',
-  // Nature
-  'Command an Animal': 'Nature',
-  // Performance
-  Perform: 'Performance',
-  // Society
-  'Create Forgery': 'Society',
-  // Stealth
-  'Conceal an Object': 'Stealth',
-  Hide: 'Stealth',
-  Sneak: 'Stealth',
-  // Survival
-  'Cover Tracks': 'Survival',
-  Track: 'Survival',
-  // Thievery
-  'Disable a Device': 'Thievery',
-  'Palm an Object': 'Thievery',
-  'Pick a Lock': 'Thievery',
-  Steal: 'Thievery',
-  // Perception (treated as a skill)
-  Seek: 'Perception',
-  'Sense Motive': 'Perception',
-  // Multiple / varies
-  Escape: 'Skill',
-  'Identify Alchemy': 'Skill',
-  'Identify Magic': 'Skill',
-  'Learn a Spell': 'Skill',
-  'Recall Knowledge': 'Skill',
-  'Earn Income': 'Skill',
-  Subsist: 'Skill',
-};
 
 /** Render text that may contain **bold** markers produced by stripHtml. */
 const ACTION_ICON: Partial<Record<ActionCost, string>> = {
@@ -205,17 +141,20 @@ const INLINE_ACTION_ICONS: [string, string][] = [
 ].filter(([, src]) => src) as [string, string][];
 
 const INLINE_ACTION_SPLIT_RE = new RegExp(
-  `(\\*\\*[^*]+\\*\\*|_{3,}|${INLINE_ACTION_ICONS.map(([s]) => s.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')).join('|')})`,
+  `(\\*\\*[^*]+\\*\\*|\\*[^*]+\\*|_{3,}|${INLINE_ACTION_ICONS.map(([s]) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`,
   'g',
 );
 
-/** Render text with **bold** markers as <strong>, ___ sequences as inline blanks, and Unicode action symbols as icon images. */
+/** Render text with **bold**, *italic* markers and action icons. ___ becomes an inline blank. */
 function renderBold(text: string): React.ReactNode {
   const parts = text.split(INLINE_ACTION_SPLIT_RE);
   if (parts.length === 1) return text;
   return parts.map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**')) {
       return <strong key={i}>{part.slice(2, -2)}</strong>;
+    }
+    if (part.startsWith('*') && part.endsWith('*')) {
+      return <em key={i}>{part.slice(1, -1)}</em>;
     }
     if (/^_{3,}$/.test(part)) {
       return <span key={i} className={styles.inlineBlank} />;
@@ -227,6 +166,33 @@ function renderBold(text: string): React.ReactNode {
     return part || null;
   });
 }
+
+/**
+ * Render multi-line markdown text for the summary field.
+ * Lines containing only `---` become `<hr>` separators.
+ * Each newline becomes a `<br>`. Inline **bold**, *italic*, and action icons
+ * are handled by `renderBold`.
+ */
+function renderMarkdown(text: string): React.ReactNode {
+  const lines = text.split('\n');
+  return (
+    <>
+      {lines.map((line, i) =>
+        line.trim() === '---' ? (
+          <hr key={i} className={styles.cardHr} />
+        ) : line.trim() === '[newcard]' ? (
+          <hr key={i} className={styles.cardSplitMark} />
+        ) : (
+          <Fragment key={i}>
+            {i > 0 && <br />}
+            {renderBold(line)}
+          </Fragment>
+        ),
+      )}
+    </>
+  );
+}
+
 const ACTION_RANGE_PARTS: Partial<Record<ActionCost, [ActionCost, ActionCost]>> = {
   '1-2': ['1', '2'],
   '1-3': ['1', '3'],
@@ -263,10 +229,10 @@ function ActionCostDisplay({ cost }: { cost: ActionCost }) {
   return <span className={styles.actionCost}>{ACTION_COST_LABEL[cost]}</span>;
 }
 
-export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude }: Props) {
+export function CardPreview({ card, selected, onClick, onModifierClick, forPrint }: Props) {
   const splitCount = !forPrint && !card.continuationOf ? splitOverflowCards([card]).length : 1;
 
-  // Title font scaling is handled in CSS via the --title-len custom property.
+  // Title font size defaults to 10pt (CSS). Override stored in card.userEdits.titleFontSize.
 
   // For spell cards, only show Spell DC when defense is a save, Spell Attack when it's a
   // spell-attack roll. If neither applies (e.g. auto-hit spells like Force Barrage) hide both.
@@ -276,12 +242,9 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
     !!card.rules.defense &&
     /\b(fortitude|reflex|will|fort)\b/i.test(card.rules.defense);
 
-  // For skill-action cards, show the relevant skill above the summary and remove it from the bottom.
-  const isSkillAction = card.category === 'skill-action' && !card.continuationOf;
   // Item level always shows in the top-right corner via getRankLabel; never
   // duplicate it in the metadata row.
   const hasItemLevel = false;
-  const skillLabel = isSkillAction ? (SKILL_FOR_ACTION[card.title] ?? 'Skill') : null;
 
   // Scale body text to match card density — applied in both deck-builder and print views
   // so the two surfaces look identical.
@@ -324,9 +287,6 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
         return true;
       });
     }
-    if (isSkillAction) {
-      fields = fields.filter((f) => f.label !== 'Skill bonus');
-    }
     return fields;
   })();
 
@@ -361,7 +321,14 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
       ]
         .filter(Boolean)
         .join(' ')}
-      onClick={onClick}
+      onClick={(e) => {
+        if ((e.metaKey || e.ctrlKey) && onModifierClick) {
+          e.stopPropagation();
+          onModifierClick();
+        } else {
+          onClick?.();
+        }
+      }}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
       onKeyDown={onClick ? (e) => e.key === 'Enter' && onClick() : undefined}
@@ -373,24 +340,14 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
       {/* Card header: TITLE ◆◆  SPELL 3 */}
       <div className={styles.cardHeader}>
         <div className={styles.titleRow}>
-          {onToggleInclude && (
-            <button
-              className={`${styles.includeToggle} ${card.print.include ? styles.toggleIncluded : styles.toggleExcluded}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleInclude();
-              }}
-              aria-label={card.print.include ? 'Hide from print' : 'Include in print'}
-              title={card.print.include ? 'Hide from print' : 'Include in print'}
-            >
-              {card.print.include ? '✓' : '–'}
-            </button>
-          )}
           <div className={styles.titleGroup}>
             <span
               className={styles.title}
-              style={{ '--title-len': card.title.length } as React.CSSProperties}
-              data-long={card.title.length >= 40 ? '' : undefined}
+              style={
+                card.userEdits.titleFontSize
+                  ? ({ fontSize: `${card.userEdits.titleFontSize}pt` } as React.CSSProperties)
+                  : undefined
+              }
             >
               {card.continuationOf && <span className={styles.backBadge}>↩</span>}
               {card.title}
@@ -509,6 +466,9 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
             <span className={styles.fieldLabel}>Frequency</span> {card.rules.frequency}
           </div>
         )}
+        {card.rules.bonus && (
+          <div className={styles.bonusField}>{renderBold(card.rules.bonus)}</div>
+        )}
 
         {(card.rules.range ||
           card.rules.area ||
@@ -552,16 +512,17 @@ export function CardPreview({ card, selected, onClick, forPrint, onToggleInclude
             </div>
           )}
 
-        {skillLabel && (
-          <div className={styles.skillTopField}>
-            <span className={styles.skillTopLabel}>{skillLabel}:</span>
-            <span className={styles.skillTopSign}>+</span>
-            <span className={styles.skillTopBlank} />
-          </div>
-        )}
-
         {card.rules.summary && (
-          <div className={styles.summary}>{renderBold(card.rules.summary)}</div>
+          <div
+            className={styles.summary}
+            style={
+              card.userEdits.bodyFontSize
+                ? ({ fontSize: `${card.userEdits.bodyFontSize}pt` } as React.CSSProperties)
+                : undefined
+            }
+          >
+            {renderMarkdown(card.rules.summary)}
+          </div>
         )}
 
         {card.rules.criticalSuccess && (

@@ -148,7 +148,7 @@ export function DeckBuilder() {
                 card={card}
                 selected={card.id === selectedCardId}
                 onClick={() => selectCard(card.id === selectedCardId ? null : card.id)}
-                onToggleInclude={() => toggleCardInclude(card.id)}
+                onModifierClick={() => toggleCardInclude(card.id)}
               />
             </div>
           ))}

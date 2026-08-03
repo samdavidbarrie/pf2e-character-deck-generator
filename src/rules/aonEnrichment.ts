@@ -171,6 +171,16 @@ function parseFullRulesHtml(
 function stripHtml(html: string): string {
   return (
     html
+      // Convert AoN action-glyph spans to Unicode symbols before stripping tags
+      .replace(/<span[^>]*class="action-glyph"[^>]*>([^<]*)<\/span>/gi, (_, c) => {
+        const ch = c.trim();
+        if (ch === '1') return '\u25c6'; // ◆
+        if (ch === '2') return '\u25c6\u25c6'; // ◆◆
+        if (ch === '3') return '\u25c6\u25c6\u25c6'; // ◆◆◆
+        if (ch === 'F' || ch === 'f') return '\u25c7'; // ◇
+        if (ch === 'R' || ch === 'r') return '\u21ba'; // ↺
+        return c;
+      })
       .replace(/<\/(p|li|div|h[1-6])>/gi, '\n')
       .replace(/<br\s*\/?>/gi, '\n')
       // Preserve hyperlinks and bold tags as **text** markers
@@ -217,12 +227,21 @@ function stripSourceMetadata(text: string): string {
  *   Two Actions → ◆◆  Three Actions → ◆◆◆
  */
 function replaceActivationActionWords(text: string): string {
-  return text
-    .replace(/\bThree Actions\b/g, '◆◆◆')
-    .replace(/\bTwo Actions\b/g, '◆◆')
-    .replace(/\bSingle Action\b/g, '◆')
-    .replace(/\bFree Action\b/g, '◇')
-    .replace(/\bReaction\b/g, '↺');
+  return (
+    text
+      // Bracket notation used in Foundry/PF2e system data
+      .replace(/\[one-action\]/gi, '◆')
+      .replace(/\[two-actions\]/gi, '◆◆')
+      .replace(/\[three-actions\]/gi, '◆◆◆')
+      .replace(/\[free-action\]/gi, '◇')
+      .replace(/\[reaction\]/gi, '↺')
+      // Word-based patterns from AoN text
+      .replace(/\bThree Actions\b/g, '◆◆◆')
+      .replace(/\bTwo Actions\b/g, '◆◆')
+      .replace(/\bSingle Action\b/g, '◆')
+      .replace(/\bFree Action\b/g, '◇')
+      .replace(/\bReaction\b/g, '↺')
+  );
 }
 
 function mapActionCost(raw: string | undefined): ActionCost | undefined {
@@ -455,6 +474,21 @@ export async function fetchAonData(
   ]);
   const isLegacy = (c: AonData) => (c.source ?? []).some((s) => LEGACY_SOURCES.has(s));
 
+  // Deprioritise army/warfare content — these share names with regular actions
+  // (e.g. "Feint" exists as both a standard Deception skill action and an army
+  // tactic). Warfare entries carry traits like Infantry, Army, Siege, Morale, etc.
+  const WARFARE_TRAITS = new Set([
+    'infantry',
+    'army',
+    'siege',
+    'morale',
+    'recruitment',
+    'scouting',
+    'battlefield',
+    'war',
+  ]);
+  const isWarfare = (c: AonData) => c.traits.some((t) => WARFARE_TRAITS.has(t.toLowerCase()));
+
   for (const card of cards) {
     const key = `${card.category}:${card.title}`;
     if (result.has(key)) continue;
@@ -471,11 +505,15 @@ export async function fetchAonData(
         ? (candidates.find((c) => preferred.includes(c.aonType) && c.priceRaw) ??
           candidates.find((c) => c.priceRaw))
         : undefined) ??
-      // Prefer non-legacy content with the right document type.
-      candidates.find((c) => preferred.includes(c.aonType) && !isLegacy(c)) ??
-      // Then any non-legacy content (right name, different type).
-      candidates.find((c) => !isLegacy(c)) ??
-      // Fall back to legacy content with the right type, then any legacy.
+      // Prefer non-legacy, non-warfare content with the right document type.
+      candidates.find((c) => preferred.includes(c.aonType) && !isLegacy(c) && !isWarfare(c)) ??
+      // Then any non-legacy, non-warfare content.
+      candidates.find((c) => !isLegacy(c) && !isWarfare(c)) ??
+      // Then legacy with the right type (still better than warfare).
+      candidates.find((c) => preferred.includes(c.aonType) && !isWarfare(c)) ??
+      // Any non-warfare content.
+      candidates.find((c) => !isWarfare(c)) ??
+      // Fall back to legacy/warfare only if nothing else exists.
       candidates.find((c) => preferred.includes(c.aonType)) ??
       candidates[0];
     result.set(key, best);
@@ -689,7 +727,30 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
   if (data.targets && !rules.targets) rules.targets = String(data.targets).trim();
   if (data.savingThrow && !rules.defense)
     rules.defense = String(data.savingThrow).replace(/\s+/g, ' ').trim();
-  if (data.duration && !rules.duration) rules.duration = String(data.duration).trim();
+  if (data.duration && !rules.duration) {
+    const raw = String(data.duration).trim();
+    // Normalise "6 seconds" → "1 round", "60 seconds" → "1 minute" etc.
+    const secMatch = /^(\d+)\s*seconds?$/i.exec(raw);
+    if (secMatch) {
+      const secs = parseInt(secMatch[1], 10);
+      const rounds = Math.round(secs / 6);
+      const mins = secs / 60;
+      rules.duration =
+        secs % 3600 === 0
+          ? secs / 3600 === 1
+            ? '1 hour'
+            : `${secs / 3600} hours`
+          : secs % 60 === 0
+            ? mins === 1
+              ? '1 minute'
+              : `${mins} minutes`
+            : rounds === 1
+              ? '1 round'
+              : `${rounds} rounds`;
+    } else {
+      rules.duration = raw;
+    }
+  }
 
   // Detect spell-attack spells from description text (they target AC, not a save)
   if (!rules.spellAttack && (card.category === 'spell' || card.category === 'focus-spell')) {

@@ -145,135 +145,15 @@ function splitOverflowOnce(cards: CardModel[]): CardModel[] {
       continue;
     }
 
-    const { criticalSuccess, success, failure, criticalFailure, summary, extraSections } =
-      card.rules;
-    const hasOutcomes = !!(criticalSuccess || success || failure || criticalFailure);
-    const outcomesLength =
-      (criticalSuccess?.length ?? 0) +
-      (success?.length ?? 0) +
-      (failure?.length ?? 0) +
-      (criticalFailure?.length ?? 0);
-    const extraSectionsText = (extraSections ?? []).reduce((n, s) => n + s.body.length, 0);
-    const hasExtraSections = (extraSections?.length ?? 0) > 0 && extraSectionsText > 0;
-
-    // Split only when the combined text genuinely won't fit on one card (~850 chars
-    // is roughly the practical limit for a 63×88 mm card at 6–7 pt body text).
-    if (hasOutcomes && summary.length + outcomesLength > 850) {
-      // If the summary itself is too long, truncate it at a sentence boundary so
-      // the front card doesn't overflow even after outcomes are moved to the back.
-      const SUMMARY_LIMIT = 680;
-      let frontSummary = summary;
-      let spilloverSummary = '';
-      if (summary.length > SUMMARY_LIMIT) {
-        let breakAt = summary.lastIndexOf('. ', SUMMARY_LIMIT);
-        if (breakAt < SUMMARY_LIMIT * 0.4) breakAt = summary.lastIndexOf(' ', SUMMARY_LIMIT);
-        if (breakAt <= 0) breakAt = SUMMARY_LIMIT;
-        frontSummary = summary.slice(0, breakAt + 1).trim();
-        spilloverSummary = summary.slice(breakAt + 1).trim();
-      }
-      // Guard: if the front would be empty there is nothing to split off —
-      // keep the card as-is rather than emitting an empty front card.
-      if (frontSummary.length === 0) {
-        result.push(card);
-      } else {
-        // Front: (truncated) summary only
-        result.push({
-          ...card,
-          rules: {
-            ...card.rules,
-            summary: frontSummary,
-            criticalSuccess: undefined,
-            success: undefined,
-            failure: undefined,
-            criticalFailure: undefined,
-          },
-        });
-        // Back: any spillover summary text + outcomes
-        result.push({
-          ...card,
-          id: `${card.id}-back`,
-          stableKey: `${card.stableKey}-back`,
-          continuationOf: card.id,
-          writableFields: [],
-          rules: {
-            ...card.rules,
-            summary: spilloverSummary,
-            traits: [],
-            trigger: undefined,
-            requirements: undefined,
-            frequency: undefined,
-            usage: undefined,
-            bulk: undefined,
-            price: undefined,
-            activateTag: undefined,
-          },
-          userEdits: { edited: false },
-        });
-      }
-    } else if (hasExtraSections && summary.length + extraSectionsText > 850) {
-      // If the summary is long, truncate it so the front card doesn't overflow
-      // even after extra sections are moved to the back.  Any spillover summary
-      // text travels with the extra sections onto the back card.
-      const SUMMARY_LIMIT = 680;
-      let frontSummary = summary;
-      let spilloverSummary = '';
-      if (summary.length > SUMMARY_LIMIT) {
-        let breakAt = summary.lastIndexOf('. ', SUMMARY_LIMIT);
-        if (breakAt < SUMMARY_LIMIT * 0.4) breakAt = summary.lastIndexOf(' ', SUMMARY_LIMIT);
-        if (breakAt <= 0) breakAt = SUMMARY_LIMIT;
-        frontSummary = summary.slice(0, breakAt + 1).trim();
-        spilloverSummary = summary.slice(breakAt + 1).trim();
-      }
-      // Guard: if the front would be empty (this card is already a continuation
-      // with no summary, only extraSections), don't split — emitting an empty
-      // front card would cascade across all 5 passes creating blank cards.
-      if (frontSummary.length === 0) {
-        result.push(card);
-      } else {
-        // Front: (truncated) summary, no extra section bodies
-        result.push({
-          ...card,
-          rules: {
-            ...card.rules,
-            summary: frontSummary,
-            extraSections: undefined,
-          },
-        });
-        // Back: any spillover summary + extra sections
-        result.push({
-          ...card,
-          id: `${card.id}-back`,
-          stableKey: `${card.stableKey}-back`,
-          continuationOf: card.id,
-          writableFields: [],
-          rules: {
-            ...card.rules,
-            summary: spilloverSummary,
-            traits: [],
-            trigger: undefined,
-            requirements: undefined,
-            frequency: undefined,
-            usage: undefined,
-            bulk: undefined,
-            price: undefined,
-            activateTag: undefined,
-          },
-          userEdits: { edited: false },
-        });
-      }
-    } else if (!hasOutcomes && !hasExtraSections && summary.length > 800) {
-      // Long plain summary — find the last sentence end before the threshold and
-      // split there. Front shows the first chunk; back shows the rest.
-      const THRESHOLD = 800;
-      let breakAt = summary.lastIndexOf('. ', THRESHOLD);
-      if (breakAt < THRESHOLD * 0.4) breakAt = summary.lastIndexOf(' ', THRESHOLD);
-      if (breakAt <= 0) breakAt = THRESHOLD;
-      const front = summary.slice(0, breakAt + 1).trim();
-      const back = summary.slice(breakAt + 1).trim();
-      // Guard: don't create an empty back card.
-      if (back.length === 0) {
-        result.push(card);
-      } else {
+    // The ONLY way a card splits is via an explicit [newcard] marker in the summary.
+    // The editor shows the marker as a display hint at the estimated split point;
+    // the user can move or remove it before it is written back.
+    const NEWCARD_RE = /\n\[newcard\]\n?/;
+    if (NEWCARD_RE.test(card.rules.summary)) {
+      const idx = card.rules.summary.search(NEWCARD_RE);
+      const front = card.rules.summary.slice(0, idx).trim();
+      const back = card.rules.summary.slice(idx).replace(NEWCARD_RE, '').trim();
+      if (front.length > 0 && back.length > 0) {
         result.push({ ...card, rules: { ...card.rules, summary: front } });
         result.push({
           ...card,
@@ -288,18 +168,15 @@ function splitOverflowOnce(cards: CardModel[]): CardModel[] {
             trigger: undefined,
             requirements: undefined,
             frequency: undefined,
-            usage: undefined,
-            bulk: undefined,
-            price: undefined,
-            activateTag: undefined,
-            level: undefined,
+            bonus: undefined,
           },
           userEdits: { edited: false },
         });
+        continue;
       }
-    } else {
-      result.push(card);
     }
+
+    result.push(card);
   }
   return result;
 }

@@ -221,6 +221,7 @@ function buildMainCard(attack: CharacterAttack): CardModel {
       ...(itemLevel !== undefined ? { level: itemLevel } : {}),
       ...(range ? { range } : {}),
       ...(extraSections.length > 0 ? { extraSections } : {}),
+      bonus: 'Attack: + ___',
     },
     print: { include: true, priority: 35, size: 'standard' },
     writableFields: [],

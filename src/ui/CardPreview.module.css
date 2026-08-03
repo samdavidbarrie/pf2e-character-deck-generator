@@ -1,16 +1,3 @@
-/**
- * Registers --title-len as a typed integer so CSS calc() can divide by it.
- * Each title span sets this via an inline style; clamp() then scales the
- * font-size down for long titles without any JavaScript measurement.
- *
- * Calibration: 195 ÷ 19 ≈ 10pt (threshold), 195 ÷ 22 ≈ 8.9pt ("HORIZON THUNDER SPHERE")
- */
-@property --title-len {
-  syntax: '<integer>';
-  inherits: false;
-  initial-value: 10;
-}
-
 .card {
   text-align: left;
   width: 63mm;
@@ -192,8 +179,7 @@
    icon stays hugged to the title text, not floating to the right. */
 .title {
   font-family: var(--pf-title-font, 'Oswald', 'Arial Narrow', system-ui, sans-serif);
-  /* Scale down long titles. Threshold: 16 chars = 10pt, longer scales proportionally. */
-  font-size: clamp(5pt, calc(160pt / var(--title-len)), 10pt);
+  font-size: 10pt;
   font-weight: 600;
   line-height: 1.1;
   text-transform: uppercase;
@@ -202,14 +188,6 @@
   flex: 0 1 auto;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: clip;
-}
-
-/* Very long titles (40+ chars): wrap to two lines at a readable size rather
-   than squishing to 4–5pt. Two lines at 7pt fit in the 7mm card header. */
-.title[data-long] {
-  white-space: normal;
-  font-size: 7pt;
   text-overflow: clip;
 }
 
@@ -403,8 +381,19 @@
 }
 
 .field {
-  font-size: 6.6pt;
+  font-size: 6.8pt;
   line-height: 1.24;
+}
+
+/* Bonus field: bold label, rendered directly without a separate heading.
+   Font-size matches .fieldLabel so BONUS stays visually aligned with
+   TRIGGER / REQUIREMENTS / FREQUENCY at every density scale. */
+.bonusField {
+  font-size: 6pt;
+  line-height: 1.3;
+  font-weight: 700;
+  font-family: var(--pf-title-font, system-ui, sans-serif);
+  text-transform: uppercase;
 }
 
 .fieldLabel {
@@ -535,7 +524,21 @@
   font-size: 6.8pt;
   line-height: 1.26;
   color: var(--pf-card-ink, #15120f);
-  white-space: pre-line;
+}
+
+.cardHr {
+  border: none;
+  border-top: 0.5pt solid currentColor;
+  margin: 2pt 0;
+  opacity: 0.4;
+}
+
+/* Manual [newcard] split marker — dashed line shown in editor preview */
+.cardSplitMark {
+  border: none;
+  border-top: 1pt dashed currentColor;
+  margin: 2pt 0;
+  opacity: 0.35;
 }
 
 .writableFields {
@@ -822,7 +825,8 @@
   font-size: 8.5pt;
   line-height: 1.32;
 }
-.scaleLg .fieldLabel {
+.scaleLg .fieldLabel,
+.scaleLg .bonusField {
   font-size: 7.5pt;
 }
 .scaleLg .outcomeLabel {
@@ -844,7 +848,8 @@
   font-size: 7.8pt;
   line-height: 1.28;
 }
-.scaleMd .fieldLabel {
+.scaleMd .fieldLabel,
+.scaleMd .bonusField {
   font-size: 7pt;
 }
 .scaleMd .outcomeLabel {
@@ -862,7 +867,8 @@
   font-size: 7.4pt;
   line-height: 1.26;
 }
-.scaleSm .fieldLabel {
+.scaleSm .fieldLabel,
+.scaleSm .bonusField {
   font-size: 6.8pt;
 }
 .scaleSm .subtitle {
@@ -877,7 +883,8 @@
   font-size: 5.8pt;
   line-height: 1.18;
 }
-.scaleDense .fieldLabel {
+.scaleDense .fieldLabel,
+.scaleDense .bonusField {
   font-size: 6pt;
 }
 .scaleDense .outcomeLabel {

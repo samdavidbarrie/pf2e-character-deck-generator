@@ -65,6 +65,7 @@ export interface CardModel {
     trigger?: string;
     requirements?: string;
     frequency?: string;
+    bonus?: string;
     summary: string;
     criticalSuccess?: string;
     success?: string;
@@ -105,6 +106,10 @@ export interface CardModel {
     edited: boolean;
     locked?: boolean;
     notes?: string;
+    /** User-set title font size override in pt (bypasses the CSS length-based scaling). */
+    titleFontSize?: number;
+    /** User-set body/summary font size override in pt (bypasses the density-based auto-scaling). */
+    bodyFontSize?: number;
   };
 
   /** Passive feat cards merged onto this card after AoN enrichment. */
