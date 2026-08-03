@@ -36,8 +36,80 @@ export function displayField(label: string, value: string): WritableField {
   return { id: crypto.randomUUID(), label, type: 'display', value };
 }
 
+/** A large HP-style field: bold label above a full-width underline blank.
+ *  Pass size='lg' for a taller blank (e.g. Notes fields). */
+export function hpField(label: string, size?: 'lg'): WritableField {
+  return { id: crypto.randomUUID(), label, type: 'hp', ...(size ? { size } : {}) };
+}
+
 // Re-export nextId for templates that need a unique card id
 export { nextId };
+
+/**
+ * Maps action/feat names to their primary skill for auto-populating the Bonus field.
+ * 'any' means the action is available with any skill.
+ */
+export const ACTION_SKILL_MAP: Record<string, string> = {
+  // Acrobatics
+  Balance: 'Acrobatics',
+  'Maneuver in Flight': 'Acrobatics',
+  Squeeze: 'Acrobatics',
+  'Tumble Through': 'Acrobatics',
+  // Athletics
+  Climb: 'Athletics',
+  Disarm: 'Athletics',
+  'Force Open': 'Athletics',
+  Grapple: 'Athletics',
+  'High Jump': 'Athletics',
+  'Long Jump': 'Athletics',
+  Shove: 'Athletics',
+  Swim: 'Athletics',
+  Trip: 'Athletics',
+  // Deception
+  'Create a Diversion': 'Deception',
+  Feint: 'Deception',
+  Impersonate: 'Deception',
+  Lie: 'Deception',
+  // Diplomacy
+  'Gather Information': 'Diplomacy',
+  'Make an Impression': 'Diplomacy',
+  Request: 'Diplomacy',
+  // Intimidation
+  Coerce: 'Intimidation',
+  Demoralize: 'Intimidation',
+  // Medicine
+  'Administer First Aid': 'Medicine',
+  'Treat Disease': 'Medicine',
+  'Treat Poison': 'Medicine',
+  'Treat Wounds': 'Medicine',
+  // Nature
+  'Command an Animal': 'Nature',
+  // Performance
+  Perform: 'Performance',
+  // Society
+  'Create Forgery': 'Society',
+  // Stealth
+  'Conceal an Object': 'Stealth',
+  Hide: 'Stealth',
+  Sneak: 'Stealth',
+  // Survival
+  'Cover Tracks': 'Survival',
+  Track: 'Survival',
+  // Thievery
+  'Disable a Device': 'Thievery',
+  'Palm an Object': 'Thievery',
+  'Pick a Lock': 'Thievery',
+  Steal: 'Thievery',
+  // Perception
+  Seek: 'Perception',
+  'Sense Motive': 'Perception',
+};
+
+/** Return `"{Skill}: + ___"` for the named action, or undefined if not a known skill action. */
+export function skillBonusFor(actionName: string): string | undefined {
+  const skill = ACTION_SKILL_MAP[actionName];
+  return skill ? `${skill}: + ___` : undefined;
+}
 
 export function defaultCard(
   overrides: Partial<CardModel> & Pick<CardModel, 'title' | 'category' | 'stableKey'>,

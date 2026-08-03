@@ -6,26 +6,9 @@ import { computeEffectiveItemLevel } from '../../rules/weaponPricing';
 import { defaultCard } from './_helpers';
 
 // ---------------------------------------------------------------------------
-// Crit specialization by weapon group
+// Crit specialization group inference (used to set weaponGroup on the card;
+// the actual spec text is fetched from AoN during enrichment)
 // ---------------------------------------------------------------------------
-const CRIT_SPEC: Record<string, string> = {
-  axe: 'Choose one adjacent creature within reach. If its AC is lower than your attack roll result, deal weapon die damage to it (same type).',
-  brawling:
-    'Target must succeed at a Fortitude save (DC = your class DC) or be slowed 1 until the end of your next turn.',
-  bow: 'If adjacent to a surface, target is stuck (immobilised, DC 10 Athletics to pull free).',
-  club: 'Knock target up to 10 feet away (forced movement).',
-  dart: 'Target takes 1d6 persistent bleed damage (+ weapon item bonus).',
-  flail: 'Target is knocked prone.',
-  hammer: 'Target is knocked prone.',
-  knife: 'Target takes 1d6 persistent bleed damage (+ weapon item bonus).',
-  pick: 'The weapon deals 2 additional damage per weapon damage die.',
-  polearm: 'Target is moved 5 feet away from you (forced movement).',
-  shield: 'Target suffers −2 circumstance penalty to AC until the start of your next turn.',
-  sling: 'Target must succeed at a Fortitude save (DC = class DC or spell DC) or be stunned 1.',
-  spear: 'The weapon pierces the target, dealing 2 additional damage per weapon damage die.',
-  sword: 'Target is flat-footed until the start of your next turn.',
-  whip: 'You can move the target up to 10 feet in any direction (forced movement).',
-};
 
 // Best-effort name → group lookup for common weapons and monk stance weapons
 const NAME_TO_GROUP: Record<string, string> = {
@@ -49,6 +32,11 @@ const NAME_TO_GROUP: Record<string, string> = {
   halberd: 'polearm',
   guisarme: 'polearm',
   glaive: 'polearm',
+  fauchard: 'polearm',
+  lance: 'polearm',
+  ranseur: 'polearm',
+  longspear: 'spear',
+  naginata: 'polearm',
   warhammer: 'hammer',
   maul: 'hammer',
   shortbow: 'bow',
@@ -172,16 +160,31 @@ function buildMainCard(attack: CharacterAttack): CardModel {
   const type = normaliseDamageType(attack.damageType ?? '');
 
   // Blanks for fillable numbers; die type and damage type are pre-printed
-  const damageLine = `Damage: ___ ${die} + ___ ${type}`;
-  const extraLines = (attack.extraDamage ?? []).map((d) => `+${d}`);
+  const damageLine = `***Damage***: ___ ${die} + ___ ${type}`;
+  // Extra damage: leading > chars act as invisible padding units (0.7em each).
+  // ~5 units aligns approximately with the value portion of the DAMAGE line.
+  // Users can add/remove > in the editor to fine-tune alignment.
+  const extraLines = (attack.extraDamage ?? []).map((d) => `>>>>>+ ${d}`);
 
-  // Runes line: fundamental runes first, then property runes
-  const allRunes = [...(attack.fundamentalRunes ?? []), ...(attack.runes ?? [])];
-  const runeNote = allRunes.length > 0 ? `Runes: ${allRunes.join(', ')}` : '';
-  const materialNote = attack.material ? `Material: ${attack.material}` : '';
-  const summaryParts = ['Hit: + ___', damageLine, ...extraLines, runeNote, materialNote].filter(
-    Boolean,
-  );
+  // Fundamental runes first (potency/striking), then property runes on a separate line
+  const fundamentalRuneNote =
+    (attack.fundamentalRunes ?? []).length > 0
+      ? `***Fundamental Runes***: ${attack.fundamentalRunes!.join(', ')}`
+      : '';
+  const propertyRuneNote =
+    (attack.runes ?? []).length > 0 ? `***Property Runes***: ${attack.runes!.join(', ')}` : '';
+  const materialNote = attack.material ? `***Material***: ${attack.material}` : '';
+
+  const group = inferGroup(attack);
+
+  const summaryParts = [
+    '***Hit***: + ___ / + ___ / + ___',
+    damageLine,
+    ...extraLines,
+    fundamentalRuneNote,
+    propertyRuneNote,
+    materialNote,
+  ].filter(Boolean);
   const summary = summaryParts.join('\n');
 
   // Effective item level from fundamental runes AND material (pre-enrichment;
@@ -200,30 +203,26 @@ function buildMainCard(attack: CharacterAttack): CardModel {
   // Range: from unarmed lookup table (Pathbuilder doesn't export it)
   const range = unarmedData?.range;
 
-  // Only crit spec in extraSections; rune descriptions live on separate cards.
-  // Stance reminder (if known) appended after crit spec.
-  const extraSections: Array<{ heading?: string; body: string }> = [];
-  const group = inferGroup(attack);
-  const critSpec = group ? CRIT_SPEC[group] : undefined;
-  if (critSpec) {
-    extraSections.push({ heading: 'Critical Specialization', body: critSpec });
-  }
-
   return defaultCard({
     title,
     category: 'weapon',
     stableKey: buildStableKey('weapon', attack.name),
-    source: { system: 'generated', runes: attack.runes },
+    source: {
+      system: 'generated',
+      runes: attack.runes,
+      ...(attack.material ? { material: getMaterialItemName(attack.material, 'weapon') } : {}),
+    },
     rules: {
       actionCost: '1',
       traits,
       summary,
       ...(itemLevel !== undefined ? { level: itemLevel } : {}),
       ...(range ? { range } : {}),
-      ...(extraSections.length > 0 ? { extraSections } : {}),
+      ...(group ? { weaponGroup: group.charAt(0).toUpperCase() + group.slice(1) } : {}),
     },
     print: { include: true, priority: 35, size: 'standard' },
     writableFields: [],
+    ...(attack.notes ? { userEdits: { edited: false, notes: attack.notes } } : {}),
   });
 }
 
@@ -246,9 +245,36 @@ function buildRuneCard(runeName: string): CardModel {
   });
 }
 
+function buildMaterialCard(materialName: string): CardModel {
+  // Construct the specific AoN variant: "Adamantine (High-Grade)" on a weapon
+  // becomes "Adamantine Weapon (High-Grade)" to match the AoN entry exactly.
+  const title = getMaterialItemName(materialName, 'weapon');
+  return defaultCard({
+    title,
+    category: 'equipment',
+    stableKey: buildStableKey('material', title),
+    source: { system: 'generated' },
+    rules: { traits: [], summary: SUMMARY_PLACEHOLDER },
+    print: { include: true, priority: 37, size: 'standard' },
+    writableFields: [],
+  });
+}
+
+/**
+ * Build the AoN-specific material item name.
+ * "Adamantine (High-Grade)" + weapon → "Adamantine Weapon (High-Grade)"
+ */
+function getMaterialItemName(material: string, type: 'weapon' | 'armor' | 'shield'): string {
+  const m = material.match(/^(.+?)\s*\((.+?)\)$/);
+  if (!m) return material;
+  const typeLabel = type === 'weapon' ? 'Weapon' : type === 'armor' ? 'Armor' : 'Shield';
+  return `${m[1].trim()} ${typeLabel} (${m[2].trim()})`;
+}
+
 export function generateWeaponCards(char: CharacterModel): CardModel[] {
   const cards: CardModel[] = [];
   const seenRuneKeys = new Set<string>();
+  const seenMaterialKeys = new Set<string>();
 
   for (const attack of char.attacks) {
     cards.push(buildMainCard(attack));
@@ -258,6 +284,14 @@ export function generateWeaponCards(char: CharacterModel): CardModel[] {
       if (!seenRuneKeys.has(key)) {
         seenRuneKeys.add(key);
         cards.push(buildRuneCard(rune));
+      }
+    }
+
+    if (attack.material) {
+      const matKey = buildStableKey('material', attack.material);
+      if (!seenMaterialKeys.has(matKey)) {
+        seenMaterialKeys.add(matKey);
+        cards.push(buildMaterialCard(attack.material));
       }
     }
   }

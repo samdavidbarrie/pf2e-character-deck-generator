@@ -1,7 +1,14 @@
 import type { CardModel } from '../../model/cards';
 import type { CharacterModel, ProficiencyRank } from '../../model/character';
 import { buildStableKey } from '../../rules/nameNormalization';
-import { blankField, defaultCard, displayField, sectionField, skillField } from './_helpers';
+import {
+  blankField,
+  defaultCard,
+  displayField,
+  hpField,
+  sectionField,
+  skillField,
+} from './_helpers';
 
 const RANK_MAP: Record<number, ProficiencyRank> = {
   0: 'untrained',
@@ -108,9 +115,16 @@ export function generateSummaryCards(char: CharacterModel): CardModel[] {
   );
 
   // --- Skill Proficiencies ---
+  // Regular skills alphabetically, Lore skills alphabetically at the end.
+  const isLore = (name: string) => /\blore\b/i.test(name);
   const allSkillFields = char.proficiencies.skills
     .slice()
-    .sort((a, b) => a.skill.localeCompare(b.skill))
+    .sort((a, b) => {
+      const aLore = isLore(a.skill);
+      const bLore = isLore(b.skill);
+      if (aLore !== bLore) return aLore ? 1 : -1;
+      return a.skill.localeCompare(b.skill);
+    })
     .map((s) => skillField(s.skill, s.rank));
 
   cards.push(
@@ -121,6 +135,25 @@ export function generateSummaryCards(char: CharacterModel): CardModel[] {
       rules: { traits: [], summary: '' },
       print: { include: true, priority: 12, size: 'standard' },
       writableFields: allSkillFields,
+    }),
+  );
+
+  // --- Wealth ---
+  cards.push(
+    defaultCard({
+      title: 'Wealth',
+      category: 'summary',
+      stableKey: buildStableKey('summary', 'wealth'),
+      layout: 'currency',
+      rules: { traits: [], summary: '' },
+      print: { include: true, priority: 13, size: 'standard' },
+      writableFields: [
+        hpField('Platinum'),
+        hpField('Gold'),
+        hpField('Silver'),
+        hpField('Copper'),
+        hpField('Notes', 'lg'),
+      ],
     }),
   );
 

@@ -3,6 +3,8 @@
  * For personal use only — do not redistribute bulk AoN content.
  */
 
+import { displayField, hpField } from '../generation/templates/_helpers';
+import { REINFORCING_RUNE } from '../generation/templates/armor';
 import type { ActionCost, CardCategory, CardModel } from '../model/cards';
 import type {
   AbilityKey,
@@ -13,6 +15,7 @@ import type {
 } from '../model/character';
 import { buildEquipmentDescription, filterEquipmentDescription } from './equipmentVariantMatcher';
 import {
+  ARMOR_RUNE_PRICES,
   computeMaterialPriceGp,
   computeRunePricesGp,
   formatGpPrice,
@@ -56,6 +59,21 @@ export interface AonData {
   bulk?: string; // e.g. "L"
   priceRaw?: string; // e.g. "50 gp"
   activateTag?: string; // activation trait, e.g. "manipulate"
+  /** Weapon-specific fields from AoN. */
+  hands?: string; // e.g. "2", "1+"
+  weaponType?: string; // "Melee" | "Ranged"
+  weaponCategory?: string; // "Simple" | "Martial" | "Advanced"
+  weaponGroup?: string; // e.g. "Polearm"
+  /** Armor/shield-specific fields from AoN. */
+  armorAC?: number; // base item AC bonus
+  armorCategory?: string; // "Light" | "Medium" | "Heavy"
+  armorGroup?: string; // e.g. "Plate", "Chain"
+  dexCap?: number; // max dex modifier
+  checkPenalty?: number; // armor check penalty
+  speedPenalty?: string; // e.g. "-5 ft."
+  strengthReq?: number; // strength score required
+  hardness?: number; // shield hardness
+  shieldHP?: number; // shield HP
   // Degree-of-success outcomes
   criticalSuccess?: string;
   success?: string;
@@ -171,6 +189,16 @@ function parseFullRulesHtml(
 function stripHtml(html: string): string {
   return (
     html
+      // Convert AoN action-glyph spans to Unicode symbols before stripping tags
+      .replace(/<span[^>]*class="action-glyph"[^>]*>([^<]*)<\/span>/gi, (_, c) => {
+        const ch = c.trim();
+        if (ch === '1') return '\u25c6'; // ◆
+        if (ch === '2') return '\u25c6\u25c6'; // ◆◆
+        if (ch === '3') return '\u25c6\u25c6\u25c6'; // ◆◆◆
+        if (ch === 'F' || ch === 'f') return '\u25c7'; // ◇
+        if (ch === 'R' || ch === 'r') return '\u21ba'; // ↺
+        return c;
+      })
       .replace(/<\/(p|li|div|h[1-6])>/gi, '\n')
       .replace(/<br\s*\/?>/gi, '\n')
       // Preserve hyperlinks and bold tags as **text** markers
@@ -196,18 +224,36 @@ function stripHtml(html: string): string {
  * Remove AoN source/price/bulk metadata and craft requirements from item description text.
  * E.g. "… Source GM Core pg. 236 Price 450 gp Bulk L ---" or "Craft Requirements You're a monk…"
  */
-function stripSourceMetadata(text: string): string {
-  return (
-    text
-      // Remove "Craft Requirements …" blocks (always appear at end of item entries).
-      .replace(/\s*\bCraft Requirements\b.*$/is, '')
-      // Remove "Source …" trailing reference blocks
-      .replace(/\s+Source\s+[A-Z][\w ',]+pg\.\s*\d+.*$/s, '')
-      // Remove any remaining "Price X gp" / "Bulk …" artifacts
-      .replace(/\s+Price\s+[\d,]+\s*(?:gp|sp|cp)[^.]*\./s, '.')
-      .replace(/\s+Bulk\s+\S+\s*---.*$/s, '')
-      .trim()
-  );
+function stripSourceMetadata(text: string, cardTitle?: string): string {
+  let result = text
+    // Remove "Craft Requirements …" blocks (always appear at end of item entries).
+    .replace(/\s*\bCraft Requirements\b.*$/is, '')
+    // Remove "Source …" trailing reference blocks
+    .replace(/\s+Source\s+[A-Z][\w ',]+pg\.\s*\d+.*$/s, '')
+    // Remove any remaining "Price X gp" / "Bulk …" artifacts
+    .replace(/\s+Price\s+[\d,]+\s*(?:gp|sp|cp)[^.]*\./s, '.')
+    .replace(/\s+Bulk\s+\S+\s*---.*$/s, '')
+    // Remove AoN cross-reference navigation: "FeatName leads to FeatA, FeatB"
+    // These appear at the end of descriptions and list related feats.
+    // The guard `[A-Z][\w (),]+` ensures we only strip proper-noun feat lists,
+    // not mid-sentence uses like "This leads to a +2 bonus".
+    .replace(/\s+[A-Z][A-Za-z ]+leads to(?:\s+[A-Z][\w (),]+)+\.?\s*$/is, '')
+    // Handle block format: optional "FeatName" line preceding a "Leads To" header
+    // e.g. "...Step 10 feet.\nTiger Stance\nLeads To\nTiger Slash"
+    .replace(/(?:\n[A-Z][^\n]+)?\n?Leads [Tt]o\b[\s\S]*$/i, '')
+    .trim();
+
+  // If the card's own title is still orphaned at the end (e.g. when AoN places
+  // "FeatName" as a navigation anchor in the description body), strip it.
+  if (cardTitle) {
+    const lower = result.toLowerCase();
+    const titleLower = cardTitle.toLowerCase();
+    if (lower.endsWith(titleLower)) {
+      result = result.slice(0, result.length - titleLower.length).trimEnd();
+    }
+  }
+
+  return result;
 }
 
 /**
@@ -217,12 +263,21 @@ function stripSourceMetadata(text: string): string {
  *   Two Actions → ◆◆  Three Actions → ◆◆◆
  */
 function replaceActivationActionWords(text: string): string {
-  return text
-    .replace(/\bThree Actions\b/g, '◆◆◆')
-    .replace(/\bTwo Actions\b/g, '◆◆')
-    .replace(/\bSingle Action\b/g, '◆')
-    .replace(/\bFree Action\b/g, '◇')
-    .replace(/\bReaction\b/g, '↺');
+  return (
+    text
+      // Bracket notation used in Foundry/PF2e system data
+      .replace(/\[one-action\]/gi, '◆')
+      .replace(/\[two-actions\]/gi, '◆◆')
+      .replace(/\[three-actions\]/gi, '◆◆◆')
+      .replace(/\[free-action\]/gi, '◇')
+      .replace(/\[reaction\]/gi, '↺')
+      // Word-based patterns from AoN text
+      .replace(/\bThree Actions\b/g, '◆◆◆')
+      .replace(/\bTwo Actions\b/g, '◆◆')
+      .replace(/\bSingle Action\b/g, '◆')
+      .replace(/\bFree Action\b/g, '◇')
+      .replace(/\bReaction\b/g, '↺')
+  );
 }
 
 function mapActionCost(raw: string | undefined): ActionCost | undefined {
@@ -278,8 +333,11 @@ function preferredTypesFor(category: CardCategory): string[] {
     case 'basic-action':
     case 'skill-action':
       return ['Action', 'Feat'];
+    case 'armor':
+    case 'shield':
+      return ['Item'];
     case 'weapon':
-      return ['Weapon'];
+      return ['Item', 'Weapon'];
     default:
       return [];
   }
@@ -338,6 +396,19 @@ async function fetchBatch(names: string[]): Promise<AonData[]> {
       'bulk',
       'price_raw',
       'source',
+      'hands',
+      'weapon_type',
+      'weapon_category',
+      'weapon_group',
+      'ac',
+      'armor_category',
+      'armor_group',
+      'dex_cap',
+      'check_penalty',
+      'speed_penalty',
+      'strength',
+      'hardness',
+      'hp',
     ],
     size: Math.min(names.length * 3, 200),
   };
@@ -406,6 +477,20 @@ async function fetchBatch(names: string[]): Promise<AonData[]> {
       bulk,
       priceRaw: (s['price_raw'] as string | undefined) || undefined,
       activateTag: activateTagMatch?.[1]?.trim() || undefined,
+      hands: (s['hands'] as string | undefined) || undefined,
+      weaponType: (s['weapon_type'] as string | undefined) || undefined,
+      weaponCategory: (s['weapon_category'] as string | undefined) || undefined,
+      weaponGroup: (s['weapon_group'] as string | undefined) || undefined,
+      armorAC: typeof s['ac'] === 'number' ? (s['ac'] as number) : undefined,
+      armorCategory: (s['armor_category'] as string | undefined) || undefined,
+      armorGroup: (s['armor_group'] as string | undefined) || undefined,
+      dexCap: typeof s['dex_cap'] === 'number' ? (s['dex_cap'] as number) : undefined,
+      checkPenalty:
+        typeof s['check_penalty'] === 'number' ? (s['check_penalty'] as number) : undefined,
+      speedPenalty: (s['speed_penalty'] as string | undefined) || undefined,
+      strengthReq: typeof s['strength'] === 'number' ? (s['strength'] as number) : undefined,
+      hardness: typeof s['hardness'] === 'number' ? (s['hardness'] as number) : undefined,
+      shieldHP: typeof s['hp'] === 'number' ? (s['hp'] as number) : undefined,
       source: (s['source'] as string[] | undefined) ?? undefined,
     };
   });
@@ -416,6 +501,84 @@ async function fetchBatch(names: string[]): Promise<AonData[]> {
  * preferring results that best match each card's category where there are
  * multiple hits for the same name (e.g. "Shield" is both a spell and an action).
  */
+
+// ---------------------------------------------------------------------------
+// Weapon/armor group specialization fetch
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch specialization effect text for a set of group names from AoN.
+ * - `'armor-group'`: returns the armor specialization effect per group.
+ * - `'weapon-group'`: returns the critical specialization effect per group.
+ * Returns a map of lowercase group name → plain-text effect.
+ * Falls back to an empty map on network failure so card generation still works.
+ */
+export async function fetchGroupSpecializations(
+  groupNames: string[],
+  groupType: 'armor-group' | 'weapon-group',
+): Promise<Map<string, string>> {
+  if (groupNames.length === 0) return new Map();
+
+  const body = {
+    query: {
+      bool: {
+        must: [{ term: { type: groupType } }],
+        should: groupNames.map((n) => ({ term: { 'name.keyword': n } })),
+        minimum_should_match: 1,
+      },
+    },
+    _source: ['name', 'type', 'text', 'summary'],
+    size: groupNames.length * 2,
+  };
+
+  let hits: Array<{ _source: Record<string, unknown> }>;
+  try {
+    const res = await fetch(AON_ES, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) return new Map();
+    const json = (await res.json()) as {
+      hits?: { hits?: Array<{ _source: Record<string, unknown> }> };
+    };
+    hits = json.hits?.hits ?? [];
+  } catch {
+    return new Map();
+  }
+
+  const result = new Map<string, string>();
+
+  for (const hit of hits) {
+    const s = hit._source;
+    const name = ((s['name'] as string) ?? '').toLowerCase().trim();
+    if (!name || result.has(name)) continue;
+
+    const rawText = (s['text'] as string) ?? '';
+    const rawSummary = (s['summary'] as string) ?? '';
+
+    // Use the parsed summary (parts[1] of the AoN text format); fall back to
+    // the standalone summary field.
+    const textParts = rawText.split(' --- ');
+    const descHtml = textParts.length > 1 ? textParts[1] : rawText;
+    const plain = stripHtml(descHtml || rawSummary).trim();
+
+    let effect: string;
+    if (groupType === 'weapon-group') {
+      // Extract the sentence(s) after the "Critical Specialization Effect" label.
+      const match = /critical specialization(?:\s+effect)?[:\s]+(.+)/is.exec(plain);
+      effect = match ? match[1].trim() : plain;
+    } else {
+      // Armor group: the entire description is the specialization effect.
+      effect = plain;
+    }
+
+    if (effect) result.set(name, effect);
+  }
+
+  return result;
+}
+
 export async function fetchAonData(
   cards: Array<{ title: string; category: CardCategory }>,
 ): Promise<Map<string, AonData>> {
@@ -455,6 +618,21 @@ export async function fetchAonData(
   ]);
   const isLegacy = (c: AonData) => (c.source ?? []).some((s) => LEGACY_SOURCES.has(s));
 
+  // Deprioritise army/warfare content — these share names with regular actions
+  // (e.g. "Feint" exists as both a standard Deception skill action and an army
+  // tactic). Warfare entries carry traits like Infantry, Army, Siege, Morale, etc.
+  const WARFARE_TRAITS = new Set([
+    'infantry',
+    'army',
+    'siege',
+    'morale',
+    'recruitment',
+    'scouting',
+    'battlefield',
+    'war',
+  ]);
+  const isWarfare = (c: AonData) => c.traits.some((t) => WARFARE_TRAITS.has(t.toLowerCase()));
+
   for (const card of cards) {
     const key = `${card.category}:${card.title}`;
     if (result.has(key)) continue;
@@ -471,11 +649,15 @@ export async function fetchAonData(
         ? (candidates.find((c) => preferred.includes(c.aonType) && c.priceRaw) ??
           candidates.find((c) => c.priceRaw))
         : undefined) ??
-      // Prefer non-legacy content with the right document type.
-      candidates.find((c) => preferred.includes(c.aonType) && !isLegacy(c)) ??
-      // Then any non-legacy content (right name, different type).
-      candidates.find((c) => !isLegacy(c)) ??
-      // Fall back to legacy content with the right type, then any legacy.
+      // Prefer non-legacy, non-warfare content with the right document type.
+      candidates.find((c) => preferred.includes(c.aonType) && !isLegacy(c) && !isWarfare(c)) ??
+      // Then any non-legacy, non-warfare content.
+      candidates.find((c) => !isLegacy(c) && !isWarfare(c)) ??
+      // Then legacy with the right type (still better than warfare).
+      candidates.find((c) => preferred.includes(c.aonType) && !isWarfare(c)) ??
+      // Any non-warfare content.
+      candidates.find((c) => !isWarfare(c)) ??
+      // Fall back to legacy/warfare only if nothing else exists.
       candidates.find((c) => preferred.includes(c.aonType)) ??
       candidates[0];
     result.set(key, best);
@@ -494,13 +676,20 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
   const rules = { ...card.rules };
   const source = { ...card.source };
   const subtitle = card.subtitle;
-  const writableFields = card.writableFields;
+  let writableFields = card.writableFields;
 
   // For basic/skill actions the template provides a short one-liner; always
   // replace it with the fuller AoN description so roll/DC text is visible.
+  // Armor/shield cards use structured field rendering (inlineMeta) for stats;
+  // skip the generic description path so the AoN flavour text is not applied.
+  const skipDescription = card.category === 'armor' || card.category === 'shield';
   const alwaysReplace = card.category === 'basic-action' || card.category === 'skill-action';
 
-  if (data.description && (rules.summary.startsWith(SUMMARY_PLACEHOLDER) || alwaysReplace)) {
+  if (
+    !skipDescription &&
+    data.description &&
+    (rules.summary.startsWith(SUMMARY_PLACEHOLDER) || alwaysReplace)
+  ) {
     if (card.category === 'equipment') {
       // Run variant filtering on the raw description BEFORE stripSourceMetadata so that
       // price information embedded in variant text is still available for extraction.
@@ -629,8 +818,9 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
       }
     } else {
       const isItem = card.category === 'weapon';
-      const desc = isItem ? stripSourceMetadata(data.description) : data.description;
-      rules.summary = desc;
+      rules.summary = isItem
+        ? stripSourceMetadata(data.description, card.title)
+        : stripSourceMetadata(data.description ?? '', card.title);
     }
   }
 
@@ -689,7 +879,30 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
   if (data.targets && !rules.targets) rules.targets = String(data.targets).trim();
   if (data.savingThrow && !rules.defense)
     rules.defense = String(data.savingThrow).replace(/\s+/g, ' ').trim();
-  if (data.duration && !rules.duration) rules.duration = String(data.duration).trim();
+  if (data.duration && !rules.duration) {
+    const raw = String(data.duration).trim();
+    // Normalise "6 seconds" → "1 round", "60 seconds" → "1 minute" etc.
+    const secMatch = /^(\d+)\s*seconds?$/i.exec(raw);
+    if (secMatch) {
+      const secs = parseInt(secMatch[1], 10);
+      const rounds = Math.round(secs / 6);
+      const mins = secs / 60;
+      rules.duration =
+        secs % 3600 === 0
+          ? secs / 3600 === 1
+            ? '1 hour'
+            : `${secs / 3600} hours`
+          : secs % 60 === 0
+            ? mins === 1
+              ? '1 minute'
+              : `${mins} minutes`
+            : rounds === 1
+              ? '1 round'
+              : `${rounds} rounds`;
+    } else {
+      rules.duration = raw;
+    }
+  }
 
   // Detect spell-attack spells from description text (they target AC, not a save)
   if (!rules.spellAttack && (card.category === 'spell' || card.category === 'focus-spell')) {
@@ -732,7 +945,11 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
   if (data.level !== undefined) {
     if (rules.level === undefined || isFeat) {
       rules.level = data.level;
-    } else if (card.category === 'weapon') {
+    } else if (
+      card.category === 'weapon' ||
+      card.category === 'armor' ||
+      card.category === 'shield'
+    ) {
       rules.level = Math.max(rules.level, data.level);
     }
   }
@@ -744,21 +961,119 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
     if (!isUnarmed) {
       if (data.usage && !rules.usage) rules.usage = data.usage;
       if (data.bulk && !rules.bulk) rules.bulk = data.bulk;
+      if (data.hands && !rules.hands) rules.hands = data.hands;
+      if (data.weaponType && !rules.weaponType) rules.weaponType = data.weaponType;
+      if (data.weaponCategory && !rules.weaponCategory) rules.weaponCategory = data.weaponCategory;
+      if (data.weaponGroup && !rules.weaponGroup) rules.weaponGroup = data.weaponGroup;
 
       // Compute total price = base weapon + fundamental rune surcharges + material surcharge.
-      // Parse rune names and material from the generated summary text.
+      // Parse rune names and material from the generated summary (format: ***Label***: value).
       if (data.priceRaw && !rules.price) {
         const baseGp = parsePriceToGp(data.priceRaw);
-        const runeMatch = /Runes:\s+([^\n]+)/i.exec(rules.summary ?? '');
-        const runeNames = runeMatch ? runeMatch[1].split(',').map((r) => r.trim()) : [];
-        const materialMatch = /Material:\s+([^\n]+)/i.exec(rules.summary ?? '');
-        const material = materialMatch ? materialMatch[1].trim() : undefined;
+        // Match "***Fundamental Runes***:" or plain "Fundamental Runes:" with optional ***
+        const runeMatch = /Fundamental Runes[^:]*:\s*([^\n]+)/i.exec(rules.summary ?? '');
+        const runeNames = runeMatch
+          ? runeMatch[1]
+              .replace(/\*\*\*/g, '')
+              .split(',')
+              .map((r) => r.trim())
+              .filter(Boolean)
+          : [];
+        const materialMatch = /Material[^:]*:\s*([^\n]+)/i.exec(rules.summary ?? '');
+        const material = materialMatch ? materialMatch[1].replace(/\*\*\*/g, '').trim() : undefined;
         const runeGp = computeRunePricesGp(runeNames);
         const matGp = material ? computeMaterialPriceGp(material, data.bulk) : 0;
         const totalGp = baseGp + runeGp + matGp;
         rules.price = formatGpPrice(totalGp) || data.priceRaw;
       }
     }
+  }
+
+  // For armor and shield cards: apply AC, penalties, hardness, HP from AoN.
+  if ((card.category === 'armor' || card.category === 'shield') && !card.continuationOf) {
+    if (data.armorAC !== undefined && !rules.armorAC) rules.armorAC = data.armorAC;
+    if (data.armorCategory && !rules.armorCategory) rules.armorCategory = data.armorCategory;
+    if (data.armorGroup && !rules.armorGroup) rules.armorGroup = data.armorGroup;
+    if (data.dexCap !== undefined && rules.dexCap === undefined) rules.dexCap = data.dexCap;
+    if (data.checkPenalty !== undefined && rules.checkPenalty === undefined)
+      rules.checkPenalty = data.checkPenalty;
+    if (data.speedPenalty && !rules.speedPenalty) rules.speedPenalty = data.speedPenalty;
+    if (data.strengthReq !== undefined && rules.strengthReq === undefined)
+      rules.strengthReq = data.strengthReq;
+
+    // For shields: apply reinforcing rune bonuses from source.runes before storing.
+    if (card.category === 'shield') {
+      let hardnessBonus = 0;
+      let hpBonus = 0;
+      for (const runeName of card.source.runes ?? []) {
+        const rb = REINFORCING_RUNE[runeName.toLowerCase()];
+        if (rb) {
+          hardnessBonus += rb.hardnessBonus;
+          hpBonus += rb.hpBonus;
+        }
+      }
+      if (data.hardness !== undefined && rules.hardness === undefined)
+        rules.hardness = data.hardness + hardnessBonus;
+      if (data.shieldHP !== undefined && rules.shieldHP === undefined)
+        rules.shieldHP = data.shieldHP + hpBonus;
+
+      // Add writable HP tracking fields once we know the effective max HP.
+      if (rules.shieldHP !== undefined) {
+        const bt = Math.floor(rules.shieldHP / 2);
+        writableFields = [
+          hpField('Current HP'),
+          displayField('HP(BT)', `${rules.shieldHP}(${bt})`),
+        ];
+      }
+    } else {
+      if (data.hardness !== undefined && rules.hardness === undefined)
+        rules.hardness = data.hardness;
+      if (data.shieldHP !== undefined && rules.shieldHP === undefined)
+        rules.shieldHP = data.shieldHP;
+    }
+    if (data.bulk && !rules.bulk) rules.bulk = data.bulk;
+    if (data.priceRaw && !rules.price) {
+      const baseGp = parsePriceToGp(data.priceRaw);
+      // Fundamental armor runes from summary
+      const runeMatch = /Fundamental Runes[^:]*:\s*([^\n]+)/i.exec(rules.summary ?? '');
+      const runeNames = runeMatch
+        ? runeMatch[1]
+            .replace(/\*\*\*/g, '')
+            .split(',')
+            .map((r) => r.trim())
+            .filter(Boolean)
+        : [];
+      const materialMatch = /Material[^:]*:\s*([^\n]+)/i.exec(rules.summary ?? '');
+      const material = materialMatch
+        ? materialMatch[1]
+            .replace(/\*\*\*/g, '')
+            .replace(/\.?\s*---.*$/s, '')
+            .trim()
+        : undefined;
+      // Fundamental rune gp (potency + resilient)
+      const fundamentalRuneGp = runeNames.reduce((sum, r) => {
+        const entry = ARMOR_RUNE_PRICES[r.toLowerCase()];
+        return sum + (entry?.gp ?? 0);
+      }, 0);
+      // Reinforcing rune gp (shields — from source.runes)
+      const reinforcingRuneGp = (card.source.runes ?? []).reduce((sum, r) => {
+        const entry = REINFORCING_RUNE[r.toLowerCase()];
+        return sum + (entry?.gp ?? 0);
+      }, 0);
+      const matGp = material ? computeMaterialPriceGp(material, data.bulk) : 0;
+      const totalGp = baseGp + fundamentalRuneGp + reinforcingRuneGp + matGp;
+      rules.price = formatGpPrice(totalGp) || data.priceRaw;
+    }
+    // Rebuild the summary: only rune/material lines from the original generated
+    // summary. Stats are shown in the inlineMeta row above. Armor/weapon
+    // specialization text is appended in a separate post-enrichment store pass
+    // after group effects are fetched from AoN.
+    const existing = rules.summary
+      .replace(SUMMARY_PLACEHOLDER, '')
+      .replace(/\n?---\n\*\*\*Armor Specialization\*\*\*[^\n]*/g, '')
+      .replace(/\n?---\n\*\*\*Critical Specialization\*\*\*[^\n]*/g, '')
+      .trim();
+    rules.summary = existing || SUMMARY_PLACEHOLDER;
   }
 
   return { ...card, rules, source, subtitle, writableFields };

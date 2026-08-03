@@ -16,6 +16,8 @@ const CATEGORY_FILTERS: Array<{ value: string; label: string }> = [
   { value: 'spell', label: 'Spells' },
   { value: 'focus-spell', label: 'Focus Spells' },
   { value: 'weapon', label: 'Weapons' },
+  { value: 'armor', label: 'Armor' },
+  { value: 'shield', label: 'Shields' },
   { value: 'equipment', label: 'Equipment' },
   { value: 'creatures', label: 'Creatures' },
   { value: 'creature-summary', label: '↳ Summary' },
@@ -53,6 +55,8 @@ export function DeckBuilder() {
   const filtered = cards.filter((card) => {
     if (categoryFilter === 'hidden') return !card.print.include;
     if (categoryFilter === 'creatures') return card.category.startsWith('creature-');
+    if (categoryFilter === 'armor') return card.category === 'armor';
+    if (categoryFilter === 'shield') return card.category === 'shield';
     if (categoryFilter && categoryFilter !== 'all' && card.category !== categoryFilter)
       return false;
     if (searchQuery) {
@@ -148,7 +152,7 @@ export function DeckBuilder() {
                 card={card}
                 selected={card.id === selectedCardId}
                 onClick={() => selectCard(card.id === selectedCardId ? null : card.id)}
-                onToggleInclude={() => toggleCardInclude(card.id)}
+                onModifierClick={() => toggleCardInclude(card.id)}
               />
             </div>
           ))}

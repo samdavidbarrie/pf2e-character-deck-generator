@@ -3,7 +3,7 @@ import type { CardCategory, CardModel } from '../../model/cards';
 import type { CharacterFeat, CharacterModel } from '../../model/character';
 import { aonSearchUrl } from '../../rules/aonUrlResolver';
 import { buildStableKey } from '../../rules/nameNormalization';
-import { defaultCard, notesField } from './_helpers';
+import { defaultCard, notesField, skillBonusFor } from './_helpers';
 
 function featCategory(feat: CharacterFeat): CardCategory {
   // All feats stay in feat categories regardless of action cost so the rank
@@ -48,8 +48,6 @@ export function generateFeatCards(char: CharacterModel): CardModel[] {
       rules: {
         actionCost: cost,
         traits: feat.traits,
-        // Store the character level as a display fallback; AoN enrichment
-        // overwrites this with the feat's correct minimum level when it runs.
         level: feat.level > 0 ? feat.level : undefined,
         trigger: feat.trigger,
         requirements: feat.requirements,
@@ -57,6 +55,7 @@ export function generateFeatCards(char: CharacterModel): CardModel[] {
         summary:
           feat.summary ??
           'Rules summary not imported. Add a short table-facing summary or use the source link.',
+        bonus: skillBonusFor(feat.name),
       },
       print: { include: defaultInclude(feat), priority: 30, size: 'standard' },
       writableFields: feat.actionCost ? [notesField()] : [],

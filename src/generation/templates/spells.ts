@@ -2,7 +2,7 @@ import type { ActionCost, CardModel } from '../../model/cards';
 import type { CharacterModel, CharacterSpell } from '../../model/character';
 import { aonSearchUrl } from '../../rules/aonUrlResolver';
 import { buildStableKey } from '../../rules/nameNormalization';
-import { blankField, defaultCard } from './_helpers';
+import { defaultCard } from './_helpers';
 
 /** Map a raw Pathbuilder cast/actions string to a typed ActionCost. */
 function mapCastCost(raw: string | undefined): ActionCost | undefined {
@@ -70,9 +70,14 @@ function buildSpellCard(spell: CharacterSpell, isFocus: boolean): CardModel {
       actionCost: mapCastCost(spell.actionCost),
       traits,
       rank: spell.rank,
-      summary:
-        spell.summary ??
-        'Rules summary not imported. Add a short table-facing summary or use the source link.',
+      summary: (() => {
+        const base =
+          spell.summary ??
+          'Rules summary not imported. Add a short table-facing summary or use the source link.';
+        return spell.defense?.toLowerCase() === 'ac'
+          ? `***Hit***: + ___ / + ___ / + ___\n${base}`
+          : base;
+      })(),
       // Pre-fill spell meta from Pathbuilder if available; enrichment will fill the rest
       range: spell.range,
       area: spell.area,
@@ -81,7 +86,7 @@ function buildSpellCard(spell: CharacterSpell, isFocus: boolean): CardModel {
       duration: spell.duration,
     },
     print: { include: true, priority: isFocus ? 42 : 40, size: 'standard' },
-    writableFields: [blankField('Spell DC', 'sm'), blankField('Spell Attack', 'sm')],
+    writableFields: [],
   });
 }
 
@@ -91,26 +96,6 @@ export function generateSpellCards(char: CharacterModel): CardModel[] {
 
 export function generateFocusSpellCards(char: CharacterModel): CardModel[] {
   const cards = char.focusSpells.map((s) => buildSpellCard(s, true));
-
-  if (char.focusSpells.length > 0) {
-    // Refocus reminder card
-    cards.push(
-      defaultCard({
-        title: 'Refocus',
-        subtitle: 'Restore Focus Points',
-        category: 'reminder',
-        stableKey: buildStableKey('reminder', 'refocus'),
-        rules: {
-          actionCost: 'variable',
-          traits: ['concentrate'],
-          summary:
-            'Spend 10 minutes performing activities intrinsic to your magical tradition to regain 1 Focus Point (up to your max).',
-        },
-        print: { include: true, priority: 43, size: 'standard' },
-        writableFields: [blankField(`Focus Pool (max ${char.focusPoints ?? 1})`, 'sm')],
-      }),
-    );
-  }
 
   return cards;
 }

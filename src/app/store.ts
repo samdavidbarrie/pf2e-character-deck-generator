@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { generateDeck, type GenerationWarning } from '../generation/generateDeck';
+import { REINFORCING_RUNE } from '../generation/templates/armor';
 import { generateCreatureCards } from '../generation/templates/creatures';
 import { detectSource } from '../import/detectSource';
 import { parsePathbuilder } from '../import/pathbuilderAdapter';
@@ -13,9 +14,11 @@ import {
   detectFeatMerges,
   enrichLinkedCreaturesFromAon,
   fetchAonData,
+  fetchGroupSpecializations,
   fetchRuneDescriptions,
 } from '../rules/aonEnrichment';
 import { aonSearchUrl } from '../rules/aonUrlResolver';
+import { formatGpPrice, parsePriceToGp } from '../rules/weaponPricing';
 
 export type AppScreen = 'import' | 'deck-builder' | 'print-preview';
 
@@ -224,7 +227,9 @@ export const useAppStore = create<AppState>((set, get) => ({
         return data ? applyAonDataToCard(card, data) : card;
       });
 
-      // Detect passive feat merges
+      // Detect passive feat merges — instead of merging onto parent cards and
+      // hiding children, put a formatted reference in the parent's notes so the
+      // user can copy-paste the text they want.
       const merges = detectFeatMerges(cards, aonDataMap);
 
       if (merges.length > 0) {
@@ -235,27 +240,119 @@ export const useAppStore = create<AppState>((set, get) => ({
           const child = cardById.get(childId);
           if (!parent || !child) continue;
 
-          // Add child info to parent (guard against duplicates on re-enrichment)
-          const alreadyMerged = (parent.mergedChildren ?? []).some((c) => c.name === child.title);
-          if (!alreadyMerged) {
+          // Build a reference line: **Name ◆◆ Feat N** Summary…
+          const costSymbols: Record<string, string> = {
+            '1': '\u25c6',
+            '2': '\u25c6\u25c6',
+            '3': '\u25c6\u25c6\u25c6',
+            free: '\u25c7',
+            reaction: '\u21ba',
+            passive: '',
+          };
+          const costStr = child.rules.actionCost
+            ? (costSymbols[child.rules.actionCost] ?? child.rules.actionCost) + ' '
+            : '';
+          const levelStr = child.rules.level !== undefined ? ` Feat ${child.rules.level}` : '';
+          // Use ***heading*** for title-font label style (triple-bold = field-label).
+          const heading = `***${child.title} ${costStr}${levelStr}***`
+            .replace(/\s+\*\*\*$/, '***')
+            .trimEnd();
+          // Prefix with --- so pasting into the summary gives a visual separator
+          const ref = child.rules.summary
+            ? `---\n${heading}\n${child.rules.summary}`
+            : `---\n${heading}`;
+
+          // Append to parent notes if not already present (guard re-enrichment)
+          const existing = parent.userEdits.notes ?? '';
+          if (!existing.includes(child.title)) {
+            const separator = existing ? '\n\n' : '';
             cardById.set(parentId, {
               ...parent,
-              mergedChildren: [
-                ...(parent.mergedChildren ?? []),
-                { name: child.title, level: child.rules.level, summary: child.rules.summary },
-              ],
+              userEdits: {
+                ...parent.userEdits,
+                notes: existing + separator + ref,
+              },
             });
           }
-
-          // Hide child and mark it as merged
-          cardById.set(childId, {
-            ...child,
-            print: { ...child.print, include: false },
-            mergedInto: parent.title,
-          });
         }
 
         cards = [...cardById.values()];
+      }
+
+      // Material notes: after material cards are enriched, append their
+      // summary to the notes of the weapon/armor/shield card they came from.
+      {
+        const cardById = new Map(cards.map((c) => [c.id, c]));
+        // Build a title → enriched summary map for material cards.
+        const materialSummary = new Map<string, string>();
+        for (const c of cards) {
+          if (
+            c.stableKey.startsWith('material:') &&
+            !c.rules.summary.includes('Rules summary not imported')
+          ) {
+            materialSummary.set(c.title, c.rules.summary);
+          }
+        }
+        if (materialSummary.size > 0) {
+          for (const card of cards) {
+            const matTitle = card.source.material;
+            if (!matTitle || card.userEdits.edited) continue;
+            const matSummary = materialSummary.get(matTitle);
+            if (!matSummary) continue;
+            const heading = `***${matTitle}***`;
+            const ref = `---\n${heading}\n${matSummary}`;
+            const existing = card.userEdits.notes ?? '';
+            if (!existing.includes(matTitle)) {
+              const separator = existing ? '\n\n' : '';
+              cardById.set(card.id, {
+                ...card,
+                userEdits: { ...card.userEdits, notes: existing + separator + ref },
+              });
+            }
+          }
+          cards = [...cardById.values()];
+        }
+      }
+
+      // Property rune price pass: property rune cards are enriched with their
+      // own price from AoN. Add those prices to the parent weapon/armor/shield total.
+      {
+        const cardById = new Map(cards.map((c) => [c.id, c]));
+        // Build rune name (lowercase) → gp map from enriched rune cards.
+        const runePrices = new Map<string, number>();
+        for (const c of cards) {
+          const isRune =
+            c.stableKey.startsWith('weapon-rune:') || c.stableKey.startsWith('armor-rune:');
+          if (isRune && c.rules.price) {
+            const gp = parsePriceToGp(c.rules.price);
+            if (gp > 0) runePrices.set(c.title.toLowerCase(), gp);
+          }
+        }
+        if (runePrices.size > 0) {
+          for (const card of cards) {
+            if (!['weapon', 'armor', 'shield'].includes(card.category)) continue;
+            if (!card.source.runes?.length || !card.rules.price) continue;
+            // Only include runes that are NOT reinforcing (those are already in shield price)
+            const propertyRunes = card.source.runes.filter(
+              (r) => !REINFORCING_RUNE[r.toLowerCase()],
+            );
+            const extraGp = propertyRunes.reduce(
+              (sum, r) => sum + (runePrices.get(r.toLowerCase()) ?? 0),
+              0,
+            );
+            if (extraGp > 0) {
+              const baseGp = parsePriceToGp(card.rules.price);
+              const newPrice = formatGpPrice(baseGp + extraGp);
+              if (newPrice) {
+                cardById.set(card.id, {
+                  ...card,
+                  rules: { ...card.rules, price: newPrice },
+                });
+              }
+            }
+          }
+          cards = [...cardById.values()];
+        }
       }
 
       // For polymorph / incarnate spell cards, insert a blank form-stats
@@ -360,6 +457,75 @@ export const useAppStore = create<AppState>((set, get) => ({
         if (card.continuationOf || card.source.aonUrl || NO_SEARCH_CATEGORIES.has(card.category))
           return card;
         return { ...card, source: { ...card.source, aonUrl: aonSearchUrl(card.title) } };
+      });
+
+      // Specialization pass: scan ALL enriched cards for qualifying feat phrases,
+      // fetch group effect text from AoN, then append to armor/weapon summaries.
+      // No hardcoded feat or group names — new feats/groups are detected automatically.
+      const hasArmorSpec = cards.some((c) =>
+        /armor specialization effects/i.test(c.rules.summary ?? ''),
+      );
+      const hasCritSpec = cards.some((c) =>
+        /critical specialization effects/i.test(c.rules.summary ?? ''),
+      );
+
+      const armorGroups = [
+        ...new Set(
+          cards
+            .filter((c) => c.category === 'armor' && c.rules.armorGroup)
+            .map((c) => c.rules.armorGroup!),
+        ),
+      ];
+      const weaponGroups = [
+        ...new Set(
+          cards
+            .filter((c) => c.category === 'weapon' && c.rules.weaponGroup)
+            .map((c) => c.rules.weaponGroup!),
+        ),
+      ];
+
+      const [armorSpecMap, critSpecMap] = await Promise.all([
+        hasArmorSpec && armorGroups.length > 0
+          ? fetchGroupSpecializations(armorGroups, 'armor-group')
+          : Promise.resolve(new Map<string, string>()),
+        hasCritSpec && weaponGroups.length > 0
+          ? fetchGroupSpecializations(weaponGroups, 'weapon-group')
+          : Promise.resolve(new Map<string, string>()),
+      ]);
+
+      const STRIP_ARMOR_SPEC = /\n?---\n\*\*\*Armor Specialization\*\*\*[^\n]*/g;
+      const STRIP_CRIT_SPEC = /\n?---\n\*\*\*Critical Specialization\*\*\*[^\n]*/g;
+
+      cards = cards.map((c) => {
+        if (c.category === 'armor') {
+          const group = (c.rules.armorGroup ?? '').toLowerCase();
+          const spec = hasArmorSpec ? armorSpecMap.get(group) : undefined;
+          const base = (c.rules.summary ?? '')
+            .replace(STRIP_ARMOR_SPEC, '')
+            .replace(/^Rules summary not imported\n?/, '')
+            .trim();
+          const summary = spec
+            ? base
+              ? `${base}\n---\n***Armor Specialization*** ${spec}`
+              : `***Armor Specialization*** ${spec}`
+            : base || 'Rules summary not imported';
+          return {
+            ...c,
+            rules: {
+              ...c.rules,
+              summary,
+              hasArmorSpecialization: hasArmorSpec || undefined,
+            },
+          };
+        }
+        if (c.category === 'weapon') {
+          const group = (c.rules.weaponGroup ?? '').toLowerCase();
+          const spec = hasCritSpec ? critSpecMap.get(group) : undefined;
+          const base = (c.rules.summary ?? '').replace(STRIP_CRIT_SPEC, '').trim();
+          const summary = spec ? `${base}\n---\n***Critical Specialization*** ${spec}` : base;
+          return summary !== c.rules.summary ? { ...c, rules: { ...c.rules, summary } } : c;
+        }
+        return c;
       });
 
       set({

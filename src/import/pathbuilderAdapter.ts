@@ -31,6 +31,73 @@ function str(v: unknown): string | undefined {
   return typeof v === 'string' && v.length > 0 ? v : undefined;
 }
 
+/**
+ * Normalise a raw Pathbuilder duration value into a PF2e game-unit string.
+ *
+ * Pathbuilder (and the underlying pf2e system data) stores durations in
+ * multiple formats:
+ *   - A plain string  "1 minute" / "sustained up to 1 minute" / "1 round"
+ *   - A number of seconds: 6 → "1 round", 60 → "1 minute", 3600 → "1 hour"
+ *   - An object { value: number, unit: string } from the pf2e system schema
+ *
+ * We normalise everything to the AoN convention so that the card always shows
+ * the same format regardless of whether the value came from Pathbuilder or AoN.
+ */
+function normalizeDuration(v: unknown): string | undefined {
+  if (v === undefined || v === null || v === '') return undefined;
+
+  // Numeric seconds (Pathbuilder sometimes exports the raw second count)
+  if (typeof v === 'number') {
+    return secondsToRounds(v);
+  }
+
+  // Structured { value, unit } from the pf2e system schema
+  if (typeof v === 'object' && !Array.isArray(v)) {
+    const obj = v as Record<string, unknown>;
+    const val = typeof obj['value'] === 'number' ? obj['value'] : undefined;
+    const unit = typeof obj['unit'] === 'string' ? obj['unit'].toLowerCase() : undefined;
+    if (val === undefined || !unit || unit === 'unlimited') return undefined;
+    if (unit === 'rounds' || unit === 'round') {
+      return val === 1 ? '1 round' : `${val} rounds`;
+    }
+    if (unit === 'minutes' || unit === 'minute') {
+      return val === 1 ? '1 minute' : `${val} minutes`;
+    }
+    if (unit === 'hours' || unit === 'hour') {
+      return val === 1 ? '1 hour' : `${val} hours`;
+    }
+    if (unit === 'days' || unit === 'day') {
+      return val === 1 ? '1 day' : `${val} days`;
+    }
+    return `${val} ${unit}`;
+  }
+
+  if (typeof v !== 'string' || v.trim() === '') return undefined;
+
+  const s = v.trim();
+
+  // "N seconds" → convert to rounds/minutes
+  const secMatch = /^(\d+)\s*seconds?$/i.exec(s);
+  if (secMatch) return secondsToRounds(parseInt(secMatch[1], 10));
+
+  // Already a standard string — pass through
+  return s;
+}
+
+function secondsToRounds(seconds: number): string | undefined {
+  if (!seconds || seconds < 0) return undefined;
+  if (seconds % 3600 === 0) {
+    const h = seconds / 3600;
+    return h === 1 ? '1 hour' : `${h} hours`;
+  }
+  if (seconds % 60 === 0) {
+    const m = seconds / 60;
+    return m === 1 ? '1 minute' : `${m} minutes`;
+  }
+  const rounds = Math.round(seconds / 6);
+  return rounds === 1 ? '1 round' : `${rounds} rounds`;
+}
+
 function num(v: unknown): number | undefined {
   return typeof v === 'number' ? v : undefined;
 }
@@ -467,7 +534,7 @@ export function parsePathbuilder(json: unknown): CharacterModel {
           area: str(get(s, 'area')),
           targets: str(get(s, 'targets')),
           defense: str(get(s, 'defense')) ?? str(get(s, 'save')),
-          duration: str(get(s, 'duration')),
+          duration: normalizeDuration(get(s, 'duration')),
           summary: str(get(s, 'description')),
         };
 
@@ -545,11 +612,51 @@ export function parsePathbuilder(json: unknown): CharacterModel {
         if (striking === 'striking') parts.push('Striking');
         else if (striking === 'greater striking') parts.push('Greater Striking');
         else if (striking === 'major striking') parts.push('Major Striking');
+        else if (striking) {
+          // Unknown striking rune variant (e.g. "mythic striking" or camelCase
+          // "MythicStriking") — split camelCase then title-case.
+          parts.push(
+            striking.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/\b\w/g, (c) => c.toUpperCase()),
+          );
+        }
         return parts.length > 0 ? parts : undefined;
       })(),
       notes: str(get(w, 'notes')),
       isUnarmed: str(get(w, 'prof')) === 'unarmed',
       material: str(get(w, 'mat')) || undefined,
+    });
+  }
+
+  // --- Armor ---
+  const armors: import('../model/character').CharacterArmor[] = [];
+  const armorRaw = arr<unknown>(get(build, 'armor'));
+  for (const a of armorRaw) {
+    if (typeof a !== 'object' || a === null) continue;
+    const name = str(get(a, 'name'));
+    if (!name) continue;
+    const pot = num(get(a, 'pot')) ?? 0;
+    const resRaw = typeof get(a, 'res') === 'string' ? (get(a, 'res') as string).trim() : '';
+    const category = str(get(a, 'prof')) ?? 'unarmored';
+
+    // Build fundamental runes: potency + resilient
+    const fundRunes: string[] = [];
+    if (pot > 0) fundRunes.push(`+${pot}`);
+    if (resRaw) {
+      // camelCase → "Mythic Resilient", already-spaced like "resilient" → "Resilient"
+      const resilientName = resRaw
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+      fundRunes.push(resilientName);
+    }
+
+    armors.push({
+      name,
+      display: str(get(a, 'display')),
+      category,
+      worn: get(a, 'worn') === true,
+      fundamentalRunes: fundRunes.length > 0 ? fundRunes : undefined,
+      runes: arr<string>(get(a, 'runes')).filter(Boolean) as string[] | undefined,
+      material: str(get(a, 'mat')) || undefined,
     });
   }
 
@@ -686,6 +793,7 @@ export function parsePathbuilder(json: unknown): CharacterModel {
     focusSpells,
     focusPoints,
     attacks,
+    armors,
     equipment,
     actions: [],
     linkedCreatures: linkedCreatures.length > 0 ? linkedCreatures : undefined,

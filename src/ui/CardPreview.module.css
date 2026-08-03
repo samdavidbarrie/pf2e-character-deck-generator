@@ -1,16 +1,3 @@
-/**
- * Registers --title-len as a typed integer so CSS calc() can divide by it.
- * Each title span sets this via an inline style; clamp() then scales the
- * font-size down for long titles without any JavaScript measurement.
- *
- * Calibration: 195 ÷ 19 ≈ 10pt (threshold), 195 ÷ 22 ≈ 8.9pt ("HORIZON THUNDER SPHERE")
- */
-@property --title-len {
-  syntax: '<integer>';
-  inherits: false;
-  initial-value: 10;
-}
-
 .card {
   text-align: left;
   width: 63mm;
@@ -75,6 +62,12 @@
 }
 .themeCreature {
   --pf-card-accent: var(--pf-accent-creature, #2a5a3a);
+}
+.themeArmor {
+  --pf-card-accent: #3a3a5a;
+}
+.themeShield {
+  --pf-card-accent: #3a4a6a;
 }
 
 /* Inline writable blank — rendered in place of ___ in card body text. */
@@ -192,8 +185,7 @@
    icon stays hugged to the title text, not floating to the right. */
 .title {
   font-family: var(--pf-title-font, 'Oswald', 'Arial Narrow', system-ui, sans-serif);
-  /* Scale down long titles. Threshold: 16 chars = 10pt, longer scales proportionally. */
-  font-size: clamp(5pt, calc(160pt / var(--title-len)), 10pt);
+  font-size: 10pt;
   font-weight: 600;
   line-height: 1.1;
   text-transform: uppercase;
@@ -202,14 +194,6 @@
   flex: 0 1 auto;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: clip;
-}
-
-/* Very long titles (40+ chars): wrap to two lines at a readable size rather
-   than squishing to 4–5pt. Two lines at 7pt fit in the 7mm card header. */
-.title[data-long] {
-  white-space: normal;
-  font-size: 7pt;
   text-overflow: clip;
 }
 
@@ -265,7 +249,6 @@
   display: inline-block;
   width: 28px;
   height: 12pt;
-  border-bottom: 1.5pt solid var(--pf-card-ink, #15120f);
 }
 
 .backBadge {
@@ -403,8 +386,28 @@
 }
 
 .field {
-  font-size: 6.6pt;
+  font-size: 6.8pt;
   line-height: 1.24;
+}
+
+/* Bonus field: bold label, rendered directly without a separate heading.
+   Font-size matches .fieldLabel so BONUS stays visually aligned with
+   TRIGGER / REQUIREMENTS / FREQUENCY at every density scale. */
+.bonusField {
+  font-size: 6pt;
+  line-height: 1.3;
+  font-weight: 700;
+  font-family: var(--pf-title-font, system-ui, sans-serif);
+  text-transform: uppercase;
+}
+
+/* ***triple-bold*** inline field-label: title font, uppercase, condensed. */
+.fieldLabelInline {
+  font-family: var(--pf-title-font, system-ui, sans-serif);
+  font-weight: 800;
+  font-size: 0.8em;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 .fieldLabel {
@@ -471,10 +474,6 @@
   margin: 2px 0 5px;
 }
 
-.skillTopLabel {
-  /* inherits bold from parent */
-}
-
 .skillTopSign {
   font-weight: 400;
   font-size: 7pt;
@@ -486,6 +485,16 @@
   border-bottom: 0.5pt solid currentColor;
   align-self: flex-end;
   margin-bottom: 2px;
+}
+
+/* Compact inline metadata row: LABEL value  LABEL value  … (no separator) */
+.inlineMeta {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0 8px;
+  font-size: 6.8pt;
+  line-height: 1.24;
 }
 
 /* Spell / action metadata block — stacked rows with bold labels */
@@ -535,7 +544,33 @@
   font-size: 6.8pt;
   line-height: 1.26;
   color: var(--pf-card-ink, #15120f);
-  white-space: pre-line;
+}
+
+.summary em {
+  font-style: italic;
+}
+
+.cardHr {
+  border: none;
+  border-top: 0.5pt solid currentColor;
+  margin: 2pt 0;
+  opacity: 0.4;
+}
+
+/* > padding unit — each leading > in a line adds one invisible width block.
+   Users control indent depth by adding/removing > characters. */
+.padUnit {
+  display: inline-block;
+  width: 0.7em;
+  visibility: hidden;
+}
+
+/* Manual [newcard] split marker — dashed line shown in editor preview */
+.cardSplitMark {
+  border: none;
+  border-top: 1pt dashed currentColor;
+  margin: 2pt 0;
+  opacity: 0.35;
 }
 
 .writableFields {
@@ -734,16 +769,17 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  /* justify-content: space-between; */
 }
 
 .skillColumnHeader {
   display: grid;
-  grid-template-columns: 1fr auto auto;
-  gap: 3px;
+  grid-template-columns: 1fr repeat(4, 7pt) 28pt;
+  gap: 0;
   font-size: 5.5pt;
   font-weight: 700;
   color: #555;
+  text-align: center;
   border-bottom: 0.5pt solid #ccc;
   padding-bottom: 1px;
   margin-bottom: 1px;
@@ -751,12 +787,12 @@
 
 .skillRow {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: 1fr repeat(4, 6pt) 28pt;
   align-items: baseline;
-  gap: 4px;
+  gap: 0;
   font-size: 6.5pt;
-  line-height: 1.45;
-  padding: 0 2px;
+  line-height: 1.55;
+  padding-left: 2px;
 }
 
 .skillRow:nth-child(odd) {
@@ -773,24 +809,33 @@
   text-overflow: ellipsis;
 }
 
-.skillTeml {
+.skillCircle {
   font-size: 6pt;
-  letter-spacing: 0;
-  white-space: nowrap;
+  text-align: center;
   color: #333;
+}
+
+.skillCircleHeader {
+  font-size: 5.5pt;
+  font-weight: 700;
+  color: #555;
+  text-align: center;
 }
 
 .skillTotal {
   font-size: 6pt;
   border-bottom: 0.5pt solid #333;
-  min-width: 28px;
-  display: inline-block;
+  display: block;
+  margin-left: 6pt;
+  align-self: end;
 }
 
 .skillTotalHeader {
-  font-size: 6pt;
-  min-width: 28px;
-  display: inline-block;
+  font-size: 5.5pt;
+  font-weight: 700;
+  color: #555;
+  display: block;
+  padding-left: 4pt;
 }
 
 /* Print overrides applied via forPrint class */
@@ -822,7 +867,8 @@
   font-size: 8.5pt;
   line-height: 1.32;
 }
-.scaleLg .fieldLabel {
+.scaleLg .fieldLabel,
+.scaleLg .bonusField {
   font-size: 7.5pt;
 }
 .scaleLg .outcomeLabel {
@@ -844,7 +890,8 @@
   font-size: 7.8pt;
   line-height: 1.28;
 }
-.scaleMd .fieldLabel {
+.scaleMd .fieldLabel,
+.scaleMd .bonusField {
   font-size: 7pt;
 }
 .scaleMd .outcomeLabel {
@@ -862,7 +909,8 @@
   font-size: 7.4pt;
   line-height: 1.26;
 }
-.scaleSm .fieldLabel {
+.scaleSm .fieldLabel,
+.scaleSm .bonusField {
   font-size: 6.8pt;
 }
 .scaleSm .subtitle {
@@ -877,7 +925,8 @@
   font-size: 5.8pt;
   line-height: 1.18;
 }
-.scaleDense .fieldLabel {
+.scaleDense .fieldLabel,
+.scaleDense .bonusField {
   font-size: 6pt;
 }
 .scaleDense .outcomeLabel {
@@ -948,6 +997,40 @@
   border-bottom: 1pt solid #444;
 }
 
+/* Tall blank — for Notes and multi-line writable areas */
+.blankTall {
+  display: block;
+  width: 100%;
+  height: 36pt;
+  border-bottom: 1pt solid #444;
+}
+
+/* Currency layout — used by the Wealth card. Rows fill the full card height. */
+.currencyBody {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: 0; /* .cardBody already provides 8px side padding */
+  gap: 0;
+}
+
+.currencyRow {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  flex: 1;
+  padding: 3pt 0 2pt;
+}
+
+.currencyRowNotes {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  flex: 2;
+  padding: 3pt 0 2pt;
+}
+
 /* Shorter blank — used for minor fields */
 .blankSm {
   display: block;
@@ -965,13 +1048,15 @@
 
 /* ── Save table: flat CSS grid so all circles align ─── */
 .saveTable {
-  display: grid;
-  grid-template-columns: max-content auto 1fr;
-  align-items: baseline;
-  column-gap: 4px;
-  row-gap: 3px;
-  align-content: start;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
   margin-top: 4px;
+}
+
+/* Narrower bonus column inside the half-width save section */
+.saveTable .skillRow {
+  grid-template-columns: 1fr repeat(4, 7pt) 16pt;
 }
 
 .saveLabel {
@@ -993,11 +1078,10 @@
   min-width: 20px;
 }
 
-/* Full-width separator row spanning all 3 grid columns */
+/* Separator row between Will and Perception */
 .saveTableSep {
-  grid-column: 1 / -1;
-  border-top: 0.5pt dotted #ccc;
-  height: 0;
+  border-top: 0.5pt solid #ccc;
+  margin: 1px 2px;
 }
 
 /* Senses/resistance/immunity note lines in right column */
