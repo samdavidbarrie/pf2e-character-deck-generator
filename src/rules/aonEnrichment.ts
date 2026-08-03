@@ -4,7 +4,7 @@
  */
 
 import { displayField, hpField } from '../generation/templates/_helpers';
-import { ARMOR_SPEC, REINFORCING_RUNE } from '../generation/templates/armor';
+import { REINFORCING_RUNE } from '../generation/templates/armor';
 import type { ActionCost, CardCategory, CardModel } from '../model/cards';
 import type {
   AbilityKey,
@@ -501,6 +501,84 @@ async function fetchBatch(names: string[]): Promise<AonData[]> {
  * preferring results that best match each card's category where there are
  * multiple hits for the same name (e.g. "Shield" is both a spell and an action).
  */
+
+// ---------------------------------------------------------------------------
+// Weapon/armor group specialization fetch
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch specialization effect text for a set of group names from AoN.
+ * - `'armor-group'`: returns the armor specialization effect per group.
+ * - `'weapon-group'`: returns the critical specialization effect per group.
+ * Returns a map of lowercase group name → plain-text effect.
+ * Falls back to an empty map on network failure so card generation still works.
+ */
+export async function fetchGroupSpecializations(
+  groupNames: string[],
+  groupType: 'armor-group' | 'weapon-group',
+): Promise<Map<string, string>> {
+  if (groupNames.length === 0) return new Map();
+
+  const body = {
+    query: {
+      bool: {
+        must: [{ term: { type: groupType } }],
+        should: groupNames.map((n) => ({ term: { 'name.keyword': n } })),
+        minimum_should_match: 1,
+      },
+    },
+    _source: ['name', 'type', 'text', 'summary'],
+    size: groupNames.length * 2,
+  };
+
+  let hits: Array<{ _source: Record<string, unknown> }>;
+  try {
+    const res = await fetch(AON_ES, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) return new Map();
+    const json = (await res.json()) as {
+      hits?: { hits?: Array<{ _source: Record<string, unknown> }> };
+    };
+    hits = json.hits?.hits ?? [];
+  } catch {
+    return new Map();
+  }
+
+  const result = new Map<string, string>();
+
+  for (const hit of hits) {
+    const s = hit._source;
+    const name = ((s['name'] as string) ?? '').toLowerCase().trim();
+    if (!name || result.has(name)) continue;
+
+    const rawText = (s['text'] as string) ?? '';
+    const rawSummary = (s['summary'] as string) ?? '';
+
+    // Use the parsed summary (parts[1] of the AoN text format); fall back to
+    // the standalone summary field.
+    const textParts = rawText.split(' --- ');
+    const descHtml = textParts.length > 1 ? textParts[1] : rawText;
+    const plain = stripHtml(descHtml || rawSummary).trim();
+
+    let effect: string;
+    if (groupType === 'weapon-group') {
+      // Extract the sentence(s) after the "Critical Specialization Effect" label.
+      const match = /critical specialization(?:\s+effect)?[:\s]+(.+)/is.exec(plain);
+      effect = match ? match[1].trim() : plain;
+    } else {
+      // Armor group: the entire description is the specialization effect.
+      effect = plain;
+    }
+
+    if (effect) result.set(name, effect);
+  }
+
+  return result;
+}
+
 export async function fetchAonData(
   cards: Array<{ title: string; category: CardCategory }>,
 ): Promise<Map<string, AonData>> {
@@ -987,19 +1065,15 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
       rules.price = formatGpPrice(totalGp) || data.priceRaw;
     }
     // Rebuild the summary: only rune/material lines from the original generated
-    // summary + armor specialization. Stats are shown in the inlineMeta row above.
-    const existing = rules.summary.replace(SUMMARY_PLACEHOLDER, '').trim();
-    const summaryParts: string[] = [];
-    if (existing) summaryParts.push(existing);
-    if (card.category === 'armor') {
-      const group = (data.armorGroup ?? rules.armorGroup ?? '').toLowerCase();
-      const spec = ARMOR_SPEC[group];
-      if (spec) {
-        summaryParts.push('---');
-        summaryParts.push(`***Armor Specialization*** ${spec}`);
-      }
-    }
-    rules.summary = summaryParts.filter(Boolean).join('\n') || SUMMARY_PLACEHOLDER;
+    // summary. Stats are shown in the inlineMeta row above. Armor/weapon
+    // specialization text is appended in a separate post-enrichment store pass
+    // after group effects are fetched from AoN.
+    const existing = rules.summary
+      .replace(SUMMARY_PLACEHOLDER, '')
+      .replace(/\n?---\n\*\*\*Armor Specialization\*\*\*[^\n]*/g, '')
+      .replace(/\n?---\n\*\*\*Critical Specialization\*\*\*[^\n]*/g, '')
+      .trim();
+    rules.summary = existing || SUMMARY_PLACEHOLDER;
   }
 
   return { ...card, rules, source, subtitle, writableFields };

@@ -14,6 +14,7 @@ import {
   detectFeatMerges,
   enrichLinkedCreaturesFromAon,
   fetchAonData,
+  fetchGroupSpecializations,
   fetchRuneDescriptions,
 } from '../rules/aonEnrichment';
 import { aonSearchUrl } from '../rules/aonUrlResolver';
@@ -456,6 +457,75 @@ export const useAppStore = create<AppState>((set, get) => ({
         if (card.continuationOf || card.source.aonUrl || NO_SEARCH_CATEGORIES.has(card.category))
           return card;
         return { ...card, source: { ...card.source, aonUrl: aonSearchUrl(card.title) } };
+      });
+
+      // Specialization pass: scan ALL enriched cards for qualifying feat phrases,
+      // fetch group effect text from AoN, then append to armor/weapon summaries.
+      // No hardcoded feat or group names — new feats/groups are detected automatically.
+      const hasArmorSpec = cards.some((c) =>
+        /armor specialization effects/i.test(c.rules.summary ?? ''),
+      );
+      const hasCritSpec = cards.some((c) =>
+        /critical specialization effects/i.test(c.rules.summary ?? ''),
+      );
+
+      const armorGroups = [
+        ...new Set(
+          cards
+            .filter((c) => c.category === 'armor' && c.rules.armorGroup)
+            .map((c) => c.rules.armorGroup!),
+        ),
+      ];
+      const weaponGroups = [
+        ...new Set(
+          cards
+            .filter((c) => c.category === 'weapon' && c.rules.weaponGroup)
+            .map((c) => c.rules.weaponGroup!),
+        ),
+      ];
+
+      const [armorSpecMap, critSpecMap] = await Promise.all([
+        hasArmorSpec && armorGroups.length > 0
+          ? fetchGroupSpecializations(armorGroups, 'armor-group')
+          : Promise.resolve(new Map<string, string>()),
+        hasCritSpec && weaponGroups.length > 0
+          ? fetchGroupSpecializations(weaponGroups, 'weapon-group')
+          : Promise.resolve(new Map<string, string>()),
+      ]);
+
+      const STRIP_ARMOR_SPEC = /\n?---\n\*\*\*Armor Specialization\*\*\*[^\n]*/g;
+      const STRIP_CRIT_SPEC = /\n?---\n\*\*\*Critical Specialization\*\*\*[^\n]*/g;
+
+      cards = cards.map((c) => {
+        if (c.category === 'armor') {
+          const group = (c.rules.armorGroup ?? '').toLowerCase();
+          const spec = hasArmorSpec ? armorSpecMap.get(group) : undefined;
+          const base = (c.rules.summary ?? '')
+            .replace(STRIP_ARMOR_SPEC, '')
+            .replace(/^Rules summary not imported\n?/, '')
+            .trim();
+          const summary = spec
+            ? base
+              ? `${base}\n---\n***Armor Specialization*** ${spec}`
+              : `***Armor Specialization*** ${spec}`
+            : base || 'Rules summary not imported';
+          return {
+            ...c,
+            rules: {
+              ...c.rules,
+              summary,
+              hasArmorSpecialization: hasArmorSpec || undefined,
+            },
+          };
+        }
+        if (c.category === 'weapon') {
+          const group = (c.rules.weaponGroup ?? '').toLowerCase();
+          const spec = hasCritSpec ? critSpecMap.get(group) : undefined;
+          const base = (c.rules.summary ?? '').replace(STRIP_CRIT_SPEC, '').trim();
+          const summary = spec ? `${base}\n---\n***Critical Specialization*** ${spec}` : base;
+          return summary !== c.rules.summary ? { ...c, rules: { ...c.rules, summary } } : c;
+        }
+        return c;
       });
 
       set({

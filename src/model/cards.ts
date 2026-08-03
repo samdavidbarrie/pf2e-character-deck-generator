@@ -105,6 +105,8 @@ export interface CardModel {
     strengthReq?: number; // strength score required
     hardness?: number; // shield/item hardness
     shieldHP?: number; // shield HP
+    /** Set at generation time if the character has a feat granting armor specialization effects. */
+    hasArmorSpecialization?: boolean;
   };
 
   layout?: 'standard' | 'quadrant' | 'currency';

@@ -6,26 +6,9 @@ import { computeEffectiveItemLevel } from '../../rules/weaponPricing';
 import { defaultCard } from './_helpers';
 
 // ---------------------------------------------------------------------------
-// Crit specialization by weapon group
+// Crit specialization group inference (used to set weaponGroup on the card;
+// the actual spec text is fetched from AoN during enrichment)
 // ---------------------------------------------------------------------------
-const CRIT_SPEC: Record<string, string> = {
-  axe: 'Choose one adjacent creature within reach. If its AC is lower than your attack roll result, deal weapon die damage to it (same type).',
-  brawling:
-    'Target must succeed at a Fortitude save (DC = your class DC) or be slowed 1 until the end of your next turn.',
-  bow: 'If adjacent to a surface, target is stuck (immobilised, DC 10 Athletics to pull free).',
-  club: 'Knock target up to 10 feet away (forced movement).',
-  dart: 'Target takes 1d6 persistent bleed damage (+ weapon item bonus).',
-  flail: 'Target is knocked prone.',
-  hammer: 'Target is knocked prone.',
-  knife: 'Target takes 1d6 persistent bleed damage (+ weapon item bonus).',
-  pick: 'The weapon deals 2 additional damage per weapon damage die.',
-  polearm: 'Target is moved 5 feet away from you (forced movement).',
-  shield: 'Target suffers −2 circumstance penalty to AC until the start of your next turn.',
-  sling: 'Target must succeed at a Fortitude save (DC = class DC or spell DC) or be stunned 1.',
-  spear: 'The weapon pierces the target, dealing 2 additional damage per weapon damage die.',
-  sword: 'Target is flat-footed until the start of your next turn.',
-  whip: 'You can move the target up to 10 feet in any direction (forced movement).',
-};
 
 // Best-effort name → group lookup for common weapons and monk stance weapons
 const NAME_TO_GROUP: Record<string, string> = {
@@ -193,8 +176,6 @@ function buildMainCard(attack: CharacterAttack): CardModel {
   const materialNote = attack.material ? `***Material***: ${attack.material}` : '';
 
   const group = inferGroup(attack);
-  const critSpec = group ? CRIT_SPEC[group] : undefined;
-  const critSpecLine = critSpec ? `---\n***Critical Specialization*** ${critSpec}` : '';
 
   const summaryParts = [
     '***Hit***: + ___ / + ___ / + ___',
@@ -203,7 +184,6 @@ function buildMainCard(attack: CharacterAttack): CardModel {
     fundamentalRuneNote,
     propertyRuneNote,
     materialNote,
-    critSpecLine,
   ].filter(Boolean);
   const summary = summaryParts.join('\n');
 

@@ -6,18 +6,6 @@ import { buildStableKey } from '../../rules/nameNormalization';
 import { ARMOR_RUNE_PRICES, WEAPON_MATERIAL_PRICES } from '../../rules/weaponPricing';
 import { defaultCard } from './_helpers';
 
-/** Armor specialization effects by armor group (requires master proficiency). */
-export const ARMOR_SPEC: Record<string, string> = {
-  chain: 'Resistance 2 to piercing damage from ranged attacks.',
-  composite: 'Resistance 3 to bludgeoning damage.',
-  hide: 'You can use your Shield Block reaction to reduce bludgeoning or slashing damage as well as physical damage.',
-  leather:
-    'You can use your Shield Block reaction to reduce bludgeoning or slashing damage as well as physical damage.',
-  plate: 'Resistance 3 to physical damage.',
-  scale: 'Resistance 3 to piercing damage.',
-  wood: 'Resistance 3 to electricity damage.',
-};
-
 /**
  * Reinforcing rune stat bonuses for shields.
  * These runes increase Hardness/HP/BT and are NOT separate item cards.
