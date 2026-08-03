@@ -56,6 +56,11 @@ export interface AonData {
   bulk?: string; // e.g. "L"
   priceRaw?: string; // e.g. "50 gp"
   activateTag?: string; // activation trait, e.g. "manipulate"
+  /** Weapon-specific fields from AoN. */
+  hands?: string; // e.g. "2", "1+"
+  weaponType?: string; // "Melee" | "Ranged"
+  weaponCategory?: string; // "Simple" | "Martial" | "Advanced"
+  weaponGroup?: string; // e.g. "Polearm"
   // Degree-of-success outcomes
   criticalSuccess?: string;
   success?: string;
@@ -316,7 +321,7 @@ function preferredTypesFor(category: CardCategory): string[] {
     case 'skill-action':
       return ['Action', 'Feat'];
     case 'weapon':
-      return ['Weapon'];
+      return ['Item', 'Weapon'];
     default:
       return [];
   }
@@ -375,6 +380,10 @@ async function fetchBatch(names: string[]): Promise<AonData[]> {
       'bulk',
       'price_raw',
       'source',
+      'hands',
+      'weapon_type',
+      'weapon_category',
+      'weapon_group',
     ],
     size: Math.min(names.length * 3, 200),
   };
@@ -443,6 +452,10 @@ async function fetchBatch(names: string[]): Promise<AonData[]> {
       bulk,
       priceRaw: (s['price_raw'] as string | undefined) || undefined,
       activateTag: activateTagMatch?.[1]?.trim() || undefined,
+      hands: (s['hands'] as string | undefined) || undefined,
+      weaponType: (s['weapon_type'] as string | undefined) || undefined,
+      weaponCategory: (s['weapon_category'] as string | undefined) || undefined,
+      weaponGroup: (s['weapon_group'] as string | undefined) || undefined,
       source: (s['source'] as string[] | undefined) ?? undefined,
     };
   });
@@ -824,6 +837,10 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
     if (!isUnarmed) {
       if (data.usage && !rules.usage) rules.usage = data.usage;
       if (data.bulk && !rules.bulk) rules.bulk = data.bulk;
+      if (data.hands && !rules.hands) rules.hands = data.hands;
+      if (data.weaponType && !rules.weaponType) rules.weaponType = data.weaponType;
+      if (data.weaponCategory && !rules.weaponCategory) rules.weaponCategory = data.weaponCategory;
+      if (data.weaponGroup && !rules.weaponGroup) rules.weaponGroup = data.weaponGroup;
 
       // Compute total price = base weapon + fundamental rune surcharges + material surcharge.
       // Parse rune names and material from the generated summary text.

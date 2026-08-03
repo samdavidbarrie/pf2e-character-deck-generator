@@ -612,6 +612,10 @@ export function parsePathbuilder(json: unknown): CharacterModel {
         if (striking === 'striking') parts.push('Striking');
         else if (striking === 'greater striking') parts.push('Greater Striking');
         else if (striking === 'major striking') parts.push('Major Striking');
+        else if (striking) {
+          // Unknown striking rune variant (e.g. "mythic striking") — title-case and include.
+          parts.push(striking.replace(/\b\w/g, (c) => c.toUpperCase()));
+        }
         return parts.length > 0 ? parts : undefined;
       })(),
       notes: str(get(w, 'notes')),

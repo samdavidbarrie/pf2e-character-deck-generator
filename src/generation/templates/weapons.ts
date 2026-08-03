@@ -49,6 +49,11 @@ const NAME_TO_GROUP: Record<string, string> = {
   halberd: 'polearm',
   guisarme: 'polearm',
   glaive: 'polearm',
+  fauchard: 'polearm',
+  lance: 'polearm',
+  ranseur: 'polearm',
+  longspear: 'spear',
+  naginata: 'polearm',
   warhammer: 'hammer',
   maul: 'hammer',
   shortbow: 'bow',
@@ -172,16 +177,35 @@ function buildMainCard(attack: CharacterAttack): CardModel {
   const type = normaliseDamageType(attack.damageType ?? '');
 
   // Blanks for fillable numbers; die type and damage type are pre-printed
-  const damageLine = `Damage: ___ ${die} + ___ ${type}`;
-  const extraLines = (attack.extraDamage ?? []).map((d) => `+${d}`);
+  const damageLine = `**Damage**: ___ ${die} + ___ ${type}`;
+  // Extra damage indented to visually align with the value field above
+  const extraLines = (attack.extraDamage ?? []).map((d) => `  ${d}`);
 
-  // Runes line: fundamental runes first, then property runes
-  const allRunes = [...(attack.fundamentalRunes ?? []), ...(attack.runes ?? [])];
-  const runeNote = allRunes.length > 0 ? `Runes: ${allRunes.join(', ')}` : '';
-  const materialNote = attack.material ? `Material: ${attack.material}` : '';
-  const summaryParts = ['Hit: + ___', damageLine, ...extraLines, runeNote, materialNote].filter(
-    Boolean,
-  );
+  // Fundamental runes first (potency/striking), then property runes on a separate line
+  const fundamentalRuneNote =
+    (attack.fundamentalRunes ?? []).length > 0
+      ? `**Fundamental Runes**: ${attack.fundamentalRunes!.join(', ')}`
+      : '';
+  const propertyRuneNote =
+    (attack.runes ?? []).length > 0 ? `**Property Runes**: ${attack.runes!.join(', ')}` : '';
+  const materialNote = attack.material ? `**Material**: ${attack.material}` : '';
+
+  const group = inferGroup(attack);
+  const critSpec = group ? CRIT_SPEC[group] : undefined;
+  const critSpecLine = critSpec
+    ? `---
+**Critical Specialization** ${critSpec}`
+    : '';
+
+  const summaryParts = [
+    '**Hit**: + ___',
+    damageLine,
+    ...extraLines,
+    fundamentalRuneNote,
+    propertyRuneNote,
+    materialNote,
+    critSpecLine,
+  ].filter(Boolean);
   const summary = summaryParts.join('\n');
 
   // Effective item level from fundamental runes AND material (pre-enrichment;
@@ -200,15 +224,6 @@ function buildMainCard(attack: CharacterAttack): CardModel {
   // Range: from unarmed lookup table (Pathbuilder doesn't export it)
   const range = unarmedData?.range;
 
-  // Only crit spec in extraSections; rune descriptions live on separate cards.
-  // Stance reminder (if known) appended after crit spec.
-  const extraSections: Array<{ heading?: string; body: string }> = [];
-  const group = inferGroup(attack);
-  const critSpec = group ? CRIT_SPEC[group] : undefined;
-  if (critSpec) {
-    extraSections.push({ heading: 'Critical Specialization', body: critSpec });
-  }
-
   return defaultCard({
     title,
     category: 'weapon',
@@ -220,10 +235,11 @@ function buildMainCard(attack: CharacterAttack): CardModel {
       summary,
       ...(itemLevel !== undefined ? { level: itemLevel } : {}),
       ...(range ? { range } : {}),
-      ...(extraSections.length > 0 ? { extraSections } : {}),
+      ...(group ? { weaponGroup: group.charAt(0).toUpperCase() + group.slice(1) } : {}),
     },
     print: { include: true, priority: 35, size: 'standard' },
     writableFields: [],
+    ...(attack.notes ? { userEdits: { edited: false, notes: attack.notes } } : {}),
   });
 }
 

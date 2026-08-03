@@ -188,6 +188,12 @@ function renderMarkdown(text: string): React.ReactNode {
             {i > 0 && <br />}
             {renderBold(line.slice(2))}
           </span>
+        ) : line.startsWith('  ') ? (
+          // Indented continuation line (e.g. extra weapon damage)
+          <span key={i} className={styles.indentedLine}>
+            {i > 0 && <br />}
+            {renderBold(line.trimStart())}
+          </span>
         ) : (
           <Fragment key={i}>
             {i > 0 && <br />}
@@ -250,7 +256,6 @@ export function CardPreview({ card, selected, onClick, onModifierClick, forPrint
 
   // Item level always shows in the top-right corner via getRankLabel; never
   // duplicate it in the metadata row.
-  const hasItemLevel = false;
 
   // Scale body text to match card density — applied in both deck-builder and print views
   // so the two surfaces look identical.
@@ -409,51 +414,56 @@ export function CardPreview({ card, selected, onClick, onModifierClick, forPrint
           </div>
         )}
 
-        {(hasItemLevel ||
-          card.rules.usage ||
-          card.rules.bulk ||
-          card.rules.activateTag ||
-          card.rules.price) && (
-          <div className={styles.itemMeta}>
-            {/* Row 1: Item; Usage; Bulk */}
-            {(hasItemLevel || card.rules.usage || card.rules.bulk) && (
-              <div>
-                {hasItemLevel && (
-                  <>
-                    <span className={styles.spellMetaLabel}>Item</span> {card.rules.level}
-                  </>
-                )}
-                {card.rules.usage && (
-                  <>
-                    {hasItemLevel && '; '}
-                    <span className={styles.spellMetaLabel}>Usage</span> {card.rules.usage}
-                  </>
-                )}
-                {card.rules.bulk && (
-                  <>
-                    {(hasItemLevel || card.rules.usage) && '; '}
-                    <span className={styles.spellMetaLabel}>Bulk</span> {card.rules.bulk}
-                  </>
-                )}
-              </div>
+        {(card.rules.hands ||
+          card.rules.weaponType ||
+          card.rules.weaponCategory ||
+          card.rules.weaponGroup) && (
+          <div className={styles.inlineMeta}>
+            {card.rules.hands && (
+              <span>
+                <span className={styles.fieldLabel}>Hands</span> {card.rules.hands}
+              </span>
             )}
-            {/* Row 2: Activate; Price */}
-            {((card.rules.activateTag && card.rules.actionCost) || card.rules.price) && (
-              <div>
-                {card.rules.activateTag && card.rules.actionCost && (
-                  <>
-                    <span className={styles.spellMetaLabel}>Activate</span>{' '}
-                    <ActionCostDisplay cost={card.rules.actionCost} /> {card.rules.activateTag}
-                  </>
-                )}
-                {card.rules.price && (
-                  <>
-                    {card.rules.activateTag && card.rules.actionCost && '; '}
-                    <span className={styles.spellMetaLabel}>Price</span> {card.rules.price}
-                  </>
-                )}
-              </div>
+            {card.rules.weaponType && (
+              <span>
+                <span className={styles.fieldLabel}>Type</span> {card.rules.weaponType}
+              </span>
             )}
+            {card.rules.weaponCategory && (
+              <span>
+                <span className={styles.fieldLabel}>Category</span> {card.rules.weaponCategory}
+              </span>
+            )}
+            {card.rules.weaponGroup && (
+              <span>
+                <span className={styles.fieldLabel}>Group</span> {card.rules.weaponGroup}
+              </span>
+            )}
+          </div>
+        )}
+        {(card.rules.usage || card.rules.bulk || card.rules.price) && (
+          <div className={styles.inlineMeta}>
+            {card.rules.usage && (
+              <span>
+                <span className={styles.fieldLabel}>Usage</span> {card.rules.usage}
+              </span>
+            )}
+            {card.rules.bulk && (
+              <span>
+                <span className={styles.fieldLabel}>Bulk</span> {card.rules.bulk}
+              </span>
+            )}
+            {card.rules.price && (
+              <span>
+                <span className={styles.fieldLabel}>Price</span> {card.rules.price}
+              </span>
+            )}
+          </div>
+        )}
+        {card.rules.activateTag && card.rules.actionCost && (
+          <div className={styles.field}>
+            <span className={styles.fieldLabel}>Activate</span>{' '}
+            <ActionCostDisplay cost={card.rules.actionCost} /> {card.rules.activateTag}
           </div>
         )}
 

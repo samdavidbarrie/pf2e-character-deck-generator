@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useAppStore } from '../app/store';
 import type { ActionCost, CardCategory, CardModel } from '../model/cards';
 import { CATEGORY_LABEL } from '../model/cards';
@@ -182,6 +182,18 @@ export function CardEditor({ card }: Props) {
 
   const summaryRef = useRef<HTMLTextAreaElement>(null);
 
+  // Traits are edited as a local comma-separated string to avoid cursor-reset
+  // on every keystroke. We sync from the card when the selected card changes
+  // by storing the last-seen card id alongside the text.
+  const [traitsState, setTraitsState] = useState({
+    id: card.id,
+    text: card.rules.traits.join(', '),
+  });
+  const traitsText = traitsState.id === card.id ? traitsState.text : card.rules.traits.join(', ');
+  function setTraitsText(text: string) {
+    setTraitsState({ id: card.id, text });
+  }
+
   function insertIntoSummary(text: string) {
     const el = summaryRef.current;
     // Use the textarea's DOM value (combined summary + outcomes)
@@ -341,10 +353,11 @@ export function CardEditor({ card }: Props) {
           <span>Traits (comma-separated)</span>
           <input
             type="text"
-            value={card.rules.traits.join(', ')}
-            onChange={(e) =>
+            value={traitsText}
+            onChange={(e) => setTraitsText(e.target.value)}
+            onBlur={() =>
               patchRules({
-                traits: e.target.value
+                traits: traitsText
                   .split(',')
                   .map((t) => t.trim())
                   .filter(Boolean),
@@ -377,6 +390,80 @@ export function CardEditor({ card }: Props) {
             type="text"
             value={card.rules.frequency ?? ''}
             onChange={(e) => patchRules({ frequency: e.target.value || undefined })}
+          />
+        </label>
+
+        <label className={styles.fieldGroup}>
+          <span>Usage</span>
+          <input
+            type="text"
+            value={card.rules.usage ?? ''}
+            onChange={(e) => patchRules({ usage: e.target.value || undefined })}
+            placeholder="e.g. held in 1 hand"
+          />
+        </label>
+
+        <label className={styles.fieldGroup}>
+          <span>Hands</span>
+          <input
+            type="text"
+            value={card.rules.hands ?? ''}
+            onChange={(e) => patchRules({ hands: e.target.value || undefined })}
+            placeholder="e.g. 2"
+          />
+        </label>
+
+        <label className={styles.fieldGroup}>
+          <span>Type</span>
+          <input
+            type="text"
+            value={card.rules.weaponType ?? ''}
+            onChange={(e) => patchRules({ weaponType: e.target.value || undefined })}
+            placeholder="Melee / Ranged"
+          />
+        </label>
+
+        <label className={styles.fieldGroup}>
+          <span>Category</span>
+          <select
+            value={card.rules.weaponCategory ?? ''}
+            onChange={(e) => patchRules({ weaponCategory: e.target.value || undefined })}
+          >
+            <option value="">—</option>
+            <option value="Simple">Simple</option>
+            <option value="Martial">Martial</option>
+            <option value="Advanced">Advanced</option>
+            <option value="Unarmed">Unarmed</option>
+          </select>
+        </label>
+
+        <label className={styles.fieldGroup}>
+          <span>Group</span>
+          <input
+            type="text"
+            value={card.rules.weaponGroup ?? ''}
+            onChange={(e) => patchRules({ weaponGroup: e.target.value || undefined })}
+            placeholder="e.g. Polearm, Sword"
+          />
+        </label>
+
+        <label className={styles.fieldGroup}>
+          <span>Bulk</span>
+          <input
+            type="text"
+            value={card.rules.bulk ?? ''}
+            onChange={(e) => patchRules({ bulk: e.target.value || undefined })}
+            placeholder="e.g. L, 1, 2"
+          />
+        </label>
+
+        <label className={styles.fieldGroup}>
+          <span>Price</span>
+          <input
+            type="text"
+            value={card.rules.price ?? ''}
+            onChange={(e) => patchRules({ price: e.target.value || undefined })}
+            placeholder="e.g. 50 gp"
           />
         </label>
 

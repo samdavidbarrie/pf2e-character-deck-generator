@@ -86,6 +86,11 @@ export interface CardModel {
     bulk?: string; // e.g. "L"
     price?: string; // e.g. "50 gp"
     activateTag?: string; // activation trait(s), e.g. "manipulate"
+    /** Weapon-specific metadata from AoN. */
+    hands?: string; // e.g. "2", "1+"
+    weaponType?: string; // "Melee" | "Ranged"
+    weaponCategory?: string; // "Simple" | "Martial" | "Advanced"
+    weaponGroup?: string; // e.g. "Polearm", "Sword"
   };
 
   layout?: 'standard' | 'quadrant';
