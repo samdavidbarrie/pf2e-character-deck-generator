@@ -52,8 +52,43 @@ const INSERT_ITEMS: InsertItem[] = [
  */
 const AUTO_SPLIT_THRESHOLD = 850; // mirrors splitOverflowOnce combined limit
 
-function buildEditorSummary(rules: CardModel['rules']): string {
-  let summaryPart = rules.summary;
+/**
+ * Inject a [newcard] marker at the estimated overflow split point.
+ * Returns the modified combined text, or null if no split is needed or
+ * a marker is already present.
+ */
+function autoInjectSplit(summaryPart: string, rest: string): string | null {
+  if (summaryPart.includes('[newcard]')) return null;
+  const hasOutcomes =
+    rest.includes('**Critical Success**') ||
+    rest.includes('**Success**') ||
+    rest.includes('**Failure**') ||
+    rest.includes('**Critical Failure**');
+  const outcomesLen = rest.length;
+
+  if (hasOutcomes && summaryPart.length + outcomesLen > AUTO_SPLIT_THRESHOLD) {
+    if (summaryPart.length <= 680) {
+      return summaryPart + '\n[newcard]' + rest;
+    }
+    let cutAt = summaryPart.lastIndexOf('. ', 680);
+    if (cutAt < 340) cutAt = summaryPart.lastIndexOf(' ', 680);
+    if (cutAt > 0) {
+      return summaryPart.slice(0, cutAt + 1) + '\n[newcard]' + summaryPart.slice(cutAt + 1) + rest;
+    }
+    return null;
+  }
+  if (!hasOutcomes && summaryPart.length > 800) {
+    let cutAt = summaryPart.lastIndexOf('. ', 680);
+    if (cutAt < 340) cutAt = summaryPart.lastIndexOf(' ', 680);
+    if (cutAt > 0) {
+      return summaryPart.slice(0, cutAt + 1) + '\n[newcard]' + summaryPart.slice(cutAt + 1) + rest;
+    }
+  }
+  return null;
+}
+
+function buildEditorSummary(rules: CardModel['rules'], edited: boolean): string {
+  const summaryPart = rules.summary;
   let rest = '';
   if (rules.criticalSuccess) rest += '\n**Critical Success** ' + rules.criticalSuccess;
   if (rules.success) rest += '\n**Success** ' + rules.success;
@@ -63,45 +98,11 @@ function buildEditorSummary(rules: CardModel['rules']): string {
     rest += `\n**${sec.heading ?? 'Extra'}** ${sec.body}`;
   }
 
-  // Inject a [newcard] marker so the user can see and adjust the split point.
-  // Mirrors the two cases in splitOverflowOnce:
-  //   1. summary + outcomes combined too long → split between summary and outcomes
-  //   2. plain summary alone too long → split within the summary text
-  if (!summaryPart.includes('[newcard]')) {
-    const hasOutcomes = !!(
-      rules.criticalSuccess ||
-      rules.success ||
-      rules.failure ||
-      rules.criticalFailure
-    );
-    const outcomesLen =
-      (rules.criticalSuccess?.length ?? 0) +
-      (rules.success?.length ?? 0) +
-      (rules.failure?.length ?? 0) +
-      (rules.criticalFailure?.length ?? 0);
-
-    if (hasOutcomes && summaryPart.length + outcomesLen > AUTO_SPLIT_THRESHOLD) {
-      if (summaryPart.length <= 680) {
-        // Summary fits on front — mark the junction between summary and outcomes.
-        rest = '\n[newcard]' + rest;
-      } else {
-        // Summary itself overflows — find a cut point within it.
-        let cutAt = summaryPart.lastIndexOf('. ', 680);
-        if (cutAt < 340) cutAt = summaryPart.lastIndexOf(' ', 680);
-        if (cutAt > 0) {
-          summaryPart =
-            summaryPart.slice(0, cutAt + 1) + '\n[newcard]' + summaryPart.slice(cutAt + 1);
-        }
-      }
-    } else if (!hasOutcomes && summaryPart.length > 800) {
-      // Plain summary only — insert at the sentence boundary before ~680 chars.
-      let cutAt = summaryPart.lastIndexOf('. ', 680);
-      if (cutAt < 340) cutAt = summaryPart.lastIndexOf(' ', 680);
-      if (cutAt > 0) {
-        summaryPart =
-          summaryPart.slice(0, cutAt + 1) + '\n[newcard]' + summaryPart.slice(cutAt + 1);
-      }
-    }
+  // Only auto-inject for unedited cards — once the user has touched the content
+  // they are in control; re-injecting would fight deliberate removal.
+  if (!edited) {
+    const injected = autoInjectSplit(summaryPart, rest);
+    if (injected !== null) return injected;
   }
 
   return summaryPart + rest;
@@ -161,6 +162,53 @@ interface Props {
   card: CardModel;
 }
 
+/**
+ * Cmd/Ctrl+B wraps selection in **...**; Cmd/Ctrl+I wraps in *...*.
+ * Works on any textarea. Call with the update function specific to that field.
+ */
+function makeFormattingKeyHandler(onUpdate: (newValue: string) => void) {
+  return (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (!(e.metaKey || e.ctrlKey)) return;
+    const wrapper = e.key === 'b' ? '**' : e.key === 'i' ? '*' : null;
+    if (!wrapper) return;
+    e.preventDefault();
+    const el = e.currentTarget;
+    const { selectionStart: start, selectionEnd: end, value } = el;
+    const selected = value.slice(start, end);
+    const wl = wrapper.length;
+
+    // Case 1: selected text is already wrapped — e.g. "**word**" selected
+    if (selected.startsWith(wrapper) && selected.endsWith(wrapper) && selected.length >= wl * 2) {
+      const inner = selected.slice(wl, -wl);
+      onUpdate(value.slice(0, start) + inner + value.slice(end));
+      requestAnimationFrame(() => {
+        el.selectionStart = start;
+        el.selectionEnd = start + inner.length;
+      });
+      return;
+    }
+
+    // Case 2: wrapper characters sit outside the selection — e.g. cursor inside **word**
+    const before = value.slice(start - wl, start);
+    const after = value.slice(end, end + wl);
+    if (before === wrapper && after === wrapper) {
+      onUpdate(value.slice(0, start - wl) + selected + value.slice(end + wl));
+      requestAnimationFrame(() => {
+        el.selectionStart = start - wl;
+        el.selectionEnd = end - wl;
+      });
+      return;
+    }
+
+    // Default: add the wrappers
+    onUpdate(value.slice(0, start) + wrapper + selected + wrapper + value.slice(end));
+    requestAnimationFrame(() => {
+      el.selectionStart = start + wl;
+      el.selectionEnd = end + wl;
+    });
+  };
+}
+
 export function CardEditor({ card }: Props) {
   const { updateCard, duplicateCard, resetCardToGenerated, toggleCardInclude } = useAppStore();
 
@@ -197,7 +245,7 @@ export function CardEditor({ card }: Props) {
   function insertIntoSummary(text: string) {
     const el = summaryRef.current;
     // Use the textarea's DOM value (combined summary + outcomes)
-    const current = el?.value ?? buildEditorSummary(card.rules);
+    const current = el?.value ?? buildEditorSummary(card.rules, card.userEdits.edited);
     const start = el?.selectionStart ?? current.length;
     const end = el?.selectionEnd ?? current.length;
     const next = current.slice(0, start) + text + current.slice(end);
@@ -582,12 +630,37 @@ export function CardEditor({ card }: Props) {
                 {icon ? <img src={icon} alt={title} className={styles.insertBtnIcon} /> : label}
               </button>
             ))}
+            <button
+              type="button"
+              className={styles.insertBtn}
+              title="Auto-detect split point and insert [newcard]"
+              aria-label="Auto split"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                const summaryPart = card.rules.summary;
+                let rest = '';
+                if (card.rules.criticalSuccess)
+                  rest += '\n**Critical Success** ' + card.rules.criticalSuccess;
+                if (card.rules.success) rest += '\n**Success** ' + card.rules.success;
+                if (card.rules.failure) rest += '\n**Failure** ' + card.rules.failure;
+                if (card.rules.criticalFailure)
+                  rest += '\n**Critical Failure** ' + card.rules.criticalFailure;
+                for (const sec of card.rules.extraSections ?? []) {
+                  rest += `\n**${sec.heading ?? 'Extra'}** ${sec.body}`;
+                }
+                const injected = autoInjectSplit(summaryPart, rest);
+                if (injected !== null) patchRules(parseEditorSummary(injected));
+              }}
+            >
+              Auto
+            </button>
           </div>
           <textarea
             ref={summaryRef}
             rows={12}
-            value={buildEditorSummary(card.rules)}
+            value={buildEditorSummary(card.rules, card.userEdits.edited)}
             onChange={(e) => patchRules(parseEditorSummary(e.target.value))}
+            onKeyDown={makeFormattingKeyHandler((v) => patchRules(parseEditorSummary(v)))}
           />
         </div>
 
@@ -604,8 +677,7 @@ export function CardEditor({ card }: Props) {
 
         <label className={styles.fieldGroup}>
           <span>
-            Related Abilities{' '}
-            <small className={styles.hint}>(editor-only — not printed on card)</small>
+            Notes <small className={styles.hint}>(editor-only)</small>
           </span>
           <textarea
             rows={8}
@@ -613,6 +685,9 @@ export function CardEditor({ card }: Props) {
             onChange={(e) =>
               patch({ userEdits: { ...card.userEdits, notes: e.target.value || undefined } })
             }
+            onKeyDown={makeFormattingKeyHandler((v) =>
+              patch({ userEdits: { ...card.userEdits, notes: v || undefined } }),
+            )}
           />
         </label>
       </div>

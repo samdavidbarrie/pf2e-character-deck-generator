@@ -396,19 +396,25 @@
   text-transform: uppercase;
 }
 
-/* Bold text inside the summary uses the title font so **labels** render
-   with the same condensed uppercase style as field labels. */
-.summary strong {
+/* ***triple-bold*** inline field-label: title font, uppercase, condensed. */
+.fieldLabelInline {
   font-family: var(--pf-title-font, system-ui, sans-serif);
+  font-weight: 800;
+  font-size: 0.8em;
   text-transform: uppercase;
   letter-spacing: 0.02em;
 }
 
-/* In the compact inline metadata row, labels share the parent font so
-   they are consistent with the values next to them. */
-.inlineMeta .fieldLabel {
-  font-size: inherit;
-  font-family: inherit;
+/* In the compact inline metadata row, labels use the same title-font
+   treatment as other field labels. */
+.inlineMetaDivider {
+  border-top: 0.5pt solid currentColor;
+  border-bottom: 0.5pt solid currentColor;
+  padding-top: 1pt;
+  padding-bottom: 1pt;
+  margin-top: 1pt;
+  margin-bottom: 1pt;
+  opacity: 0.8;
 }
 
 .fieldLabel {
@@ -551,6 +557,10 @@
   color: var(--pf-card-ink, #15120f);
 }
 
+.summary em {
+  font-style: italic;
+}
+
 .cardHr {
   border: none;
   border-top: 0.5pt solid currentColor;
@@ -558,23 +568,12 @@
   opacity: 0.4;
 }
 
-/* Nested-feat reference line: "> Tiger Slash ◆◆ Feat 6" */
-.featRef {
-  display: block;
-  font-family: var(--pf-title-font, system-ui, sans-serif);
-  font-weight: 700;
-  font-size: 6pt;
-  text-transform: uppercase;
-  border-left: 1.5pt solid var(--pf-card-accent);
-  padding-left: 3pt;
-  margin: 1.5pt 0 0.5pt;
-  line-height: 1.3;
-}
-
-/* Indented continuation line — extra damage, sub-entries */
-.indentedLine {
+/* > padding unit — each leading > in a line adds one invisible width block.
+   Users control indent depth by adding/removing > characters. */
+.padUnit {
   display: inline-block;
-  padding-left: 1.6em;
+  width: 0.7em;
+  visibility: hidden;
 }
 
 /* Manual [newcard] split marker — dashed line shown in editor preview */

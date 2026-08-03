@@ -250,9 +250,10 @@ export const useAppStore = create<AppState>((set, get) => ({
             ? (costSymbols[child.rules.actionCost] ?? child.rules.actionCost) + ' '
             : '';
           const levelStr = child.rules.level !== undefined ? ` Feat ${child.rules.level}` : '';
-          // Use "> " prefix so renderMarkdown styles it as a feat-reference line.
-          // Action icons (◆, ◇, ↺) are NOT wrapped in ** so they render as images.
-          const heading = `> ${child.title} ${costStr}${levelStr}`.trimEnd();
+          // Use ***heading*** for title-font label style (triple-bold = field-label).
+          const heading = `***${child.title} ${costStr}${levelStr}***`
+            .replace(/\s+\*\*\*$/, '***')
+            .trimEnd();
           // Prefix with --- so pasting into the summary gives a visual separator
           const ref = child.rules.summary
             ? `---\n${heading}\n${child.rules.summary}`

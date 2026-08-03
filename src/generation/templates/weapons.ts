@@ -177,28 +177,27 @@ function buildMainCard(attack: CharacterAttack): CardModel {
   const type = normaliseDamageType(attack.damageType ?? '');
 
   // Blanks for fillable numbers; die type and damage type are pre-printed
-  const damageLine = `**Damage**: ___ ${die} + ___ ${type}`;
-  // Extra damage indented to visually align with the value field above
-  const extraLines = (attack.extraDamage ?? []).map((d) => `  ${d}`);
+  const damageLine = `***Damage***: ___ ${die} + ___ ${type}`;
+  // Extra damage: leading > chars act as invisible padding units (0.7em each).
+  // ~5 units aligns approximately with the value portion of the DAMAGE line.
+  // Users can add/remove > in the editor to fine-tune alignment.
+  const extraLines = (attack.extraDamage ?? []).map((d) => `>>>>>+ ${d}`);
 
   // Fundamental runes first (potency/striking), then property runes on a separate line
   const fundamentalRuneNote =
     (attack.fundamentalRunes ?? []).length > 0
-      ? `**Fundamental Runes**: ${attack.fundamentalRunes!.join(', ')}`
+      ? `***Fundamental Runes***: ${attack.fundamentalRunes!.join(', ')}`
       : '';
   const propertyRuneNote =
-    (attack.runes ?? []).length > 0 ? `**Property Runes**: ${attack.runes!.join(', ')}` : '';
-  const materialNote = attack.material ? `**Material**: ${attack.material}` : '';
+    (attack.runes ?? []).length > 0 ? `***Property Runes***: ${attack.runes!.join(', ')}` : '';
+  const materialNote = attack.material ? `***Material***: ${attack.material}` : '';
 
   const group = inferGroup(attack);
   const critSpec = group ? CRIT_SPEC[group] : undefined;
-  const critSpecLine = critSpec
-    ? `---
-**Critical Specialization** ${critSpec}`
-    : '';
+  const critSpecLine = critSpec ? `---\n***Critical Specialization*** ${critSpec}` : '';
 
   const summaryParts = [
-    '**Hit**: + ___',
+    '***Hit***: + ___',
     damageLine,
     ...extraLines,
     fundamentalRuneNote,

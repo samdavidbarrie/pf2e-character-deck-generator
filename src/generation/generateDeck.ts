@@ -103,8 +103,8 @@ export function generateDeck(char: CharacterModel): GenerationResult {
     return out;
   }
   for (const card of cards) {
-    // Weapon summaries use explicit **bold** markers; skip cross-ref bolding
-    // to avoid bolding property rune names that exist as other cards.
+    // Weapon summaries use explicit ***label*** markup; skip cross-ref bolding
+    // to avoid bolding property rune names that exist as separate cards.
     if (card.category !== 'weapon') {
       card.rules.summary = boldRefs(card.rules.summary) ?? card.rules.summary;
     }

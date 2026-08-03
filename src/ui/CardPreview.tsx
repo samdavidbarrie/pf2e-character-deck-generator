@@ -141,15 +141,22 @@ const INLINE_ACTION_ICONS: [string, string][] = [
 ].filter(([, src]) => src) as [string, string][];
 
 const INLINE_ACTION_SPLIT_RE = new RegExp(
-  `(\\*\\*[^*]+\\*\\*|\\*[^*]+\\*|_{3,}|${INLINE_ACTION_ICONS.map(([s]) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`,
+  `(\\*\\*\\*[^*]+\\*\\*\\*|\\*\\*[^*]+\\*\\*|\\*[^*]+\\*|_{3,}|${INLINE_ACTION_ICONS.map(([s]) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`,
   'g',
 );
 
-/** Render text with **bold**, *italic* markers and action icons. ___ becomes an inline blank. */
+/** Render text with ***field-label***, **bold**, *italic* markers and action icons. ___ becomes an inline blank. */
 function renderBold(text: string): React.ReactNode {
   const parts = text.split(INLINE_ACTION_SPLIT_RE);
   if (parts.length === 1) return text;
   return parts.map((part, i) => {
+    if (part.startsWith('***') && part.endsWith('***')) {
+      return (
+        <span key={i} className={styles.fieldLabelInline}>
+          {part.slice(3, -3)}
+        </span>
+      );
+    }
     if (part.startsWith('**') && part.endsWith('**')) {
       return <strong key={i}>{part.slice(2, -2)}</strong>;
     }
@@ -182,20 +189,20 @@ function renderMarkdown(text: string): React.ReactNode {
           i > 0 && (lines[i - 1].trim() === '---' || lines[i - 1].trim() === '[newcard]');
         if (line.trim() === '---') return <hr key={i} className={styles.cardHr} />;
         if (line.trim() === '[newcard]') return <hr key={i} className={styles.cardSplitMark} />;
-        if (line.startsWith('> '))
-          return (
-            <span key={i} className={styles.featRef}>
-              {i > 0 && !prevWasBlock && <br />}
-              {renderBold(line.slice(2))}
-            </span>
-          );
-        if (line.startsWith('  '))
-          return (
-            <span key={i} className={styles.indentedLine}>
-              {i > 0 && !prevWasBlock && <br />}
-              {renderBold(line.trimStart())}
-            </span>
-          );
+        if (line.startsWith('>'))
+          return (() => {
+            let p = 0;
+            while (p < line.length && line[p] === '>') p++;
+            return (
+              <span key={i}>
+                {i > 0 && !prevWasBlock && <br />}
+                {Array.from({ length: p }, (_, j) => (
+                  <span key={j} className={styles.padUnit} />
+                ))}
+                {renderBold(line.slice(p))}
+              </span>
+            );
+          })();
         return (
           <Fragment key={i}>
             {i > 0 && !prevWasBlock && <br />}
@@ -423,41 +430,42 @@ export function CardPreview({ card, selected, onClick, onModifierClick, forPrint
           <div className={styles.inlineMeta}>
             {card.rules.hands && (
               <span>
-                <span className={styles.fieldLabel}>Hands</span> {card.rules.hands}
+                <span className={styles.fieldLabelInline}>Hands</span> {card.rules.hands}
               </span>
             )}
             {card.rules.weaponType && (
               <span>
-                <span className={styles.fieldLabel}>Type</span> {card.rules.weaponType}
+                <span className={styles.fieldLabelInline}>Type</span> {card.rules.weaponType}
               </span>
             )}
             {card.rules.weaponCategory && (
               <span>
-                <span className={styles.fieldLabel}>Category</span> {card.rules.weaponCategory}
+                <span className={styles.fieldLabelInline}>Category</span>{' '}
+                {card.rules.weaponCategory}
               </span>
             )}
             {card.rules.weaponGroup && (
               <span>
-                <span className={styles.fieldLabel}>Group</span> {card.rules.weaponGroup}
+                <span className={styles.fieldLabelInline}>Group</span> {card.rules.weaponGroup}
               </span>
             )}
           </div>
         )}
         {(card.rules.usage || card.rules.bulk || card.rules.price) && (
-          <div className={styles.inlineMeta}>
+          <div className={`${styles.inlineMeta} ${styles.inlineMetaDivider}`}>
             {card.rules.usage && (
               <span>
-                <span className={styles.fieldLabel}>Usage</span> {card.rules.usage}
+                <span className={styles.fieldLabelInline}>Usage</span> {card.rules.usage}
               </span>
             )}
             {card.rules.bulk && (
               <span>
-                <span className={styles.fieldLabel}>Bulk</span> {card.rules.bulk}
+                <span className={styles.fieldLabelInline}>Bulk</span> {card.rules.bulk}
               </span>
             )}
             {card.rules.price && (
               <span>
-                <span className={styles.fieldLabel}>Price</span> {card.rules.price}
+                <span className={styles.fieldLabelInline}>Price</span> {card.rules.price}
               </span>
             )}
           </div>
