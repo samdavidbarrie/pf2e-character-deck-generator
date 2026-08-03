@@ -707,6 +707,23 @@ export function CardPreview({ card, selected, onClick, onModifierClick, forPrint
         )}
 
         {(() => {
+          // ── Currency layout (Wealth card) ─────────────────────────────
+          if (card.layout === 'currency') {
+            return (
+              <div className={styles.currencyBody}>
+                {effectiveWritableFields.map((f, i, arr) => (
+                  <div
+                    key={f.id}
+                    className={f.size === 'lg' ? styles.currencyRowNotes : styles.currencyRow}
+                  >
+                    <span className={styles.hpLabel}>{f.label}</span>
+                    {i < arr.length - 1 && <span className={styles.blankFull} />}
+                  </div>
+                ))}
+              </div>
+            );
+          }
+
           // ── Two-column layout ────────────────────────────────────────────
           if (card.layout === 'quadrant') {
             const qf = (n: 1 | 2 | 3 | 4) =>
@@ -826,7 +843,7 @@ export function CardPreview({ card, selected, onClick, onModifierClick, forPrint
                       return (
                         <div key={f.id} className={styles.hpField}>
                           <span className={styles.hpLabel}>{f.label}</span>
-                          <span className={styles.blankFull} />
+                          <span className={f.size === 'lg' ? styles.blankTall : styles.blankFull} />
                         </div>
                       );
                     }

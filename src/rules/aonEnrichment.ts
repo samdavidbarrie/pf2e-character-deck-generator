@@ -889,13 +889,20 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
       if (data.weaponGroup && !rules.weaponGroup) rules.weaponGroup = data.weaponGroup;
 
       // Compute total price = base weapon + fundamental rune surcharges + material surcharge.
-      // Parse rune names and material from the generated summary text.
+      // Parse rune names and material from the generated summary (format: ***Label***: value).
       if (data.priceRaw && !rules.price) {
         const baseGp = parsePriceToGp(data.priceRaw);
-        const runeMatch = /Runes:\s+([^\n]+)/i.exec(rules.summary ?? '');
-        const runeNames = runeMatch ? runeMatch[1].split(',').map((r) => r.trim()) : [];
-        const materialMatch = /Material:\s+([^\n]+)/i.exec(rules.summary ?? '');
-        const material = materialMatch ? materialMatch[1].trim() : undefined;
+        // Match "***Fundamental Runes***:" or plain "Fundamental Runes:" with optional ***
+        const runeMatch = /Fundamental Runes[^:]*:\s*([^\n]+)/i.exec(rules.summary ?? '');
+        const runeNames = runeMatch
+          ? runeMatch[1]
+              .replace(/\*\*\*/g, '')
+              .split(',')
+              .map((r) => r.trim())
+              .filter(Boolean)
+          : [];
+        const materialMatch = /Material[^:]*:\s*([^\n]+)/i.exec(rules.summary ?? '');
+        const material = materialMatch ? materialMatch[1].replace(/\*\*\*/g, '').trim() : undefined;
         const runeGp = computeRunePricesGp(runeNames);
         const matGp = material ? computeMaterialPriceGp(material, data.bulk) : 0;
         const totalGp = baseGp + runeGp + matGp;
@@ -949,22 +956,34 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
     if (data.bulk && !rules.bulk) rules.bulk = data.bulk;
     if (data.priceRaw && !rules.price) {
       const baseGp = parsePriceToGp(data.priceRaw);
-      const runeMatch = /Fundamental Runes[^\n]*/i.exec(rules.summary ?? '');
+      // Fundamental armor runes from summary
+      const runeMatch = /Fundamental Runes[^:]*:\s*([^\n]+)/i.exec(rules.summary ?? '');
       const runeNames = runeMatch
-        ? runeMatch[0]
-            .replace(/.*:\s*/, '')
+        ? runeMatch[1]
+            .replace(/\*\*\*/g, '')
             .split(',')
-            .map((r) => r.replace(/\*\*\*/g, '').trim())
+            .map((r) => r.trim())
+            .filter(Boolean)
         : [];
-      const materialMatch = /Material[^\n]*/i.exec(rules.summary ?? '');
-      const material = materialMatch ? materialMatch[0].replace(/.*:\s*/, '').trim() : undefined;
-      // Armor runes use the armor pricing table
-      const runeGp = runeNames.reduce((sum, r) => {
+      const materialMatch = /Material[^:]*:\s*([^\n]+)/i.exec(rules.summary ?? '');
+      const material = materialMatch
+        ? materialMatch[1]
+            .replace(/\*\*\*/g, '')
+            .replace(/\.?\s*---.*$/s, '')
+            .trim()
+        : undefined;
+      // Fundamental rune gp (potency + resilient)
+      const fundamentalRuneGp = runeNames.reduce((sum, r) => {
         const entry = ARMOR_RUNE_PRICES[r.toLowerCase()];
         return sum + (entry?.gp ?? 0);
       }, 0);
+      // Reinforcing rune gp (shields — from source.runes)
+      const reinforcingRuneGp = (card.source.runes ?? []).reduce((sum, r) => {
+        const entry = REINFORCING_RUNE[r.toLowerCase()];
+        return sum + (entry?.gp ?? 0);
+      }, 0);
       const matGp = material ? computeMaterialPriceGp(material, data.bulk) : 0;
-      const totalGp = baseGp + runeGp + matGp;
+      const totalGp = baseGp + fundamentalRuneGp + reinforcingRuneGp + matGp;
       rules.price = formatGpPrice(totalGp) || data.priceRaw;
     }
     // Rebuild the summary: only rune/material lines from the original generated

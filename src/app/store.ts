@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { generateDeck, type GenerationWarning } from '../generation/generateDeck';
+import { REINFORCING_RUNE } from '../generation/templates/armor';
 import { generateCreatureCards } from '../generation/templates/creatures';
 import { detectSource } from '../import/detectSource';
 import { parsePathbuilder } from '../import/pathbuilderAdapter';
@@ -16,6 +17,7 @@ import {
   fetchRuneDescriptions,
 } from '../rules/aonEnrichment';
 import { aonSearchUrl } from '../rules/aonUrlResolver';
+import { formatGpPrice, parsePriceToGp } from '../rules/weaponPricing';
 
 export type AppScreen = 'import' | 'deck-builder' | 'print-preview';
 
@@ -305,6 +307,47 @@ export const useAppStore = create<AppState>((set, get) => ({
                 ...card,
                 userEdits: { ...card.userEdits, notes: existing + separator + ref },
               });
+            }
+          }
+          cards = [...cardById.values()];
+        }
+      }
+
+      // Property rune price pass: property rune cards are enriched with their
+      // own price from AoN. Add those prices to the parent weapon/armor/shield total.
+      {
+        const cardById = new Map(cards.map((c) => [c.id, c]));
+        // Build rune name (lowercase) → gp map from enriched rune cards.
+        const runePrices = new Map<string, number>();
+        for (const c of cards) {
+          const isRune =
+            c.stableKey.startsWith('weapon-rune:') || c.stableKey.startsWith('armor-rune:');
+          if (isRune && c.rules.price) {
+            const gp = parsePriceToGp(c.rules.price);
+            if (gp > 0) runePrices.set(c.title.toLowerCase(), gp);
+          }
+        }
+        if (runePrices.size > 0) {
+          for (const card of cards) {
+            if (!['weapon', 'armor', 'shield'].includes(card.category)) continue;
+            if (!card.source.runes?.length || !card.rules.price) continue;
+            // Only include runes that are NOT reinforcing (those are already in shield price)
+            const propertyRunes = card.source.runes.filter(
+              (r) => !REINFORCING_RUNE[r.toLowerCase()],
+            );
+            const extraGp = propertyRunes.reduce(
+              (sum, r) => sum + (runePrices.get(r.toLowerCase()) ?? 0),
+              0,
+            );
+            if (extraGp > 0) {
+              const baseGp = parsePriceToGp(card.rules.price);
+              const newPrice = formatGpPrice(baseGp + extraGp);
+              if (newPrice) {
+                cardById.set(card.id, {
+                  ...card,
+                  rules: { ...card.rules, price: newPrice },
+                });
+              }
             }
           }
           cards = [...cardById.values()];

@@ -1,7 +1,14 @@
 import type { CardModel } from '../../model/cards';
 import type { CharacterModel, ProficiencyRank } from '../../model/character';
 import { buildStableKey } from '../../rules/nameNormalization';
-import { blankField, defaultCard, displayField, sectionField, skillField } from './_helpers';
+import {
+  blankField,
+  defaultCard,
+  displayField,
+  hpField,
+  sectionField,
+  skillField,
+} from './_helpers';
 
 const RANK_MAP: Record<number, ProficiencyRank> = {
   0: 'untrained',
@@ -130,14 +137,15 @@ export function generateSummaryCards(char: CharacterModel): CardModel[] {
       title: 'Wealth',
       category: 'summary',
       stableKey: buildStableKey('summary', 'wealth'),
+      layout: 'currency',
       rules: { traits: [], summary: '' },
       print: { include: true, priority: 13, size: 'standard' },
       writableFields: [
-        blankField('PP', 'md'),
-        blankField('GP', 'md'),
-        blankField('SP', 'md'),
-        blankField('CP', 'md'),
-        blankField('Other / Notes', 'lg'),
+        hpField('Platinum'),
+        hpField('Gold'),
+        hpField('Silver'),
+        hpField('Copper'),
+        hpField('Notes', 'lg'),
       ],
     }),
   );

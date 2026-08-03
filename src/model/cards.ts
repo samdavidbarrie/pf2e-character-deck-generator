@@ -107,7 +107,7 @@ export interface CardModel {
     shieldHP?: number; // shield HP
   };
 
-  layout?: 'standard' | 'quadrant';
+  layout?: 'standard' | 'quadrant' | 'currency';
   /** When true, renders a writable level blank in the top-right rank area instead of the computed rank label. */
   rankBlank?: boolean;
   writableFields: WritableField[];

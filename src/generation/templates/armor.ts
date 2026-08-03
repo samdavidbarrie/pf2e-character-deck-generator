@@ -24,14 +24,14 @@ export const ARMOR_SPEC: Record<string, string> = {
  */
 export const REINFORCING_RUNE: Record<
   string,
-  { hardnessBonus: number; hpBonus: number; level: number }
+  { hardnessBonus: number; hpBonus: number; level: number; gp: number }
 > = {
-  'reinforcing (minor)': { hardnessBonus: 3, hpBonus: 44, level: 4 },
-  'reinforcing (lesser)': { hardnessBonus: 3, hpBonus: 52, level: 7 },
-  'reinforcing (moderate)': { hardnessBonus: 3, hpBonus: 64, level: 10 },
-  'reinforcing (greater)': { hardnessBonus: 5, hpBonus: 80, level: 13 },
-  'reinforcing (major)': { hardnessBonus: 5, hpBonus: 84, level: 16 },
-  'reinforcing (supreme)': { hardnessBonus: 7, hpBonus: 108, level: 19 },
+  'reinforcing (minor)': { hardnessBonus: 3, hpBonus: 44, level: 4, gp: 75 },
+  'reinforcing (lesser)': { hardnessBonus: 3, hpBonus: 52, level: 7, gp: 300 },
+  'reinforcing (moderate)': { hardnessBonus: 3, hpBonus: 64, level: 10, gp: 900 },
+  'reinforcing (greater)': { hardnessBonus: 5, hpBonus: 80, level: 13, gp: 2_500 },
+  'reinforcing (major)': { hardnessBonus: 5, hpBonus: 84, level: 16, gp: 8_000 },
+  'reinforcing (supreme)': { hardnessBonus: 7, hpBonus: 108, level: 19, gp: 32_000 },
 };
 
 export function generateArmorCards(char: CharacterModel): CardModel[] {

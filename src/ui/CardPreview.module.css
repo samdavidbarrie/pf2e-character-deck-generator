@@ -998,6 +998,40 @@
   border-bottom: 1pt solid #444;
 }
 
+/* Tall blank — for Notes and multi-line writable areas */
+.blankTall {
+  display: block;
+  width: 100%;
+  height: 36pt;
+  border-bottom: 1pt solid #444;
+}
+
+/* Currency layout — used by the Wealth card. Rows fill the full card height. */
+.currencyBody {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: 0; /* .cardBody already provides 8px side padding */
+  gap: 0;
+}
+
+.currencyRow {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  flex: 1;
+  padding: 3pt 0 2pt;
+}
+
+.currencyRowNotes {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  flex: 2;
+  padding: 3pt 0 2pt;
+}
+
 /* Shorter blank — used for minor fields */
 .blankSm {
   display: block;
