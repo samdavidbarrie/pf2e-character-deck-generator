@@ -3,6 +3,8 @@
  * For personal use only — do not redistribute bulk AoN content.
  */
 
+import { displayField, hpField } from '../generation/templates/_helpers';
+import { ARMOR_SPEC, REINFORCING_RUNE } from '../generation/templates/armor';
 import type { ActionCost, CardCategory, CardModel } from '../model/cards';
 import type {
   AbilityKey,
@@ -13,6 +15,7 @@ import type {
 } from '../model/character';
 import { buildEquipmentDescription, filterEquipmentDescription } from './equipmentVariantMatcher';
 import {
+  ARMOR_RUNE_PRICES,
   computeMaterialPriceGp,
   computeRunePricesGp,
   formatGpPrice,
@@ -61,6 +64,16 @@ export interface AonData {
   weaponType?: string; // "Melee" | "Ranged"
   weaponCategory?: string; // "Simple" | "Martial" | "Advanced"
   weaponGroup?: string; // e.g. "Polearm"
+  /** Armor/shield-specific fields from AoN. */
+  armorAC?: number; // base item AC bonus
+  armorCategory?: string; // "Light" | "Medium" | "Heavy"
+  armorGroup?: string; // e.g. "Plate", "Chain"
+  dexCap?: number; // max dex modifier
+  checkPenalty?: number; // armor check penalty
+  speedPenalty?: string; // e.g. "-5 ft."
+  strengthReq?: number; // strength score required
+  hardness?: number; // shield hardness
+  shieldHP?: number; // shield HP
   // Degree-of-success outcomes
   criticalSuccess?: string;
   success?: string;
@@ -320,6 +333,9 @@ function preferredTypesFor(category: CardCategory): string[] {
     case 'basic-action':
     case 'skill-action':
       return ['Action', 'Feat'];
+    case 'armor':
+    case 'shield':
+      return ['Item'];
     case 'weapon':
       return ['Item', 'Weapon'];
     default:
@@ -384,6 +400,15 @@ async function fetchBatch(names: string[]): Promise<AonData[]> {
       'weapon_type',
       'weapon_category',
       'weapon_group',
+      'ac',
+      'armor_category',
+      'armor_group',
+      'dex_cap',
+      'check_penalty',
+      'speed_penalty',
+      'strength',
+      'hardness',
+      'hp',
     ],
     size: Math.min(names.length * 3, 200),
   };
@@ -456,6 +481,16 @@ async function fetchBatch(names: string[]): Promise<AonData[]> {
       weaponType: (s['weapon_type'] as string | undefined) || undefined,
       weaponCategory: (s['weapon_category'] as string | undefined) || undefined,
       weaponGroup: (s['weapon_group'] as string | undefined) || undefined,
+      armorAC: typeof s['ac'] === 'number' ? (s['ac'] as number) : undefined,
+      armorCategory: (s['armor_category'] as string | undefined) || undefined,
+      armorGroup: (s['armor_group'] as string | undefined) || undefined,
+      dexCap: typeof s['dex_cap'] === 'number' ? (s['dex_cap'] as number) : undefined,
+      checkPenalty:
+        typeof s['check_penalty'] === 'number' ? (s['check_penalty'] as number) : undefined,
+      speedPenalty: (s['speed_penalty'] as string | undefined) || undefined,
+      strengthReq: typeof s['strength'] === 'number' ? (s['strength'] as number) : undefined,
+      hardness: typeof s['hardness'] === 'number' ? (s['hardness'] as number) : undefined,
+      shieldHP: typeof s['hp'] === 'number' ? (s['hp'] as number) : undefined,
       source: (s['source'] as string[] | undefined) ?? undefined,
     };
   });
@@ -563,13 +598,20 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
   const rules = { ...card.rules };
   const source = { ...card.source };
   const subtitle = card.subtitle;
-  const writableFields = card.writableFields;
+  let writableFields = card.writableFields;
 
   // For basic/skill actions the template provides a short one-liner; always
   // replace it with the fuller AoN description so roll/DC text is visible.
+  // Armor/shield cards use structured field rendering (inlineMeta) for stats;
+  // skip the generic description path so the AoN flavour text is not applied.
+  const skipDescription = card.category === 'armor' || card.category === 'shield';
   const alwaysReplace = card.category === 'basic-action' || card.category === 'skill-action';
 
-  if (data.description && (rules.summary.startsWith(SUMMARY_PLACEHOLDER) || alwaysReplace)) {
+  if (
+    !skipDescription &&
+    data.description &&
+    (rules.summary.startsWith(SUMMARY_PLACEHOLDER) || alwaysReplace)
+  ) {
     if (card.category === 'equipment') {
       // Run variant filtering on the raw description BEFORE stripSourceMetadata so that
       // price information embedded in variant text is still available for extraction.
@@ -825,7 +867,11 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
   if (data.level !== undefined) {
     if (rules.level === undefined || isFeat) {
       rules.level = data.level;
-    } else if (card.category === 'weapon') {
+    } else if (
+      card.category === 'weapon' ||
+      card.category === 'armor' ||
+      card.category === 'shield'
+    ) {
       rules.level = Math.max(rules.level, data.level);
     }
   }
@@ -856,6 +902,85 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
         rules.price = formatGpPrice(totalGp) || data.priceRaw;
       }
     }
+  }
+
+  // For armor and shield cards: apply AC, penalties, hardness, HP from AoN.
+  if ((card.category === 'armor' || card.category === 'shield') && !card.continuationOf) {
+    if (data.armorAC !== undefined && !rules.armorAC) rules.armorAC = data.armorAC;
+    if (data.armorCategory && !rules.armorCategory) rules.armorCategory = data.armorCategory;
+    if (data.armorGroup && !rules.armorGroup) rules.armorGroup = data.armorGroup;
+    if (data.dexCap !== undefined && rules.dexCap === undefined) rules.dexCap = data.dexCap;
+    if (data.checkPenalty !== undefined && rules.checkPenalty === undefined)
+      rules.checkPenalty = data.checkPenalty;
+    if (data.speedPenalty && !rules.speedPenalty) rules.speedPenalty = data.speedPenalty;
+    if (data.strengthReq !== undefined && rules.strengthReq === undefined)
+      rules.strengthReq = data.strengthReq;
+
+    // For shields: apply reinforcing rune bonuses from source.runes before storing.
+    if (card.category === 'shield') {
+      let hardnessBonus = 0;
+      let hpBonus = 0;
+      for (const runeName of card.source.runes ?? []) {
+        const rb = REINFORCING_RUNE[runeName.toLowerCase()];
+        if (rb) {
+          hardnessBonus += rb.hardnessBonus;
+          hpBonus += rb.hpBonus;
+        }
+      }
+      if (data.hardness !== undefined && rules.hardness === undefined)
+        rules.hardness = data.hardness + hardnessBonus;
+      if (data.shieldHP !== undefined && rules.shieldHP === undefined)
+        rules.shieldHP = data.shieldHP + hpBonus;
+
+      // Add writable HP tracking fields once we know the effective max HP.
+      if (rules.shieldHP !== undefined) {
+        const bt = Math.floor(rules.shieldHP / 2);
+        writableFields = [
+          hpField('Current HP'),
+          displayField('HP(BT)', `${rules.shieldHP}(${bt})`),
+        ];
+      }
+    } else {
+      if (data.hardness !== undefined && rules.hardness === undefined)
+        rules.hardness = data.hardness;
+      if (data.shieldHP !== undefined && rules.shieldHP === undefined)
+        rules.shieldHP = data.shieldHP;
+    }
+    if (data.bulk && !rules.bulk) rules.bulk = data.bulk;
+    if (data.priceRaw && !rules.price) {
+      const baseGp = parsePriceToGp(data.priceRaw);
+      const runeMatch = /Fundamental Runes[^\n]*/i.exec(rules.summary ?? '');
+      const runeNames = runeMatch
+        ? runeMatch[0]
+            .replace(/.*:\s*/, '')
+            .split(',')
+            .map((r) => r.replace(/\*\*\*/g, '').trim())
+        : [];
+      const materialMatch = /Material[^\n]*/i.exec(rules.summary ?? '');
+      const material = materialMatch ? materialMatch[0].replace(/.*:\s*/, '').trim() : undefined;
+      // Armor runes use the armor pricing table
+      const runeGp = runeNames.reduce((sum, r) => {
+        const entry = ARMOR_RUNE_PRICES[r.toLowerCase()];
+        return sum + (entry?.gp ?? 0);
+      }, 0);
+      const matGp = material ? computeMaterialPriceGp(material, data.bulk) : 0;
+      const totalGp = baseGp + runeGp + matGp;
+      rules.price = formatGpPrice(totalGp) || data.priceRaw;
+    }
+    // Rebuild the summary: only rune/material lines from the original generated
+    // summary + armor specialization. Stats are shown in the inlineMeta row above.
+    const existing = rules.summary.replace(SUMMARY_PLACEHOLDER, '').trim();
+    const summaryParts: string[] = [];
+    if (existing) summaryParts.push(existing);
+    if (card.category === 'armor') {
+      const group = (data.armorGroup ?? rules.armorGroup ?? '').toLowerCase();
+      const spec = ARMOR_SPEC[group];
+      if (spec) {
+        summaryParts.push('---');
+        summaryParts.push(`***Armor Specialization*** ${spec}`);
+      }
+    }
+    rules.summary = summaryParts.filter(Boolean).join('\n') || SUMMARY_PLACEHOLDER;
   }
 
   return { ...card, rules, source, subtitle, writableFields };

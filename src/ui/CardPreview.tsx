@@ -61,6 +61,8 @@ function getCardTabInfo(card: CardModel): CardTabInfo {
     'creature-skill': { tabLabel: 'Creature', themeClass: styles.themeCreature },
     'creature-attack': { tabLabel: 'Creature', themeClass: styles.themeCreature },
     'creature-action': { tabLabel: 'Creature', themeClass: styles.themeCreature },
+    armor: { tabLabel: 'Armor', themeClass: styles.themeArmor },
+    shield: { tabLabel: 'Shield', themeClass: styles.themeShield },
   };
   return categoryTab[card.category] ?? { tabLabel: '', themeClass: '' };
 }
@@ -82,9 +84,11 @@ function getRankLabel(card: CardModel): string {
   if (card.category === 'equipment' && card.rules.level !== undefined) {
     return `Item ${card.rules.level}`;
   }
-  // Weapons with a known item level (from runes/material/AoN base) show it
-  // in the top-right corner just like equipment cards do.
-  if (card.category === 'weapon' && card.rules.level !== undefined) {
+  // Weapons, armor, and shields show item level the same way equipment cards do.
+  if (
+    (card.category === 'weapon' || card.category === 'armor' || card.category === 'shield') &&
+    card.rules.level !== undefined
+  ) {
     return `Item ${card.rules.level}`;
   }
   // Feats: include the feat's own minimum level (filled by AoN enrichment).
@@ -403,73 +407,145 @@ export function CardPreview({ card, selected, onClick, onModifierClick, forPrint
           );
         })()}
 
-        {card.rules.traits.length > 0 && (
-          <div className={styles.traits}>
-            {[...card.rules.traits]
-              .sort((a, b) => traitSortKey(a) - traitSortKey(b))
-              .map((t) => {
-                const lower = t.toLowerCase();
-                const traitClass = rarityTraits.has(lower)
-                  ? styles[lower]
-                  : sizeTraits.has(lower)
-                    ? styles.size
-                    : '';
-                return (
-                  <span key={t} className={[styles.trait, traitClass].filter(Boolean).join(' ')}>
-                    {t}
-                  </span>
-                );
-              })}
-          </div>
-        )}
+        {(() => {
+          const hasTraits = card.rules.traits.length > 0;
+          const hasWeaponMeta = !!(
+            card.rules.hands ||
+            card.rules.weaponType ||
+            card.rules.weaponCategory ||
+            card.rules.weaponGroup
+          );
+          const hasArmorMeta =
+            card.rules.armorAC !== undefined ||
+            card.rules.dexCap !== undefined ||
+            card.rules.checkPenalty !== undefined ||
+            card.rules.speedPenalty !== undefined ||
+            card.rules.strengthReq !== undefined ||
+            card.rules.hardness !== undefined ||
+            card.rules.shieldHP !== undefined;
+          const hasItemMeta = !!(card.rules.usage || card.rules.bulk || card.rules.price);
+          const firstMeta = hasWeaponMeta || hasArmorMeta;
+          return (
+            <>
+              {hasTraits && (
+                <div className={styles.traits}>
+                  {[...card.rules.traits]
+                    .sort((a, b) => traitSortKey(a) - traitSortKey(b))
+                    .map((t) => {
+                      const lower = t.toLowerCase();
+                      const traitClass = rarityTraits.has(lower)
+                        ? styles[lower]
+                        : sizeTraits.has(lower)
+                          ? styles.size
+                          : '';
+                      return (
+                        <span
+                          key={t}
+                          className={[styles.trait, traitClass].filter(Boolean).join(' ')}
+                        >
+                          {t}
+                        </span>
+                      );
+                    })}
+                </div>
+              )}
 
-        {(card.rules.hands ||
-          card.rules.weaponType ||
-          card.rules.weaponCategory ||
-          card.rules.weaponGroup) && (
-          <div className={styles.inlineMeta}>
-            {card.rules.hands && (
-              <span>
-                <span className={styles.fieldLabelInline}>Hands</span> {card.rules.hands}
-              </span>
-            )}
-            {card.rules.weaponType && (
-              <span>
-                <span className={styles.fieldLabelInline}>Type</span> {card.rules.weaponType}
-              </span>
-            )}
-            {card.rules.weaponCategory && (
-              <span>
-                <span className={styles.fieldLabelInline}>Category</span>{' '}
-                {card.rules.weaponCategory}
-              </span>
-            )}
-            {card.rules.weaponGroup && (
-              <span>
-                <span className={styles.fieldLabelInline}>Group</span> {card.rules.weaponGroup}
-              </span>
-            )}
-          </div>
-        )}
-        {(card.rules.usage || card.rules.bulk || card.rules.price) && (
-          <div className={`${styles.inlineMeta} ${styles.inlineMetaDivider}`}>
-            {card.rules.usage && (
-              <span>
-                <span className={styles.fieldLabelInline}>Usage</span> {card.rules.usage}
-              </span>
-            )}
-            {card.rules.bulk && (
-              <span>
-                <span className={styles.fieldLabelInline}>Bulk</span> {card.rules.bulk}
-              </span>
-            )}
-            {card.rules.price && (
-              <span>
-                <span className={styles.fieldLabelInline}>Price</span> {card.rules.price}
-              </span>
-            )}
-          </div>
-        )}
+              {/* Separator after traits if there's any meta below */}
+              {hasTraits && (firstMeta || hasItemMeta) && <hr className={styles.cardHr} />}
+
+              {hasWeaponMeta && (
+                <div className={styles.inlineMeta}>
+                  {card.rules.hands && (
+                    <span>
+                      <span className={styles.fieldLabelInline}>Hands</span> {card.rules.hands}
+                    </span>
+                  )}
+                  {card.rules.weaponType && (
+                    <span>
+                      <span className={styles.fieldLabelInline}>Type</span> {card.rules.weaponType}
+                    </span>
+                  )}
+                  {card.rules.weaponCategory && (
+                    <span>
+                      <span className={styles.fieldLabelInline}>Category</span>{' '}
+                      {card.rules.weaponCategory}
+                    </span>
+                  )}
+                  {card.rules.weaponGroup && (
+                    <span>
+                      <span className={styles.fieldLabelInline}>Group</span>{' '}
+                      {card.rules.weaponGroup}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {hasArmorMeta && (
+                <div className={styles.inlineMeta}>
+                  {card.rules.armorAC !== undefined && (
+                    <span>
+                      <span className={styles.fieldLabelInline}>AC</span> +{card.rules.armorAC}
+                    </span>
+                  )}
+                  {card.rules.dexCap !== undefined && (
+                    <span>
+                      <span className={styles.fieldLabelInline}>Max Dex</span> +{card.rules.dexCap}
+                    </span>
+                  )}
+                  {card.rules.checkPenalty !== undefined && card.rules.checkPenalty !== 0 && (
+                    <span>
+                      <span className={styles.fieldLabelInline}>Check</span>{' '}
+                      {card.rules.checkPenalty}
+                    </span>
+                  )}
+                  {card.rules.speedPenalty && (
+                    <span>
+                      <span className={styles.fieldLabelInline}>Speed</span>{' '}
+                      {card.rules.speedPenalty}
+                    </span>
+                  )}
+                  {card.rules.strengthReq !== undefined && (
+                    <span>
+                      <span className={styles.fieldLabelInline}>Str</span> {card.rules.strengthReq}+
+                    </span>
+                  )}
+                  {card.rules.hardness !== undefined && (
+                    <span>
+                      <span className={styles.fieldLabelInline}>Hardness</span>{' '}
+                      {card.rules.hardness}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Separator between first meta group and bulk/price */}
+              {firstMeta && hasItemMeta && <hr className={styles.cardHr} />}
+
+              {hasItemMeta && (
+                <div className={styles.inlineMeta}>
+                  {card.rules.usage && (
+                    <span>
+                      <span className={styles.fieldLabelInline}>Usage</span> {card.rules.usage}
+                    </span>
+                  )}
+                  {card.rules.bulk && (
+                    <span>
+                      <span className={styles.fieldLabelInline}>Bulk</span> {card.rules.bulk}
+                    </span>
+                  )}
+                  {card.rules.price && (
+                    <span>
+                      <span className={styles.fieldLabelInline}>Price</span> {card.rules.price}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Separator after ALL meta before content */}
+              {(firstMeta || hasItemMeta) && <hr className={styles.cardHr} />}
+            </>
+          );
+        })()}
         {card.rules.activateTag && card.rules.actionCost && (
           <div className={styles.field}>
             <span className={styles.fieldLabel}>Activate</span>{' '}
@@ -743,6 +819,14 @@ export function CardPreview({ card, selected, onClick, onModifierClick, forPrint
                         <div key={f.id} className={styles.displayField}>
                           <span className={styles.displayLabel}>{f.label}:</span>
                           <span className={styles.displayValue}>{f.value}</span>
+                        </div>
+                      );
+                    }
+                    if (f.type === 'hp') {
+                      return (
+                        <div key={f.id} className={styles.hpField}>
+                          <span className={styles.hpLabel}>{f.label}</span>
+                          <span className={styles.blankFull} />
                         </div>
                       );
                     }

@@ -627,6 +627,39 @@ export function parsePathbuilder(json: unknown): CharacterModel {
     });
   }
 
+  // --- Armor ---
+  const armors: import('../model/character').CharacterArmor[] = [];
+  const armorRaw = arr<unknown>(get(build, 'armor'));
+  for (const a of armorRaw) {
+    if (typeof a !== 'object' || a === null) continue;
+    const name = str(get(a, 'name'));
+    if (!name) continue;
+    const pot = num(get(a, 'pot')) ?? 0;
+    const resRaw = typeof get(a, 'res') === 'string' ? (get(a, 'res') as string).trim() : '';
+    const category = str(get(a, 'prof')) ?? 'unarmored';
+
+    // Build fundamental runes: potency + resilient
+    const fundRunes: string[] = [];
+    if (pot > 0) fundRunes.push(`+${pot}`);
+    if (resRaw) {
+      // camelCase → "Mythic Resilient", already-spaced like "resilient" → "Resilient"
+      const resilientName = resRaw
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+      fundRunes.push(resilientName);
+    }
+
+    armors.push({
+      name,
+      display: str(get(a, 'display')),
+      category,
+      worn: get(a, 'worn') === true,
+      fundamentalRunes: fundRunes.length > 0 ? fundRunes : undefined,
+      runes: arr<string>(get(a, 'runes')).filter(Boolean) as string[] | undefined,
+      material: str(get(a, 'mat')) || undefined,
+    });
+  }
+
   // --- Equipment ---
   const equipment: CharacterEquipment[] = [];
   const equipRaw = arr<unknown>(get(build, 'equipment'));
@@ -760,6 +793,7 @@ export function parsePathbuilder(json: unknown): CharacterModel {
     focusSpells,
     focusPoints,
     attacks,
+    armors,
     equipment,
     actions: [],
     linkedCreatures: linkedCreatures.length > 0 ? linkedCreatures : undefined,

@@ -197,7 +197,7 @@ function buildMainCard(attack: CharacterAttack): CardModel {
   const critSpecLine = critSpec ? `---\n***Critical Specialization*** ${critSpec}` : '';
 
   const summaryParts = [
-    '***Hit***: + ___',
+    '***Hit***: + ___ / + ___ / + ___',
     damageLine,
     ...extraLines,
     fundamentalRuneNote,
@@ -227,7 +227,11 @@ function buildMainCard(attack: CharacterAttack): CardModel {
     title,
     category: 'weapon',
     stableKey: buildStableKey('weapon', attack.name),
-    source: { system: 'generated', runes: attack.runes },
+    source: {
+      system: 'generated',
+      runes: attack.runes,
+      ...(attack.material ? { material: getMaterialItemName(attack.material, 'weapon') } : {}),
+    },
     rules: {
       actionCost: '1',
       traits,
@@ -261,9 +265,36 @@ function buildRuneCard(runeName: string): CardModel {
   });
 }
 
+function buildMaterialCard(materialName: string): CardModel {
+  // Construct the specific AoN variant: "Adamantine (High-Grade)" on a weapon
+  // becomes "Adamantine Weapon (High-Grade)" to match the AoN entry exactly.
+  const title = getMaterialItemName(materialName, 'weapon');
+  return defaultCard({
+    title,
+    category: 'equipment',
+    stableKey: buildStableKey('material', title),
+    source: { system: 'generated' },
+    rules: { traits: [], summary: SUMMARY_PLACEHOLDER },
+    print: { include: true, priority: 37, size: 'standard' },
+    writableFields: [],
+  });
+}
+
+/**
+ * Build the AoN-specific material item name.
+ * "Adamantine (High-Grade)" + weapon → "Adamantine Weapon (High-Grade)"
+ */
+function getMaterialItemName(material: string, type: 'weapon' | 'armor' | 'shield'): string {
+  const m = material.match(/^(.+?)\s*\((.+?)\)$/);
+  if (!m) return material;
+  const typeLabel = type === 'weapon' ? 'Weapon' : type === 'armor' ? 'Armor' : 'Shield';
+  return `${m[1].trim()} ${typeLabel} (${m[2].trim()})`;
+}
+
 export function generateWeaponCards(char: CharacterModel): CardModel[] {
   const cards: CardModel[] = [];
   const seenRuneKeys = new Set<string>();
+  const seenMaterialKeys = new Set<string>();
 
   for (const attack of char.attacks) {
     cards.push(buildMainCard(attack));
@@ -273,6 +304,14 @@ export function generateWeaponCards(char: CharacterModel): CardModel[] {
       if (!seenRuneKeys.has(key)) {
         seenRuneKeys.add(key);
         cards.push(buildRuneCard(rune));
+      }
+    }
+
+    if (attack.material) {
+      const matKey = buildStableKey('material', attack.material);
+      if (!seenMaterialKeys.has(matKey)) {
+        seenMaterialKeys.add(matKey);
+        cards.push(buildMaterialCard(attack.material));
       }
     }
   }

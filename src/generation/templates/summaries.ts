@@ -124,5 +124,23 @@ export function generateSummaryCards(char: CharacterModel): CardModel[] {
     }),
   );
 
+  // --- Wealth ---
+  cards.push(
+    defaultCard({
+      title: 'Wealth',
+      category: 'summary',
+      stableKey: buildStableKey('summary', 'wealth'),
+      rules: { traits: [], summary: '' },
+      print: { include: true, priority: 13, size: 'standard' },
+      writableFields: [
+        blankField('PP', 'md'),
+        blankField('GP', 'md'),
+        blankField('SP', 'md'),
+        blankField('CP', 'md'),
+        blankField('Other / Notes', 'lg'),
+      ],
+    }),
+  );
+
   return cards;
 }

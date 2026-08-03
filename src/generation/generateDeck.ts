@@ -1,5 +1,6 @@
 import type { CardModel } from '../model/cards';
 import type { CharacterModel } from '../model/character';
+import { generateArmorCards } from './templates/armor';
 import { generateBasicActionCards } from './templates/basicActions';
 import { generateCreatureCards } from './templates/creatures';
 import { generateEquipmentCards } from './templates/equipment';
@@ -26,6 +27,10 @@ export function generateDeck(char: CharacterModel): GenerationResult {
   cards.push(...generateSummaryCards(char));
   cards.push(...generateBasicActionCards(char));
   cards.push(...generateWeaponCards(char));
+
+  if (char.armors.length > 0) {
+    cards.push(...generateArmorCards(char));
+  }
 
   if (char.feats.length > 0) {
     cards.push(...generateFeatCards(char));
@@ -71,6 +76,8 @@ export function generateDeck(char: CharacterModel): GenerationResult {
     'focus-spell': 8,
     weapon: 9,
     equipment: 10,
+    armor: 9,
+    shield: 9,
     'creature-summary': 11,
     'creature-skill': 11,
     'creature-attack': 11,

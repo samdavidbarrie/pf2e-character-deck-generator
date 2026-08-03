@@ -20,9 +20,11 @@ export const WEAPON_RUNE_PRICES: Record<string, RuneEntry> = {
   '+1': { level: 2, gp: 35 },
   '+2': { level: 10, gp: 935 },
   '+3': { level: 16, gp: 8_935 },
+  '+4': { level: 20, gp: 70_000 }, // Mythic Weapon Potency (War of Immortals)
   striking: { level: 4, gp: 65 },
   'greater striking': { level: 12, gp: 1_065 },
   'major striking': { level: 19, gp: 31_065 },
+  'mythic striking': { level: 20, gp: 70_000 }, // War of Immortals
 };
 
 /** Fundamental armor rune prices, keyed by lowercased rune label. */
@@ -30,9 +32,11 @@ export const ARMOR_RUNE_PRICES: Record<string, RuneEntry> = {
   '+1': { level: 5, gp: 160 },
   '+2': { level: 11, gp: 1_060 },
   '+3': { level: 18, gp: 20_560 },
+  '+4': { level: 20, gp: 70_000 }, // Mythic Armor Potency (War of Immortals)
   resilient: { level: 8, gp: 340 },
   'greater resilient': { level: 14, gp: 3_440 },
   'major resilient': { level: 20, gp: 49_440 },
+  'mythic resilient': { level: 20, gp: 70_000 }, // War of Immortals
 };
 
 // ---------------------------------------------------------------------------

@@ -276,6 +276,41 @@ export const useAppStore = create<AppState>((set, get) => ({
         cards = [...cardById.values()];
       }
 
+      // Material notes: after material cards are enriched, append their
+      // summary to the notes of the weapon/armor/shield card they came from.
+      {
+        const cardById = new Map(cards.map((c) => [c.id, c]));
+        // Build a title → enriched summary map for material cards.
+        const materialSummary = new Map<string, string>();
+        for (const c of cards) {
+          if (
+            c.stableKey.startsWith('material:') &&
+            !c.rules.summary.includes('Rules summary not imported')
+          ) {
+            materialSummary.set(c.title, c.rules.summary);
+          }
+        }
+        if (materialSummary.size > 0) {
+          for (const card of cards) {
+            const matTitle = card.source.material;
+            if (!matTitle || card.userEdits.edited) continue;
+            const matSummary = materialSummary.get(matTitle);
+            if (!matSummary) continue;
+            const heading = `***${matTitle}***`;
+            const ref = `---\n${heading}\n${matSummary}`;
+            const existing = card.userEdits.notes ?? '';
+            if (!existing.includes(matTitle)) {
+              const separator = existing ? '\n\n' : '';
+              cardById.set(card.id, {
+                ...card,
+                userEdits: { ...card.userEdits, notes: existing + separator + ref },
+              });
+            }
+          }
+          cards = [...cardById.values()];
+        }
+      }
+
       // For polymorph / incarnate spell cards, insert a blank form-stats
       // companion card immediately after each one so the player can fill in
       // their chosen form's statistics during preparation.

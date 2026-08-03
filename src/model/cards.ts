@@ -15,13 +15,15 @@ export type CardCategory =
   | 'creature-summary'
   | 'creature-skill'
   | 'creature-attack'
-  | 'creature-action';
+  | 'creature-action'
+  | 'armor'
+  | 'shield';
 
 export type ActionCost =
   'free' | 'reaction' | '1' | '2' | '3' | '1-2' | '1-3' | '2-3' | 'variable' | 'passive' | '2+';
 
 export type WritableFieldType =
-  'blank' | 'checkboxes' | 'counter' | 'notes' | 'skill-row' | 'section' | 'display';
+  'blank' | 'checkboxes' | 'counter' | 'notes' | 'skill-row' | 'section' | 'display' | 'hp';
 
 /** Proficiency ranks in ascending order — used by skill-row fields. */
 export const TEML_RANKS = ['trained', 'expert', 'master', 'legendary'] as const;
@@ -55,6 +57,8 @@ export interface CardModel {
     pathbuilderPath?: string;
     /** Property rune names stored for AoN enrichment lookup. */
     runes?: string[];
+    /** Title of the generated material card for this item (e.g. "Adamantine Weapon (High-Grade)"). */
+    material?: string;
   };
 
   rules: {
@@ -91,6 +95,16 @@ export interface CardModel {
     weaponType?: string; // "Melee" | "Ranged"
     weaponCategory?: string; // "Simple" | "Martial" | "Advanced"
     weaponGroup?: string; // e.g. "Polearm", "Sword"
+    /** Armor-specific metadata from AoN. */
+    armorAC?: number; // base item AC bonus
+    armorCategory?: string; // "Light" | "Medium" | "Heavy"
+    armorGroup?: string; // e.g. "Plate", "Chain"
+    dexCap?: number; // max dex modifier
+    checkPenalty?: number; // armor check penalty (negative)
+    speedPenalty?: string; // e.g. "-5 ft."
+    strengthReq?: number; // strength score required
+    hardness?: number; // shield/item hardness
+    shieldHP?: number; // shield HP
   };
 
   layout?: 'standard' | 'quadrant';
@@ -163,6 +177,8 @@ export const CATEGORY_LABEL: Record<CardCategory, string> = {
   'creature-skill': 'Creature Skills',
   'creature-attack': 'Creature Attack',
   'creature-action': 'Creature Action',
+  armor: 'Armor',
+  shield: 'Shield',
 };
 
 export const CATEGORY_COLOR: Record<CardCategory, string> = {
@@ -183,4 +199,6 @@ export const CATEGORY_COLOR: Record<CardCategory, string> = {
   'creature-skill': '#c8dcc8',
   'creature-attack': '#dce4c4',
   'creature-action': '#d0e0c8',
+  armor: '#d8d4e8',
+  shield: '#d0d8e8',
 };

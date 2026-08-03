@@ -63,6 +63,12 @@
 .themeCreature {
   --pf-card-accent: var(--pf-accent-creature, #2a5a3a);
 }
+.themeArmor {
+  --pf-card-accent: #3a3a5a;
+}
+.themeShield {
+  --pf-card-accent: #3a4a6a;
+}
 
 /* Inline writable blank — rendered in place of ___ in card body text. */
 .inlineBlank {
@@ -408,13 +414,7 @@
 /* In the compact inline metadata row, labels use the same title-font
    treatment as other field labels. */
 .inlineMetaDivider {
-  border-top: 0.5pt solid currentColor;
-  border-bottom: 0.5pt solid currentColor;
-  padding-top: 1pt;
-  padding-bottom: 1pt;
-  margin-top: 1pt;
-  margin-bottom: 1pt;
-  opacity: 0.8;
+  /* intentionally empty — separators are now explicit <hr> elements */
 }
 
 .fieldLabel {

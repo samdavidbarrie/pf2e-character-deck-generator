@@ -51,6 +51,19 @@ export interface CharacterSpell {
   focusCost?: number;
 }
 
+export interface CharacterArmor {
+  name: string;
+  display?: string;
+  /** "light" | "medium" | "heavy" | "shield" | "unarmored" */
+  category: string;
+  worn: boolean;
+  /** Fundamental rune display names, e.g. ["+4", "Mythic Resilient"] */
+  fundamentalRunes?: string[];
+  /** Property rune names */
+  runes?: string[];
+  material?: string;
+}
+
 export interface CharacterAttack {
   name: string;
   /** Full display name including rune descriptors, e.g. "+2 Striking Astral Special Unarmed Tiger Claw". */
@@ -197,6 +210,7 @@ export interface CharacterModel {
   focusSpells: CharacterSpell[];
   focusPoints?: number;
   attacks: CharacterAttack[];
+  armors: CharacterArmor[];
   equipment: CharacterEquipment[];
   actions: CharacterAction[];
   linkedCreatures?: LinkedCreature[];

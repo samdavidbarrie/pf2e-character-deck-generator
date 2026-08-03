@@ -36,6 +36,11 @@ export function displayField(label: string, value: string): WritableField {
   return { id: crypto.randomUUID(), label, type: 'display', value };
 }
 
+/** A large HP-style field: bold label above a full-width underline blank. */
+export function hpField(label: string): WritableField {
+  return { id: crypto.randomUUID(), label, type: 'hp' };
+}
+
 // Re-export nextId for templates that need a unique card id
 export { nextId };
 
