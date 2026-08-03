@@ -742,27 +742,34 @@ export function CardPreview({ card, selected, onClick, onModifierClick, forPrint
               );
             };
 
-            const circles = (rank: string | undefined) => {
-              const idx = TEML_RANKS.indexOf(rank as (typeof TEML_RANKS)[number]);
-              return TEML_RANKS.map((_, i) => (i <= idx ? '●' : '○')).join('');
-            };
-
             return (
               <div className={styles.twoColBody}>
                 {/* ── Left column: HP → saves ── */}
                 <div className={styles.twoColLeft}>
                   {qf(1).map(renderHpField)}
                   <div className={styles.saveTable}>
-                    {qf(3).map((f) => (
-                      <Fragment key={f.id}>
-                        {f.label === 'Perception' && <div className={styles.saveTableSep} />}
-                        <span className={styles.saveLabel}>{f.label}</span>
-                        <span className={styles.saveTeml}>
-                          {f.type === 'skill-row' ? circles(f.rank) : ''}
-                        </span>
-                        <span className={styles.saveBlank} />
-                      </Fragment>
-                    ))}
+                    {qf(3).map((f) => {
+                      const rankIndex = TEML_RANKS.indexOf(f.rank as (typeof TEML_RANKS)[number]);
+                      const circleArr = TEML_RANKS.map((_, i) => (i <= rankIndex ? '●' : '○'));
+                      return (
+                        <Fragment key={f.id}>
+                          {f.label === 'Perception' && <div className={styles.saveTableSep} />}
+                          <div className={styles.skillRow}>
+                            <span className={styles.skillName}>{f.label}</span>
+                            {f.type === 'skill-row'
+                              ? circleArr.map((c, i) => (
+                                  <span key={i} className={styles.skillCircle}>
+                                    {c}
+                                  </span>
+                                ))
+                              : TEML_RANKS.map((_, i) => (
+                                  <span key={i} className={styles.skillCircle} />
+                                ))}
+                            <span className={styles.skillTotal} />
+                          </div>
+                        </Fragment>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -804,16 +811,28 @@ export function CardPreview({ card, selected, onClick, onModifierClick, forPrint
                 <div className={styles.skillTable}>
                   <div className={styles.skillColumnHeader}>
                     <span className={styles.skillName} />
-                    <span className={styles.skillTeml}>T&nbsp;E&nbsp;M&nbsp;L</span>
+                    <span className={styles.skillCircleHeader}>T</span>
+                    <span className={styles.skillCircleHeader}>E</span>
+                    <span className={styles.skillCircleHeader}>M</span>
+                    <span className={styles.skillCircleHeader}>L</span>
                     <span className={styles.skillTotalHeader}>Bonus</span>
                   </div>
                   {skillRows.map((f) => {
                     const rankIndex = TEML_RANKS.indexOf(f.rank as (typeof TEML_RANKS)[number]);
-                    const circles = TEML_RANKS.map((_, i) => (i <= rankIndex ? '●' : '○')).join('');
+                    const circles = TEML_RANKS.map((_, i) => (i <= rankIndex ? '●' : '○'));
                     return (
                       <div key={f.id} className={styles.skillRow}>
-                        <span className={styles.skillName}>{f.label}</span>
-                        <span className={styles.skillTeml}>{circles}</span>
+                        <span className={styles.skillName}>
+                          {f.label
+                            .split(/\s+/)
+                            .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                            .join(' ')}
+                        </span>
+                        {circles.map((c, i) => (
+                          <span key={i} className={styles.skillCircle}>
+                            {c}
+                          </span>
+                        ))}
                         <span className={styles.skillTotal} />
                       </div>
                     );

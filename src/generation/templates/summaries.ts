@@ -115,9 +115,16 @@ export function generateSummaryCards(char: CharacterModel): CardModel[] {
   );
 
   // --- Skill Proficiencies ---
+  // Regular skills alphabetically, Lore skills alphabetically at the end.
+  const isLore = (name: string) => /\blore\b/i.test(name);
   const allSkillFields = char.proficiencies.skills
     .slice()
-    .sort((a, b) => a.skill.localeCompare(b.skill))
+    .sort((a, b) => {
+      const aLore = isLore(a.skill);
+      const bLore = isLore(b.skill);
+      if (aLore !== bLore) return aLore ? 1 : -1;
+      return a.skill.localeCompare(b.skill);
+    })
     .map((s) => skillField(s.skill, s.rank));
 
   cards.push(

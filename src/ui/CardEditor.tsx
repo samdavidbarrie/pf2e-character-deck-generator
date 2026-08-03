@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { useAppStore } from '../app/store';
 import type { ActionCost, CardCategory, CardModel } from '../model/cards';
-import { CATEGORY_LABEL } from '../model/cards';
+import { CATEGORY_LABEL, TEML_RANKS } from '../model/cards';
 import styles from './CardEditor.module.css';
 
 const ACTION_COST_OPTIONS: Array<{ value: ActionCost | ''; label: string }> = [
@@ -238,6 +238,15 @@ export function CardEditor({ card }: Props) {
     text: card.rules.traits.join(', '),
   });
   const traitsText = traitsState.id === card.id ? traitsState.text : card.rules.traits.join(', ');
+
+  // Hide rules/item metadata for "data cards" whose content is entirely writable fields.
+  const hideMeta =
+    card.category === 'summary' ||
+    card.category === 'creature-summary' ||
+    card.category === 'creature-skill';
+  // Traits are still useful on face cards (character and creature).
+  const showTraits =
+    !hideMeta || card.stableKey === 'summary:combat-status' || card.category === 'creature-summary';
   function setTraitsText(text: string) {
     setTraitsState({ id: card.id, text });
   }
@@ -367,313 +376,530 @@ export function CardEditor({ card }: Props) {
           </select>
         </label>
 
-        <label className={styles.fieldGroup}>
-          <span>Level</span>
-          <input
-            type="number"
-            min={0}
-            max={25}
-            value={card.rules.level ?? ''}
-            placeholder="—"
-            onChange={(e) =>
-              patchRules({ level: e.target.value ? Number(e.target.value) : undefined })
-            }
-          />
-        </label>
+        {!hideMeta && (
+          <label className={styles.fieldGroup}>
+            <span>Level</span>
+            <input
+              type="number"
+              min={0}
+              max={25}
+              value={card.rules.level ?? ''}
+              placeholder="—"
+              onChange={(e) =>
+                patchRules({ level: e.target.value ? Number(e.target.value) : undefined })
+              }
+            />
+          </label>
+        )}
 
-        <label className={styles.fieldGroup}>
-          <span>Action cost</span>
-          <select
-            value={card.rules.actionCost ?? ''}
-            onChange={(e) =>
-              patchRules({ actionCost: (e.target.value || undefined) as ActionCost | undefined })
-            }
-          >
-            {ACTION_COST_OPTIONS.map(({ value, label }) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
+        {!hideMeta && (
+          <label className={styles.fieldGroup}>
+            <span>Action cost</span>
+            <select
+              value={card.rules.actionCost ?? ''}
+              onChange={(e) =>
+                patchRules({ actionCost: (e.target.value || undefined) as ActionCost | undefined })
+              }
+            >
+              {ACTION_COST_OPTIONS.map(({ value, label }) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
 
-        <label className={styles.fieldGroup}>
-          <span>Traits (comma-separated)</span>
-          <input
-            type="text"
-            value={traitsText}
-            onChange={(e) => setTraitsText(e.target.value)}
-            onBlur={() =>
-              patchRules({
-                traits: traitsText
-                  .split(',')
-                  .map((t) => t.trim())
-                  .filter(Boolean),
-              })
-            }
-          />
-        </label>
+        {showTraits && (
+          <label className={styles.fieldGroup}>
+            <span>Traits (comma-separated)</span>
+            <input
+              type="text"
+              value={traitsText}
+              onChange={(e) => setTraitsText(e.target.value)}
+              onBlur={() =>
+                patchRules({
+                  traits: traitsText
+                    .split(',')
+                    .map((t) => t.trim())
+                    .filter(Boolean),
+                })
+              }
+            />
+          </label>
+        )}
 
-        <label className={styles.fieldGroup}>
-          <span>Trigger</span>
-          <input
-            type="text"
-            value={card.rules.trigger ?? ''}
-            onChange={(e) => patchRules({ trigger: e.target.value || undefined })}
-          />
-        </label>
-
-        <label className={styles.fieldGroup}>
-          <span>Requirements</span>
-          <input
-            type="text"
-            value={card.rules.requirements ?? ''}
-            onChange={(e) => patchRules({ requirements: e.target.value || undefined })}
-          />
-        </label>
-
-        <label className={styles.fieldGroup}>
-          <span>Frequency</span>
-          <input
-            type="text"
-            value={card.rules.frequency ?? ''}
-            onChange={(e) => patchRules({ frequency: e.target.value || undefined })}
-          />
-        </label>
-
-        <label className={styles.fieldGroup}>
-          <span>Usage</span>
-          <input
-            type="text"
-            value={card.rules.usage ?? ''}
-            onChange={(e) => patchRules({ usage: e.target.value || undefined })}
-            placeholder="e.g. held in 1 hand"
-          />
-        </label>
-
-        <label className={styles.fieldGroup}>
-          <span>Hands</span>
-          <input
-            type="text"
-            value={card.rules.hands ?? ''}
-            onChange={(e) => patchRules({ hands: e.target.value || undefined })}
-            placeholder="e.g. 2"
-          />
-        </label>
-
-        <label className={styles.fieldGroup}>
-          <span>Type</span>
-          <input
-            type="text"
-            value={card.rules.weaponType ?? ''}
-            onChange={(e) => patchRules({ weaponType: e.target.value || undefined })}
-            placeholder="Melee / Ranged"
-          />
-        </label>
-
-        <label className={styles.fieldGroup}>
-          <span>Category</span>
-          <select
-            value={card.rules.weaponCategory ?? ''}
-            onChange={(e) => patchRules({ weaponCategory: e.target.value || undefined })}
-          >
-            <option value="">—</option>
-            <option value="Simple">Simple</option>
-            <option value="Martial">Martial</option>
-            <option value="Advanced">Advanced</option>
-            <option value="Unarmed">Unarmed</option>
-          </select>
-        </label>
-
-        <label className={styles.fieldGroup}>
-          <span>Group</span>
-          <input
-            type="text"
-            value={card.rules.weaponGroup ?? ''}
-            onChange={(e) => patchRules({ weaponGroup: e.target.value || undefined })}
-            placeholder="e.g. Polearm, Sword"
-          />
-        </label>
-
-        <label className={styles.fieldGroup}>
-          <span>Bulk</span>
-          <input
-            type="text"
-            value={card.rules.bulk ?? ''}
-            onChange={(e) => patchRules({ bulk: e.target.value || undefined })}
-            placeholder="e.g. L, 1, 2"
-          />
-        </label>
-
-        <label className={styles.fieldGroup}>
-          <span>Price</span>
-          <input
-            type="text"
-            value={card.rules.price ?? ''}
-            onChange={(e) => patchRules({ price: e.target.value || undefined })}
-            placeholder="e.g. 50 gp"
-          />
-        </label>
-
-        <label className={styles.fieldGroup}>
-          <span>Bonus</span>
-          <input
-            type="text"
-            value={card.rules.bonus ?? ''}
-            onChange={(e) => patchRules({ bonus: e.target.value || undefined })}
-            placeholder="e.g. +14, Acrobatics +15"
-          />
-        </label>
-
-        {(card.rules.range !== undefined ||
-          card.rules.area !== undefined ||
-          card.rules.targets !== undefined ||
-          card.rules.defense !== undefined ||
-          card.rules.duration !== undefined) && (
+        {!hideMeta && (
           <>
-            {[
-              { key: 'range', label: 'Range' },
-              { key: 'area', label: 'Area' },
-              { key: 'targets', label: 'Targets' },
-              { key: 'defense', label: 'Defense' },
-              { key: 'duration', label: 'Duration' },
-            ].map(({ key, label }) => (
-              <label key={key} className={styles.fieldGroup}>
-                <span>{label}</span>
-                <input
-                  type="text"
-                  value={(card.rules[key as keyof typeof card.rules] as string) ?? ''}
-                  onChange={(e) => patchRules({ [key]: e.target.value || undefined })}
-                />
-              </label>
-            ))}
+            <label className={styles.fieldGroup}>
+              <span>Trigger</span>
+              <input
+                type="text"
+                value={card.rules.trigger ?? ''}
+                onChange={(e) => patchRules({ trigger: e.target.value || undefined })}
+              />
+            </label>
+
+            <label className={styles.fieldGroup}>
+              <span>Requirements</span>
+              <input
+                type="text"
+                value={card.rules.requirements ?? ''}
+                onChange={(e) => patchRules({ requirements: e.target.value || undefined })}
+              />
+            </label>
+
+            <label className={styles.fieldGroup}>
+              <span>Frequency</span>
+              <input
+                type="text"
+                value={card.rules.frequency ?? ''}
+                onChange={(e) => patchRules({ frequency: e.target.value || undefined })}
+              />
+            </label>
+
+            <label className={styles.fieldGroup}>
+              <span>Usage</span>
+              <input
+                type="text"
+                value={card.rules.usage ?? ''}
+                onChange={(e) => patchRules({ usage: e.target.value || undefined })}
+                placeholder="e.g. held in 1 hand"
+              />
+            </label>
+
+            <label className={styles.fieldGroup}>
+              <span>Hands</span>
+              <input
+                type="text"
+                value={card.rules.hands ?? ''}
+                onChange={(e) => patchRules({ hands: e.target.value || undefined })}
+                placeholder="e.g. 2"
+              />
+            </label>
+
+            <label className={styles.fieldGroup}>
+              <span>Type</span>
+              <input
+                type="text"
+                value={card.rules.weaponType ?? ''}
+                onChange={(e) => patchRules({ weaponType: e.target.value || undefined })}
+                placeholder="Melee / Ranged"
+              />
+            </label>
+
+            <label className={styles.fieldGroup}>
+              <span>Category</span>
+              <select
+                value={card.rules.weaponCategory ?? ''}
+                onChange={(e) => patchRules({ weaponCategory: e.target.value || undefined })}
+              >
+                <option value="">—</option>
+                <option value="Simple">Simple</option>
+                <option value="Martial">Martial</option>
+                <option value="Advanced">Advanced</option>
+                <option value="Unarmed">Unarmed</option>
+              </select>
+            </label>
+
+            <label className={styles.fieldGroup}>
+              <span>Group</span>
+              <input
+                type="text"
+                value={card.rules.weaponGroup ?? ''}
+                onChange={(e) => patchRules({ weaponGroup: e.target.value || undefined })}
+                placeholder="e.g. Polearm, Sword"
+              />
+            </label>
+
+            <label className={styles.fieldGroup}>
+              <span>Bulk</span>
+              <input
+                type="text"
+                value={card.rules.bulk ?? ''}
+                onChange={(e) => patchRules({ bulk: e.target.value || undefined })}
+                placeholder="e.g. L, 1, 2"
+              />
+            </label>
+
+            <label className={styles.fieldGroup}>
+              <span>Price</span>
+              <input
+                type="text"
+                value={card.rules.price ?? ''}
+                onChange={(e) => patchRules({ price: e.target.value || undefined })}
+                placeholder="e.g. 50 gp"
+              />
+            </label>
+
+            <label className={styles.fieldGroup}>
+              <span>Bonus</span>
+              <input
+                type="text"
+                value={card.rules.bonus ?? ''}
+                onChange={(e) => patchRules({ bonus: e.target.value || undefined })}
+                placeholder="e.g. +14, Acrobatics +15"
+              />
+            </label>
+
+            {(card.rules.range !== undefined ||
+              card.rules.area !== undefined ||
+              card.rules.targets !== undefined ||
+              card.rules.defense !== undefined ||
+              card.rules.duration !== undefined) && (
+              <>
+                {[
+                  { key: 'range', label: 'Range' },
+                  { key: 'area', label: 'Area' },
+                  { key: 'targets', label: 'Targets' },
+                  { key: 'defense', label: 'Defense' },
+                  { key: 'duration', label: 'Duration' },
+                ].map(({ key, label }) => (
+                  <label key={key} className={styles.fieldGroup}>
+                    <span>{label}</span>
+                    <input
+                      type="text"
+                      value={(card.rules[key as keyof typeof card.rules] as string) ?? ''}
+                      onChange={(e) => patchRules({ [key]: e.target.value || undefined })}
+                    />
+                  </label>
+                ))}
+              </>
+            )}
           </>
         )}
 
-        <div className={styles.fieldGroup}>
-          <div className={styles.fieldLabelRow}>
-            <span>Summary</span>
-            <span className={styles.fontSizeStepper}>
-              {card.userEdits.bodyFontSize !== undefined && (
+        {!hideMeta && (
+          <div className={styles.fieldGroup}>
+            <div className={styles.fieldLabelRow}>
+              <span>Summary</span>
+              <span className={styles.fontSizeStepper}>
+                {card.userEdits.bodyFontSize !== undefined && (
+                  <button
+                    type="button"
+                    className={styles.stepBtn}
+                    onClick={() =>
+                      patch({ userEdits: { ...card.userEdits, bodyFontSize: undefined } })
+                    }
+                    title="Reset body font size to default"
+                    aria-label="Reset body font size to default"
+                  >
+                    ↺
+                  </button>
+                )}
                 <button
                   type="button"
                   className={styles.stepBtn}
-                  onClick={() =>
-                    patch({ userEdits: { ...card.userEdits, bodyFontSize: undefined } })
-                  }
-                  title="Reset body font size to default"
-                  aria-label="Reset body font size to default"
+                  onClick={() => {
+                    const cur = card.userEdits.bodyFontSize ?? 6.8;
+                    const next = Math.min(12, Math.max(4, Math.round((cur - 0.5) * 10) / 10));
+                    patch({ userEdits: { ...card.userEdits, bodyFontSize: next } });
+                  }}
+                  title="Decrease body font size"
+                  aria-label="Decrease body font size"
                 >
-                  ↺
+                  −
                 </button>
-              )}
+                <input
+                  type="number"
+                  className={styles.fontSizeInput}
+                  min={4}
+                  max={12}
+                  step={0.5}
+                  value={card.userEdits.bodyFontSize ?? 6.8}
+                  title="Body font size in pt"
+                  aria-label="Body font size in pt"
+                  onChange={(e) => {
+                    const v = parseFloat(e.target.value);
+                    if (!isNaN(v)) {
+                      const clamped = Math.min(12, Math.max(4, Math.round(v * 10) / 10));
+                      patch({ userEdits: { ...card.userEdits, bodyFontSize: clamped } });
+                    }
+                  }}
+                />
+                <span className={styles.fontSizeUnit}>pt</span>
+                <button
+                  type="button"
+                  className={styles.stepBtn}
+                  onClick={() => {
+                    const cur = card.userEdits.bodyFontSize ?? 6.8;
+                    const next = Math.min(12, Math.max(4, Math.round((cur + 0.5) * 10) / 10));
+                    patch({ userEdits: { ...card.userEdits, bodyFontSize: next } });
+                  }}
+                  title="Increase body font size"
+                  aria-label="Increase body font size"
+                >
+                  +
+                </button>
+              </span>
+            </div>
+            <div className={styles.insertToolbar} role="toolbar" aria-label="Insert into summary">
+              {INSERT_ITEMS.map(({ label, title, insert, icon }) => (
+                <button
+                  key={label}
+                  type="button"
+                  className={styles.insertBtn}
+                  title={title}
+                  aria-label={`Insert ${title}`}
+                  onMouseDown={(e) => {
+                    // Prevent blur so selectionStart/End are still valid
+                    e.preventDefault();
+                    insertIntoSummary(insert);
+                  }}
+                >
+                  {icon ? <img src={icon} alt={title} className={styles.insertBtnIcon} /> : label}
+                </button>
+              ))}
               <button
-                type="button"
-                className={styles.stepBtn}
-                onClick={() => {
-                  const cur = card.userEdits.bodyFontSize ?? 6.8;
-                  const next = Math.min(12, Math.max(4, Math.round((cur - 0.5) * 10) / 10));
-                  patch({ userEdits: { ...card.userEdits, bodyFontSize: next } });
-                }}
-                title="Decrease body font size"
-                aria-label="Decrease body font size"
-              >
-                −
-              </button>
-              <input
-                type="number"
-                className={styles.fontSizeInput}
-                min={4}
-                max={12}
-                step={0.5}
-                value={card.userEdits.bodyFontSize ?? 6.8}
-                title="Body font size in pt"
-                aria-label="Body font size in pt"
-                onChange={(e) => {
-                  const v = parseFloat(e.target.value);
-                  if (!isNaN(v)) {
-                    const clamped = Math.min(12, Math.max(4, Math.round(v * 10) / 10));
-                    patch({ userEdits: { ...card.userEdits, bodyFontSize: clamped } });
-                  }
-                }}
-              />
-              <span className={styles.fontSizeUnit}>pt</span>
-              <button
-                type="button"
-                className={styles.stepBtn}
-                onClick={() => {
-                  const cur = card.userEdits.bodyFontSize ?? 6.8;
-                  const next = Math.min(12, Math.max(4, Math.round((cur + 0.5) * 10) / 10));
-                  patch({ userEdits: { ...card.userEdits, bodyFontSize: next } });
-                }}
-                title="Increase body font size"
-                aria-label="Increase body font size"
-              >
-                +
-              </button>
-            </span>
-          </div>
-          <div className={styles.insertToolbar} role="toolbar" aria-label="Insert into summary">
-            {INSERT_ITEMS.map(({ label, title, insert, icon }) => (
-              <button
-                key={label}
                 type="button"
                 className={styles.insertBtn}
-                title={title}
-                aria-label={`Insert ${title}`}
+                title="Auto-detect split point and insert [newcard]"
+                aria-label="Auto split"
                 onMouseDown={(e) => {
-                  // Prevent blur so selectionStart/End are still valid
                   e.preventDefault();
-                  insertIntoSummary(insert);
+                  const summaryPart = card.rules.summary;
+                  let rest = '';
+                  if (card.rules.criticalSuccess)
+                    rest += '\n**Critical Success** ' + card.rules.criticalSuccess;
+                  if (card.rules.success) rest += '\n**Success** ' + card.rules.success;
+                  if (card.rules.failure) rest += '\n**Failure** ' + card.rules.failure;
+                  if (card.rules.criticalFailure)
+                    rest += '\n**Critical Failure** ' + card.rules.criticalFailure;
+                  for (const sec of card.rules.extraSections ?? []) {
+                    rest += `\n**${sec.heading ?? 'Extra'}** ${sec.body}`;
+                  }
+                  const injected = autoInjectSplit(summaryPart, rest);
+                  if (injected !== null) patchRules(parseEditorSummary(injected));
                 }}
               >
-                {icon ? <img src={icon} alt={title} className={styles.insertBtnIcon} /> : label}
+                Auto
               </button>
-            ))}
-            <button
-              type="button"
-              className={styles.insertBtn}
-              title="Auto-detect split point and insert [newcard]"
-              aria-label="Auto split"
-              onMouseDown={(e) => {
-                e.preventDefault();
-                const summaryPart = card.rules.summary;
-                let rest = '';
-                if (card.rules.criticalSuccess)
-                  rest += '\n**Critical Success** ' + card.rules.criticalSuccess;
-                if (card.rules.success) rest += '\n**Success** ' + card.rules.success;
-                if (card.rules.failure) rest += '\n**Failure** ' + card.rules.failure;
-                if (card.rules.criticalFailure)
-                  rest += '\n**Critical Failure** ' + card.rules.criticalFailure;
-                for (const sec of card.rules.extraSections ?? []) {
-                  rest += `\n**${sec.heading ?? 'Extra'}** ${sec.body}`;
-                }
-                const injected = autoInjectSplit(summaryPart, rest);
-                if (injected !== null) patchRules(parseEditorSummary(injected));
-              }}
-            >
-              Auto
-            </button>
+            </div>
+            <textarea
+              ref={summaryRef}
+              rows={12}
+              value={buildEditorSummary(card.rules, card.userEdits.edited)}
+              onChange={(e) => patchRules(parseEditorSummary(e.target.value))}
+              onKeyDown={makeFormattingKeyHandler((v) => patchRules(parseEditorSummary(v)))}
+            />
           </div>
-          <textarea
-            ref={summaryRef}
-            rows={12}
-            value={buildEditorSummary(card.rules, card.userEdits.edited)}
-            onChange={(e) => patchRules(parseEditorSummary(e.target.value))}
-            onKeyDown={makeFormattingKeyHandler((v) => patchRules(parseEditorSummary(v)))}
-          />
-        </div>
+        )}
 
-        <label className={styles.fieldGroup}>
-          <span>AoN / Source URL</span>
-          <input
-            type="url"
-            value={card.source.aonUrl ?? ''}
-            onChange={(e) =>
-              patch({ source: { ...card.source, aonUrl: e.target.value || undefined } })
-            }
-          />
-        </label>
+        {/* Defense notes textarea — combat status card only */}
+        {card.stableKey === 'summary:combat-status' &&
+          (() => {
+            const defNotes = card.writableFields.filter(
+              (f) => f.type === 'display' && !f.label && f.quadrant === 4,
+            );
+            const noteText = defNotes.map((f) => f.value ?? '').join('\n');
+            const updateNotes = (text: string) => {
+              const lines = text.split('\n');
+              const kept = card.writableFields.filter(
+                (f) => !(f.type === 'display' && !f.label && f.quadrant === 4),
+              );
+              const newFields = lines.map((line, i) => ({
+                id: defNotes[i]?.id ?? `defense-note-${Date.now()}-${i}`,
+                type: 'display' as const,
+                label: '',
+                value: line,
+                quadrant: 4 as const,
+              }));
+              patch({ writableFields: [...kept, ...newFields] });
+            };
+            return (
+              <label className={styles.fieldGroup}>
+                <span>Defense Notes / Senses</span>
+                <textarea rows={4} value={noteText} onChange={(e) => updateNotes(e.target.value)} />
+              </label>
+            );
+          })()}
+
+        {/* Editable display fields (e.g. Ancestry, Heritage on summary cards) */}
+        {card.writableFields.some((f) => f.type === 'display' && f.label) && (
+          <div className={styles.fieldGroup}>
+            <span>Card Fields</span>
+            {card.writableFields
+              .filter((f) => f.type === 'display' && f.label)
+              .map((f) => (
+                <label key={f.id} className={styles.fieldGroup}>
+                  <span>{f.label.replace(/:?\s*$/, '')}</span>
+                  <input
+                    type="text"
+                    value={f.value ?? ''}
+                    onChange={(e) =>
+                      patch({
+                        writableFields: card.writableFields.map((wf) =>
+                          wf.id === f.id ? { ...wf, value: e.target.value || undefined } : wf,
+                        ),
+                      })
+                    }
+                  />
+                </label>
+              ))}
+          </div>
+        )}
+
+        {/* Editable skill ranks — compact table layout */}
+        {card.writableFields.some((f) => f.type === 'skill-row') &&
+          (() => {
+            const isLore = (label: string) => /\blore\b/i.test(label);
+            const regularSkills = card.writableFields.filter(
+              (f) => f.type === 'skill-row' && !isLore(f.label),
+            );
+            const loreSkills = card.writableFields.filter(
+              (f) => f.type === 'skill-row' && isLore(f.label),
+            );
+
+            const setRank = (id: string, r: string) =>
+              patch({
+                writableFields: card.writableFields.map((wf) =>
+                  wf.id === id
+                    ? { ...wf, rank: (wf.rank === r ? undefined : r) as typeof wf.rank }
+                    : wf,
+                ),
+              });
+
+            const renderSkillRow = (f: (typeof card.writableFields)[number]) => (
+              <div key={f.id} className={styles.skillTableRow}>
+                <span className={styles.skillTableName}>
+                  {f.label
+                    .split(/\s+/)
+                    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                    .join(' ')}
+                </span>
+                {TEML_RANKS.map((r) => {
+                  const rankIndex = TEML_RANKS.indexOf(r);
+                  const currentIndex = TEML_RANKS.indexOf(f.rank as (typeof TEML_RANKS)[number]);
+                  const filled = currentIndex >= rankIndex;
+                  return (
+                    <button
+                      key={r}
+                      type="button"
+                      className={`${styles.skillCircleBtn} ${filled ? styles.skillCircleFilled : ''}`}
+                      title={r}
+                      onClick={() => setRank(f.id, r)}
+                    >
+                      {filled ? '●' : '○'}
+                    </button>
+                  );
+                })}
+              </div>
+            );
+
+            const renderLoreRow = (f: (typeof card.writableFields)[number]) => {
+              // Store/display just the subject; full label is assembled on card render
+              const subject = f.label
+                .replace(/^lore\s*\((.*)\)\s*$/i, '$1')
+                .replace(/^lore\s*/i, '');
+              return (
+                <div key={f.id} className={styles.skillTableRowLore}>
+                  <input
+                    type="text"
+                    className={styles.loreNameInput}
+                    value={subject}
+                    placeholder="Subject"
+                    onChange={(e) =>
+                      patch({
+                        writableFields: card.writableFields.map((wf) =>
+                          wf.id === f.id
+                            ? { ...wf, label: e.target.value ? `Lore (${e.target.value})` : 'Lore' }
+                            : wf,
+                        ),
+                      })
+                    }
+                  />
+                  <button
+                    type="button"
+                    className={styles.removeFieldBtn}
+                    title="Remove Lore skill"
+                    onClick={() =>
+                      patch({
+                        writableFields: card.writableFields.filter((wf) => wf.id !== f.id),
+                      })
+                    }
+                  >
+                    ×
+                  </button>
+                  {TEML_RANKS.map((r) => {
+                    const rankIndex = TEML_RANKS.indexOf(r);
+                    const currentIndex = TEML_RANKS.indexOf(f.rank as (typeof TEML_RANKS)[number]);
+                    const filled = currentIndex >= rankIndex;
+                    return (
+                      <button
+                        key={r}
+                        type="button"
+                        className={`${styles.skillCircleBtn} ${filled ? styles.skillCircleFilled : ''}`}
+                        title={r}
+                        onClick={() => setRank(f.id, r)}
+                      >
+                        {filled ? '●' : '○'}
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            };
+
+            return (
+              <div className={styles.fieldGroup}>
+                <div className={styles.fieldLabelRow}>
+                  <span>Skill Ranks</span>
+                </div>
+                {/* Header row */}
+                <div className={styles.skillTableHeader}>
+                  <span />
+                  {TEML_RANKS.map((r) => (
+                    <span key={r} className={styles.skillTableHeaderCell}>
+                      {r[0].toUpperCase()}
+                    </span>
+                  ))}
+                </div>
+                {regularSkills.map(renderSkillRow)}
+                {(card.category !== 'summary' || card.stableKey === 'summary:skills') &&
+                  card.category !== 'creature-skill' &&
+                  card.category !== 'creature-summary' && (
+                    <>
+                      {/* Lore section */}
+                      <hr className={styles.skillLoreDivider} />
+                      <span className={styles.loreSectionLabel}>Lore</span>
+                      {loreSkills.map(renderLoreRow)}
+                      <button
+                        type="button"
+                        className={styles.addLoreBtn}
+                        onClick={() =>
+                          patch({
+                            writableFields: [
+                              ...card.writableFields,
+                              {
+                                id: `lore-${Date.now()}`,
+                                label: 'Lore',
+                                type: 'skill-row' as const,
+                                rank: 'trained' as const,
+                              },
+                            ],
+                          })
+                        }
+                      >
+                        +
+                      </button>
+                    </>
+                  )}
+              </div>
+            );
+          })()}
+
+        {!hideMeta && (
+          <label className={styles.fieldGroup}>
+            <span>AoN / Source URL</span>
+            <input
+              type="url"
+              value={card.source.aonUrl ?? ''}
+              onChange={(e) =>
+                patch({ source: { ...card.source, aonUrl: e.target.value || undefined } })
+              }
+            />
+          </label>
+        )}
 
         <label className={styles.fieldGroup}>
           <span>

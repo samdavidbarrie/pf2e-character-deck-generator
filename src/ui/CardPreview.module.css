@@ -249,7 +249,6 @@
   display: inline-block;
   width: 28px;
   height: 12pt;
-  border-bottom: 1.5pt solid var(--pf-card-ink, #15120f);
 }
 
 .backBadge {
@@ -780,16 +779,17 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  /* justify-content: space-between; */
 }
 
 .skillColumnHeader {
   display: grid;
-  grid-template-columns: 1fr auto auto;
-  gap: 3px;
+  grid-template-columns: 1fr repeat(4, 7pt) 28pt;
+  gap: 0;
   font-size: 5.5pt;
   font-weight: 700;
   color: #555;
+  text-align: center;
   border-bottom: 0.5pt solid #ccc;
   padding-bottom: 1px;
   margin-bottom: 1px;
@@ -797,12 +797,12 @@
 
 .skillRow {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: 1fr repeat(4, 6pt) 28pt;
   align-items: baseline;
-  gap: 4px;
+  gap: 0;
   font-size: 6.5pt;
-  line-height: 1.45;
-  padding: 0 2px;
+  line-height: 1.55;
+  padding-left: 2px;
 }
 
 .skillRow:nth-child(odd) {
@@ -819,24 +819,33 @@
   text-overflow: ellipsis;
 }
 
-.skillTeml {
+.skillCircle {
   font-size: 6pt;
-  letter-spacing: 0;
-  white-space: nowrap;
+  text-align: center;
   color: #333;
+}
+
+.skillCircleHeader {
+  font-size: 5.5pt;
+  font-weight: 700;
+  color: #555;
+  text-align: center;
 }
 
 .skillTotal {
   font-size: 6pt;
   border-bottom: 0.5pt solid #333;
-  min-width: 28px;
-  display: inline-block;
+  display: block;
+  margin-left: 6pt;
+  align-self: end;
 }
 
 .skillTotalHeader {
-  font-size: 6pt;
-  min-width: 28px;
-  display: inline-block;
+  font-size: 5.5pt;
+  font-weight: 700;
+  color: #555;
+  display: block;
+  padding-left: 4pt;
 }
 
 /* Print overrides applied via forPrint class */
@@ -1049,13 +1058,15 @@
 
 /* ── Save table: flat CSS grid so all circles align ─── */
 .saveTable {
-  display: grid;
-  grid-template-columns: max-content auto 1fr;
-  align-items: baseline;
-  column-gap: 4px;
-  row-gap: 3px;
-  align-content: start;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
   margin-top: 4px;
+}
+
+/* Narrower bonus column inside the half-width save section */
+.saveTable .skillRow {
+  grid-template-columns: 1fr repeat(4, 7pt) 16pt;
 }
 
 .saveLabel {
@@ -1077,11 +1088,10 @@
   min-width: 20px;
 }
 
-/* Full-width separator row spanning all 3 grid columns */
+/* Separator row between Will and Perception */
 .saveTableSep {
-  grid-column: 1 / -1;
-  border-top: 0.5pt dotted #ccc;
-  height: 0;
+  border-top: 0.5pt solid #ccc;
+  margin: 1px 2px;
 }
 
 /* Senses/resistance/immunity note lines in right column */
