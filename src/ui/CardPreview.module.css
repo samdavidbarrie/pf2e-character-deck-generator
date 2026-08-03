@@ -410,12 +410,6 @@
   letter-spacing: 0.02em;
 }
 
-/* In the compact inline metadata row, labels use the same title-font
-   treatment as other field labels. */
-.inlineMetaDivider {
-  /* intentionally empty — separators are now explicit <hr> elements */
-}
-
 .fieldLabel {
   font-weight: 800;
   font-family: var(--pf-title-font, system-ui, sans-serif);
@@ -478,10 +472,6 @@
   font-size: 7.5pt;
   font-weight: 700;
   margin: 2px 0 5px;
-}
-
-.skillTopLabel {
-  /* inherits bold from parent */
 }
 
 .skillTopSign {
