@@ -182,6 +182,12 @@ function renderMarkdown(text: string): React.ReactNode {
           <hr key={i} className={styles.cardHr} />
         ) : line.trim() === '[newcard]' ? (
           <hr key={i} className={styles.cardSplitMark} />
+        ) : line.startsWith('> ') ? (
+          // Nested-feat reference: "> Tiger Slash ◆◆ Feat 6"
+          <span key={i} className={styles.featRef}>
+            {i > 0 && <br />}
+            {renderBold(line.slice(2))}
+          </span>
         ) : (
           <Fragment key={i}>
             {i > 0 && <br />}
@@ -600,25 +606,6 @@ export function CardPreview({ card, selected, onClick, onModifierClick, forPrint
           );
         })}
 
-        {card.mergedChildren && card.mergedChildren.length > 0 && (
-          <div className={styles.mergedChildren}>
-            <div className={styles.mergedChildrenLabel}>Also applies</div>
-            {card.mergedChildren.map((child) => (
-              <div key={child.name} className={styles.mergedChild}>
-                <span className={styles.mergedChildName}>
-                  {child.name}
-                  {child.level !== undefined && (
-                    <span className={styles.mergedChildLevel}> (lv{child.level})</span>
-                  )}
-                </span>
-                {child.summary && (
-                  <span className={styles.mergedChildSummary}>{child.summary}</span>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-
         {card.mergedInto && !forPrint && (
           <div className={styles.mergedIntoBadge}>↗ Merged into: {card.mergedInto}</div>
         )}
@@ -772,14 +759,6 @@ export function CardPreview({ card, selected, onClick, onModifierClick, forPrint
             <a href={card.source.aonUrl} target="_blank" rel="noopener noreferrer" tabIndex={-1}>
               AoN ↗
             </a>
-          </div>
-        )}
-
-        {/* User notes — shown on ALL card types when the notes textarea has content. */}
-        {card.userEdits.notes && (
-          <div className={styles.userNotes}>
-            <span className={styles.userNotesLabel}>Notes</span>
-            <span className={styles.userNotesContent}>{card.userEdits.notes}</span>
           </div>
         )}
       </div>

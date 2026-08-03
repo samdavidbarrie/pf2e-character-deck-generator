@@ -498,7 +498,7 @@ export function CardEditor({ card }: Props) {
           </div>
           <textarea
             ref={summaryRef}
-            rows={8}
+            rows={12}
             value={buildEditorSummary(card.rules)}
             onChange={(e) => patchRules(parseEditorSummary(e.target.value))}
           />
@@ -516,9 +516,12 @@ export function CardEditor({ card }: Props) {
         </label>
 
         <label className={styles.fieldGroup}>
-          <span>Notes</span>
+          <span>
+            Related Abilities{' '}
+            <small className={styles.hint}>(editor-only — not printed on card)</small>
+          </span>
           <textarea
-            rows={3}
+            rows={8}
             value={card.userEdits.notes ?? ''}
             onChange={(e) =>
               patch({ userEdits: { ...card.userEdits, notes: e.target.value || undefined } })

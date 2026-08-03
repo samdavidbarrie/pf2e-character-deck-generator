@@ -224,7 +224,9 @@ export const useAppStore = create<AppState>((set, get) => ({
         return data ? applyAonDataToCard(card, data) : card;
       });
 
-      // Detect passive feat merges
+      // Detect passive feat merges — instead of merging onto parent cards and
+      // hiding children, put a formatted reference in the parent's notes so the
+      // user can copy-paste the text they want.
       const merges = detectFeatMerges(cards, aonDataMap);
 
       if (merges.length > 0) {
@@ -235,24 +237,39 @@ export const useAppStore = create<AppState>((set, get) => ({
           const child = cardById.get(childId);
           if (!parent || !child) continue;
 
-          // Add child info to parent (guard against duplicates on re-enrichment)
-          const alreadyMerged = (parent.mergedChildren ?? []).some((c) => c.name === child.title);
-          if (!alreadyMerged) {
+          // Build a reference line: **Name ◆◆ Feat N** Summary…
+          const costSymbols: Record<string, string> = {
+            '1': '\u25c6',
+            '2': '\u25c6\u25c6',
+            '3': '\u25c6\u25c6\u25c6',
+            free: '\u25c7',
+            reaction: '\u21ba',
+            passive: '',
+          };
+          const costStr = child.rules.actionCost
+            ? (costSymbols[child.rules.actionCost] ?? child.rules.actionCost) + ' '
+            : '';
+          const levelStr = child.rules.level !== undefined ? ` Feat ${child.rules.level}` : '';
+          // Use "> " prefix so renderMarkdown styles it as a feat-reference line.
+          // Action icons (◆, ◇, ↺) are NOT wrapped in ** so they render as images.
+          const heading = `> ${child.title} ${costStr}${levelStr}`.trimEnd();
+          // Prefix with --- so pasting into the summary gives a visual separator
+          const ref = child.rules.summary
+            ? `---\n${heading}\n${child.rules.summary}`
+            : `---\n${heading}`;
+
+          // Append to parent notes if not already present (guard re-enrichment)
+          const existing = parent.userEdits.notes ?? '';
+          if (!existing.includes(child.title)) {
+            const separator = existing ? '\n\n' : '';
             cardById.set(parentId, {
               ...parent,
-              mergedChildren: [
-                ...(parent.mergedChildren ?? []),
-                { name: child.title, level: child.rules.level, summary: child.rules.summary },
-              ],
+              userEdits: {
+                ...parent.userEdits,
+                notes: existing + separator + ref,
+              },
             });
           }
-
-          // Hide child and mark it as merged
-          cardById.set(childId, {
-            ...child,
-            print: { ...child.print, include: false },
-            mergedInto: parent.title,
-          });
         }
 
         cards = [...cardById.values()];

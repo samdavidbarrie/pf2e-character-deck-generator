@@ -206,18 +206,36 @@ function stripHtml(html: string): string {
  * Remove AoN source/price/bulk metadata and craft requirements from item description text.
  * E.g. "… Source GM Core pg. 236 Price 450 gp Bulk L ---" or "Craft Requirements You're a monk…"
  */
-function stripSourceMetadata(text: string): string {
-  return (
-    text
-      // Remove "Craft Requirements …" blocks (always appear at end of item entries).
-      .replace(/\s*\bCraft Requirements\b.*$/is, '')
-      // Remove "Source …" trailing reference blocks
-      .replace(/\s+Source\s+[A-Z][\w ',]+pg\.\s*\d+.*$/s, '')
-      // Remove any remaining "Price X gp" / "Bulk …" artifacts
-      .replace(/\s+Price\s+[\d,]+\s*(?:gp|sp|cp)[^.]*\./s, '.')
-      .replace(/\s+Bulk\s+\S+\s*---.*$/s, '')
-      .trim()
-  );
+function stripSourceMetadata(text: string, cardTitle?: string): string {
+  let result = text
+    // Remove "Craft Requirements …" blocks (always appear at end of item entries).
+    .replace(/\s*\bCraft Requirements\b.*$/is, '')
+    // Remove "Source …" trailing reference blocks
+    .replace(/\s+Source\s+[A-Z][\w ',]+pg\.\s*\d+.*$/s, '')
+    // Remove any remaining "Price X gp" / "Bulk …" artifacts
+    .replace(/\s+Price\s+[\d,]+\s*(?:gp|sp|cp)[^.]*\./s, '.')
+    .replace(/\s+Bulk\s+\S+\s*---.*$/s, '')
+    // Remove AoN cross-reference navigation: "FeatName leads to FeatA, FeatB"
+    // These appear at the end of descriptions and list related feats.
+    // The guard `[A-Z][\w (),]+` ensures we only strip proper-noun feat lists,
+    // not mid-sentence uses like "This leads to a +2 bonus".
+    .replace(/\s+[A-Z][A-Za-z ]+leads to(?:\s+[A-Z][\w (),]+)+\.?\s*$/is, '')
+    // Handle block format: optional "FeatName" line preceding a "Leads To" header
+    // e.g. "...Step 10 feet.\nTiger Stance\nLeads To\nTiger Slash"
+    .replace(/(?:\n[A-Z][^\n]+)?\n?Leads [Tt]o\b[\s\S]*$/i, '')
+    .trim();
+
+  // If the card's own title is still orphaned at the end (e.g. when AoN places
+  // "FeatName" as a navigation anchor in the description body), strip it.
+  if (cardTitle) {
+    const lower = result.toLowerCase();
+    const titleLower = cardTitle.toLowerCase();
+    if (lower.endsWith(titleLower)) {
+      result = result.slice(0, result.length - titleLower.length).trimEnd();
+    }
+  }
+
+  return result;
 }
 
 /**
@@ -667,8 +685,9 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
       }
     } else {
       const isItem = card.category === 'weapon';
-      const desc = isItem ? stripSourceMetadata(data.description) : data.description;
-      rules.summary = desc;
+      rules.summary = isItem
+        ? stripSourceMetadata(data.description, card.title)
+        : stripSourceMetadata(data.description ?? '', card.title);
     }
   }
 
