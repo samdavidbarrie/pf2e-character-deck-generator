@@ -12,7 +12,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  background: var(--pf-card-paper, #f5f1e7);
+  background: var(--surface);
 }
 
 .charName {
@@ -22,18 +22,18 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin: 0;
-  color: var(--pf-maroon, #5e0000);
+  color: var(--pf-ui-accent, #5e0000);
 }
 
 .charMeta {
   font-size: 0.8rem;
-  color: #666;
+  color: var(--muted);
 }
 
 .cardCount {
   font-size: 0.8rem;
   font-weight: 600;
-  color: var(--pf-maroon, #5e0000);
+  color: var(--pf-ui-accent, #5e0000);
   margin-bottom: 4px;
 }
 
@@ -54,15 +54,15 @@
   border-radius: 4px;
   font-size: 0.82rem;
   cursor: pointer;
-  color: #333;
+  color: var(--text);
 }
 
 .filterBtn:hover {
-  background: #eee;
+  background: var(--hover-bg);
 }
 
 .filterBtn.active {
-  background: var(--pf-maroon, #5e0000);
+  background: var(--pf-ui-accent, #5e0000);
   color: #fff;
   font-weight: 600;
 }
@@ -77,7 +77,7 @@
 }
 
 .primaryBtn {
-  background: var(--pf-maroon, #5e0000);
+  background: var(--pf-ui-accent, #5e0000);
   color: #fff;
   border: none;
   padding: 8px 12px;
@@ -91,26 +91,27 @@
 }
 
 .primaryBtn:hover {
-  background: var(--pf-maroon-dark, #3f0000);
+  background: var(--pf-ui-accent-hover, #3f0000);
 }
 
 .secondaryBtn {
   background: none;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border);
   padding: 7px 12px;
   border-radius: 4px;
   font-size: 0.88rem;
   cursor: pointer;
+  color: var(--text);
 }
 
 .secondaryBtn:hover {
-  background: #eee;
+  background: var(--hover-bg);
 }
 
 .enrichBtn {
   background: none;
   border: 1px solid var(--pf-trait-gold, #d8c483);
-  color: var(--pf-maroon, #5e0000);
+  color: var(--pf-ui-accent, #5e0000);
   padding: 7px 12px;
   border-radius: 4px;
   font-size: 0.88rem;
@@ -118,8 +119,8 @@
 }
 
 .enrichBtn:hover:not(:disabled) {
-  background: #fdf7f0;
-  border-color: var(--pf-maroon, #5e0000);
+  background: var(--surface);
+  border-color: var(--pf-ui-accent, #5e0000);
 }
 .enrichBtn:disabled {
   opacity: 0.55;
@@ -128,7 +129,7 @@
 
 .enrichError {
   font-size: 0.8rem;
-  color: #c0392b;
+  color: var(--error-text);
   padding: 4px 0;
 }
 
@@ -139,6 +140,8 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  background: var(--bg);
+  color: var(--text);
 }
 
 .toolbar {
@@ -150,14 +153,16 @@
 .search {
   flex: 1;
   padding: 6px 10px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border);
   border-radius: 4px;
   font-size: 0.9rem;
+  background: var(--input-bg);
+  color: var(--text);
 }
 
 .resultCount {
   font-size: 0.82rem;
-  color: #666;
+  color: var(--muted);
   white-space: nowrap;
 }
 
@@ -184,19 +189,19 @@
 }
 
 .warning.warning {
-  background: #fffbf0;
-  border: 1px solid #c80;
-  color: #760;
+  background: var(--warning-bg);
+  border: 1px solid var(--warning-border);
+  color: var(--warning-text);
 }
 
 .warning.info {
-  background: #f0f6ff;
-  border: 1px solid #69c;
-  color: #046;
+  background: var(--info-bg);
+  border: 1px solid var(--info-border);
+  color: var(--info-text);
 }
 
 .empty {
-  color: #888;
+  color: var(--muted);
   font-size: 0.9rem;
   grid-column: 1 / -1;
 }
@@ -204,5 +209,5 @@
 .editor {
   border-left: 2px solid var(--pf-trait-gold, #d8c483);
   overflow-y: auto;
-  background: var(--pf-card-paper, #f5f1e7);
+  background: var(--bg);
 }

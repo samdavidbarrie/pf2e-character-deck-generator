@@ -5,8 +5,8 @@
   max-width: 760px;
   margin: 0 auto;
   padding: 24px 16px;
-  background: var(--pf-card-paper, #f5f1e7);
-  color: var(--pf-card-ink, #15120f);
+  background: var(--bg);
+  color: var(--text);
   font-family: var(--pf-body-font, system-ui, sans-serif);
 }
 
@@ -21,12 +21,12 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin: 0 0 4px;
-  color: var(--pf-maroon, #5e0000);
+  color: var(--pf-ui-accent, #5e0000);
 }
 
 .privacy {
   font-size: 0.85rem;
-  color: #555;
+  color: var(--muted);
   margin: 0;
   border-left: 3px solid var(--pf-trait-gold, #d8c483);
   padding-left: 8px;
@@ -45,7 +45,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--pf-maroon, #5e0000);
+  color: var(--pf-ui-accent, #5e0000);
   border-bottom: 1pt solid var(--pf-trait-gold, #d8c483);
   padding-bottom: 4px;
   margin: 0 0 12px;
@@ -63,22 +63,22 @@
   transition:
     border-color 0.15s,
     background 0.15s;
-  background: #fff;
+  background: var(--surface);
 }
 
 .dropZone.dragging {
-  border-color: var(--pf-maroon, #5e0000);
-  background: #fdf7f7;
+  border-color: var(--pf-ui-accent, #5e0000);
+  background: var(--accent-bg);
 }
 
 .dropZone p {
   margin: 0;
-  color: #555;
+  color: var(--muted);
 }
 
 .uploadButton {
   display: inline-block;
-  background: var(--pf-maroon, #5e0000);
+  background: var(--pf-ui-accent, #5e0000);
   color: #fff;
   padding: 8px 20px;
   border-radius: 4px;
@@ -92,7 +92,7 @@
 }
 
 .uploadButton:hover {
-  background: var(--pf-maroon-dark, #3f0000);
+  background: var(--pf-ui-accent-hover, #3f0000);
 }
 
 .hiddenInput {
@@ -115,15 +115,17 @@
   margin-bottom: 8px;
   font-family: monospace;
   font-size: 0.8rem;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border);
   border-radius: 4px;
   padding: 8px;
   resize: vertical;
+  background: var(--input-bg);
+  color: var(--text);
 }
 
 .button {
   margin-top: 8px;
-  background: var(--pf-maroon, #5e0000);
+  background: var(--pf-ui-accent, #5e0000);
   color: #fff;
   border: none;
   border-radius: 4px;
@@ -142,16 +144,16 @@
 }
 
 .button:hover:not(:disabled) {
-  background: var(--pf-maroon-dark, #3f0000);
+  background: var(--pf-ui-accent-hover, #3f0000);
 }
 
 .errorPanel {
   margin-top: 16px;
-  border: 1px solid #c00;
+  border: 1px solid var(--error-border);
   border-radius: 4px;
   padding: 12px 16px;
-  background: #fff5f5;
-  color: #900;
+  background: var(--error-bg);
+  color: var(--error-text);
 }
 
 .errorPanel ul {
@@ -161,11 +163,11 @@
 
 .warningPanel {
   margin-top: 12px;
-  border: 1px solid #c80;
+  border: 1px solid var(--warning-border);
   border-radius: 4px;
   padding: 12px 16px;
-  background: #fffbf0;
-  color: #760;
+  background: var(--warning-bg);
+  color: var(--warning-text);
 }
 
 .warningPanel ul {
@@ -175,7 +177,7 @@
 
 .debugPre {
   font-size: 0.7rem;
-  background: #f5f5f5;
+  background: var(--code-bg);
   padding: 8px;
   border-radius: 4px;
   overflow: auto;
@@ -192,9 +194,9 @@
 .devFixtures {
   margin-top: 16px;
   padding: 10px 14px;
-  border: 1px dashed #888;
+  border: 1px dashed var(--border);
   border-radius: 6px;
-  background: #fafafa;
+  background: var(--surface);
   font-size: 0.85rem;
 }
 
@@ -207,13 +209,14 @@
 
 .secondaryButton {
   padding: 6px 14px;
-  border: 1px solid #555;
+  border: 1px solid var(--border);
   border-radius: 4px;
-  background: #fff;
+  background: var(--input-bg);
+  color: var(--text);
   cursor: pointer;
   font-size: 0.85rem;
 }
 
 .secondaryButton:hover {
-  background: #f0f0f0;
+  background: var(--hover-bg);
 }

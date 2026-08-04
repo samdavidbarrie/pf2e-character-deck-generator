@@ -16,6 +16,24 @@
   --social-bg: rgba(243, 244, 246, 0.8);
   --shadow: rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
 
+  /* Shell tokens — used by app UI; separate from card design tokens */
+  --muted: #6b7280;
+  --surface: #f3f4f6;
+  --input-bg: #ffffff;
+  --hover-bg: #f3f4f6;
+  --error-bg: #fff5f5;
+  --error-text: #900000;
+  --error-border: #cc0000;
+  --warning-bg: #fffbf0;
+  --warning-text: #6b5000;
+  --warning-border: #cc8800;
+  --info-bg: #f0f6ff;
+  --info-text: #004466;
+  --info-border: #6699cc;
+  /* PF2e maroon adapted for app shell (not cards, which always use --pf-maroon on white bg) */
+  --pf-ui-accent: #5e0000;
+  --pf-ui-accent-hover: #3f0000;
+
   --sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --heading: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
@@ -52,6 +70,22 @@
     --accent-border: rgba(192, 132, 252, 0.5);
     --social-bg: rgba(47, 48, 58, 0.5);
     --shadow: rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+
+    --muted: #9ca3af;
+    --surface: #1f2028;
+    --input-bg: #16171d;
+    --hover-bg: #2a2c38;
+    --error-bg: #2a1010;
+    --error-text: #ff8080;
+    --error-border: #cc3333;
+    --warning-bg: #2a2000;
+    --warning-text: #d4aa40;
+    --warning-border: #9a7a00;
+    --info-bg: #001a2e;
+    --info-text: #66bbdd;
+    --info-border: #336699;
+    --pf-ui-accent: #c87070;
+    --pf-ui-accent-hover: #a05050;
 
     color-scheme: dark;
   }
