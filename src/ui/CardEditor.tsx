@@ -542,7 +542,9 @@ export function CardEditor({ card }: Props) {
               />
             </label>
 
-            {(card.rules.range !== undefined ||
+            {(card.category === 'spell' ||
+              card.category === 'focus-spell' ||
+              card.rules.range !== undefined ||
               card.rules.area !== undefined ||
               card.rules.targets !== undefined ||
               card.rules.defense !== undefined ||
