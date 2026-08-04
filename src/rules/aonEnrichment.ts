@@ -325,10 +325,7 @@ function preferredTypesFor(category: CardCategory): string[] {
       return ['Spell', 'Cantrip'];
     case 'focus-spell':
       return ['Focus', 'Spell'];
-    case 'feat-action':
-    case 'feat-passive':
-    case 'reaction':
-    case 'free-action':
+    case 'feat':
       return ['Feat', 'Action'];
     case 'basic-action':
     case 'skill-action':
@@ -941,7 +938,7 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
   // For weapons: take the max of the pre-set rune/material level and the AoN
   // base weapon level so neither is ever lost.
   // For all other non-equipment cards only fill in if not already set.
-  const isFeat = card.category === 'feat-action' || card.category === 'feat-passive';
+  const isFeat = card.category === 'feat';
   if (data.level !== undefined) {
     if (rules.level === undefined || isFeat) {
       rules.level = data.level;
@@ -1407,7 +1404,7 @@ export function detectFeatMerges(
   const merges: FeatMerge[] = [];
 
   for (const card of cards) {
-    if (card.category !== 'feat-passive') continue;
+    if (card.category !== 'feat') continue;
     const aon = aonDataMap.get(`${card.category}:${card.title}`);
     if (!aon?.prerequisite) continue;
 

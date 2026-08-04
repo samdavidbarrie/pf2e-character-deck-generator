@@ -35,12 +35,13 @@ interface CardTabInfo {
 
 function getCardTabInfo(card: CardModel): CardTabInfo {
   if (card.category === 'spell' || card.category === 'focus-spell') {
+    // Focus spells always use the focus colour regardless of tradition.
+    if (card.category === 'focus-spell') {
+      return { tabLabel: 'Focus', themeClass: styles.themeFocus };
+    }
     const tradition = traditionFromTraits(card.rules.traits);
     if (TRADITION_LABEL[tradition]) {
       return { tabLabel: TRADITION_LABEL[tradition], themeClass: TRADITION_CLASS[tradition] };
-    }
-    if (card.category === 'focus-spell') {
-      return { tabLabel: 'Focus', themeClass: styles.themeFocus };
     }
     return { tabLabel: 'Spell', themeClass: styles.themeSpell };
   }
@@ -48,10 +49,7 @@ function getCardTabInfo(card: CardModel): CardTabInfo {
   const categoryTab: Partial<Record<CardCategory, CardTabInfo>> = {
     'basic-action': { tabLabel: 'Action', themeClass: styles.themeAction },
     'skill-action': { tabLabel: 'Action', themeClass: styles.themeAction },
-    'feat-action': { tabLabel: 'Feat', themeClass: styles.themeFeat },
-    'feat-passive': { tabLabel: 'Feat', themeClass: styles.themeFeat },
-    reaction: { tabLabel: 'Reaction', themeClass: styles.themeAction },
-    'free-action': { tabLabel: 'Free', themeClass: styles.themeAction },
+    feat: { tabLabel: 'Feat', themeClass: styles.themeFeat },
     weapon: { tabLabel: 'Weapon', themeClass: styles.themeWeapon },
     equipment: { tabLabel: 'Equipment', themeClass: styles.themeEquipment },
     summary: { tabLabel: '', themeClass: styles.themeSummary },
@@ -92,14 +90,12 @@ function getRankLabel(card: CardModel): string {
     return `Item ${card.rules.level}`;
   }
   // Feats: include the feat's own minimum level (filled by AoN enrichment).
-  if (card.category === 'feat-action' || card.category === 'feat-passive') {
+  if (card.category === 'feat') {
     return card.rules.level !== undefined ? `Feat ${card.rules.level}` : 'Feat';
   }
   const labelMap: Partial<Record<CardCategory, string>> = {
     'basic-action': 'Action',
     'skill-action': 'Skill',
-    reaction: 'Reaction',
-    'free-action': 'Free',
     weapon: 'Weapon',
     equipment: 'Equipment',
     'creature-summary': 'Creature',
@@ -398,7 +394,7 @@ export function CardPreview({ card, selected, onClick, onModifierClick, forPrint
         {/* Subtitle — hidden for feat cards (rank label carries type+level) and
             in print for spell cards (tradition tab + rank replace it). */}
         {(() => {
-          const isFeatCard = card.category === 'feat-action' || card.category === 'feat-passive';
+          const isFeatCard = card.category === 'feat';
           if (!card.subtitle || isFeatCard) return null;
           return (
             <div className={`${styles.subtitle}${isSpellCard ? ` ${styles.subtitleSpell}` : ''}`}>
