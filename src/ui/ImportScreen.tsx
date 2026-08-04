@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useAppStore } from '../app/store';
-import { isPathbuilderId } from '../import/detectPathbuilderId';
+import { isPathbuilderId, looksLikeBuildLinkId } from '../import/detectPathbuilderId';
 import { validateImport } from '../import/validateImport';
 import { importProjectJson } from '../storage/exportProject';
 import styles from './ImportScreen.module.css';
@@ -58,6 +58,18 @@ export function ImportScreen() {
 
     // Numeric-only input → Pathbuilder JSON ID
     if (isPathbuilderId(trimmed)) {
+      // 7-digit numbers are Pathbuilder build link IDs, not JSON export IDs.
+      // The json.php endpoint only accepts JSON export IDs (typically 6 digits).
+      if (looksLikeBuildLinkId(trimmed)) {
+        setErrors([
+          `"${trimmed}" looks like a Pathbuilder build link ID, not a JSON export ID.` +
+            ' Build link IDs cannot be used here.' +
+            ' In Pathbuilder, open your character and use Export → Export to JSON → Share to JSON.' +
+            ' Enter the 6-digit ID that appears there.',
+        ]);
+        return;
+      }
+
       setLoading(true);
       try {
         const res = await fetch(

@@ -16,6 +16,15 @@ function mapCastCost(raw: string | undefined): ActionCost | undefined {
   if (isOne(s) && isThree(s)) return '1-3';
   if (isOne(s) && isTwo(s)) return '1-2';
   if (isTwo(s) && isThree(s)) return '2-3';
+  // "Two actions to X rounds/minutes" — ritual-style; show minimum cost.
+  if (
+    isTwo(s) &&
+    s.includes(' to ') &&
+    !isThree(s) &&
+    (s.includes('round') || s.includes('minute') || s.includes('hour'))
+  )
+    return '2+';
+  if (s.includes(' to ') || s.includes('varies') || s.includes('variable')) return 'variable';
   if (
     s === '1' ||
     s.startsWith('one ') ||

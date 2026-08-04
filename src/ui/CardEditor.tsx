@@ -229,6 +229,7 @@ export function CardEditor({ card }: Props) {
   }
 
   const summaryRef = useRef<HTMLTextAreaElement>(null);
+  const variableCostRef = useRef<HTMLInputElement>(null);
 
   // Traits are edited as a local comma-separated string to avoid cursor-reset
   // on every keystroke. We sync from the card when the selected card changes
@@ -247,6 +248,14 @@ export function CardEditor({ card }: Props) {
   // Traits are still useful on face cards (character and creature).
   const showTraits =
     !hideMeta || card.stableKey === 'summary:combat-status' || card.category === 'creature-summary';
+  // Item-specific fields (Usage, Hands, Bulk, Price) only make sense on physical items.
+  const isItemCard =
+    card.category === 'weapon' ||
+    card.category === 'equipment' ||
+    card.category === 'armor' ||
+    card.category === 'shield';
+  // Weapon-classification fields (Type, Category, Group) are weapon-only.
+  const isWeaponCard = card.category === 'weapon';
   function setTraitsText(text: string) {
     setTraitsState({ id: card.id, text });
   }
@@ -259,6 +268,19 @@ export function CardEditor({ card }: Props) {
     const end = el?.selectionEnd ?? current.length;
     const next = current.slice(0, start) + text + current.slice(end);
     patchRules(parseEditorSummary(next));
+    requestAnimationFrame(() => {
+      el?.focus();
+      el?.setSelectionRange(start + text.length, start + text.length);
+    });
+  }
+
+  function insertIntoVariableCost(text: string) {
+    const el = variableCostRef.current;
+    const current = el?.value ?? card.rules.variableActionCost ?? '';
+    const start = el?.selectionStart ?? current.length;
+    const end = el?.selectionEnd ?? current.length;
+    const next = current.slice(0, start) + text + current.slice(end);
+    patchRules({ variableActionCost: next || undefined });
     requestAnimationFrame(() => {
       el?.focus();
       el?.setSelectionRange(start + text.length, start + text.length);
@@ -410,6 +432,40 @@ export function CardEditor({ card }: Props) {
           </label>
         )}
 
+        {!hideMeta && card.rules.actionCost === 'variable' && (
+          <div className={styles.fieldGroup}>
+            <div className={styles.fieldLabelRow}>
+              <span>
+                Variable cost detail <span className={styles.hint}>(e.g. ◆ to ◆◆◆)</span>
+              </span>
+            </div>
+            <div className={styles.insertToolbar} role="toolbar" aria-label="Insert action symbol">
+              {INSERT_ITEMS.slice(0, 5).map(({ label, title, insert, icon }) => (
+                <button
+                  key={label}
+                  type="button"
+                  className={styles.insertBtn}
+                  title={title}
+                  aria-label={`Insert ${title}`}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    insertIntoVariableCost(insert);
+                  }}
+                >
+                  {icon ? <img src={icon} alt={title} className={styles.insertBtnIcon} /> : label}
+                </button>
+              ))}
+            </div>
+            <input
+              ref={variableCostRef}
+              type="text"
+              value={card.rules.variableActionCost ?? ''}
+              placeholder="e.g. ◆ to ◆◆◆"
+              onChange={(e) => patchRules({ variableActionCost: e.target.value || undefined })}
+            />
+          </div>
+        )}
+
         {showTraits && (
           <label className={styles.fieldGroup}>
             <span>Traits (comma-separated)</span>
@@ -458,79 +514,91 @@ export function CardEditor({ card }: Props) {
               />
             </label>
 
-            <label className={styles.fieldGroup}>
-              <span>Usage</span>
-              <input
-                type="text"
-                value={card.rules.usage ?? ''}
-                onChange={(e) => patchRules({ usage: e.target.value || undefined })}
-                placeholder="e.g. held in 1 hand"
-              />
-            </label>
+            {isItemCard && (
+              <>
+                <label className={styles.fieldGroup}>
+                  <span>Usage</span>
+                  <input
+                    type="text"
+                    value={card.rules.usage ?? ''}
+                    onChange={(e) => patchRules({ usage: e.target.value || undefined })}
+                    placeholder="e.g. held in 1 hand"
+                  />
+                </label>
 
-            <label className={styles.fieldGroup}>
-              <span>Hands</span>
-              <input
-                type="text"
-                value={card.rules.hands ?? ''}
-                onChange={(e) => patchRules({ hands: e.target.value || undefined })}
-                placeholder="e.g. 2"
-              />
-            </label>
+                <label className={styles.fieldGroup}>
+                  <span>Hands</span>
+                  <input
+                    type="text"
+                    value={card.rules.hands ?? ''}
+                    onChange={(e) => patchRules({ hands: e.target.value || undefined })}
+                    placeholder="e.g. 2"
+                  />
+                </label>
+              </>
+            )}
 
-            <label className={styles.fieldGroup}>
-              <span>Type</span>
-              <input
-                type="text"
-                value={card.rules.weaponType ?? ''}
-                onChange={(e) => patchRules({ weaponType: e.target.value || undefined })}
-                placeholder="Melee / Ranged"
-              />
-            </label>
+            {isWeaponCard && (
+              <>
+                <label className={styles.fieldGroup}>
+                  <span>Type</span>
+                  <input
+                    type="text"
+                    value={card.rules.weaponType ?? ''}
+                    onChange={(e) => patchRules({ weaponType: e.target.value || undefined })}
+                    placeholder="Melee / Ranged"
+                  />
+                </label>
 
-            <label className={styles.fieldGroup}>
-              <span>Category</span>
-              <select
-                value={card.rules.weaponCategory ?? ''}
-                onChange={(e) => patchRules({ weaponCategory: e.target.value || undefined })}
-              >
-                <option value="">—</option>
-                <option value="Simple">Simple</option>
-                <option value="Martial">Martial</option>
-                <option value="Advanced">Advanced</option>
-                <option value="Unarmed">Unarmed</option>
-              </select>
-            </label>
+                <label className={styles.fieldGroup}>
+                  <span>Category</span>
+                  <select
+                    value={card.rules.weaponCategory ?? ''}
+                    onChange={(e) => patchRules({ weaponCategory: e.target.value || undefined })}
+                  >
+                    <option value="">—</option>
+                    <option value="Simple">Simple</option>
+                    <option value="Martial">Martial</option>
+                    <option value="Advanced">Advanced</option>
+                    <option value="Unarmed">Unarmed</option>
+                  </select>
+                </label>
 
-            <label className={styles.fieldGroup}>
-              <span>Group</span>
-              <input
-                type="text"
-                value={card.rules.weaponGroup ?? ''}
-                onChange={(e) => patchRules({ weaponGroup: e.target.value || undefined })}
-                placeholder="e.g. Polearm, Sword"
-              />
-            </label>
+                <label className={styles.fieldGroup}>
+                  <span>Group</span>
+                  <input
+                    type="text"
+                    value={card.rules.weaponGroup ?? ''}
+                    onChange={(e) => patchRules({ weaponGroup: e.target.value || undefined })}
+                    placeholder="e.g. Polearm, Sword"
+                  />
+                </label>
+              </>
+            )}
 
-            <label className={styles.fieldGroup}>
-              <span>Bulk</span>
-              <input
-                type="text"
-                value={card.rules.bulk ?? ''}
-                onChange={(e) => patchRules({ bulk: e.target.value || undefined })}
-                placeholder="e.g. L, 1, 2"
-              />
-            </label>
+            {isItemCard && (
+              <>
+                <label className={styles.fieldGroup}>
+                  <span>Bulk</span>
+                  <input
+                    type="text"
+                    value={card.rules.bulk ?? ''}
+                    onChange={(e) => patchRules({ bulk: e.target.value || undefined })}
+                    placeholder="e.g. L, 1, 2"
+                  />
+                </label>
 
-            <label className={styles.fieldGroup}>
-              <span>Price</span>
-              <input
-                type="text"
-                value={card.rules.price ?? ''}
-                onChange={(e) => patchRules({ price: e.target.value || undefined })}
-                placeholder="e.g. 50 gp"
-              />
-            </label>
+                <label className={styles.fieldGroup}>
+                  <span>Price</span>
+                  <input
+                    type="text"
+                    value={card.rules.price ?? ''}
+                    onChange={(e) => patchRules({ price: e.target.value || undefined })}
+                    placeholder="e.g. 50 gp"
+                  />
+                </label>
+              </>
+            )}
 
             <label className={styles.fieldGroup}>
               <span>Bonus</span>
@@ -542,7 +610,9 @@ export function CardEditor({ card }: Props) {
               />
             </label>
 
-            {(card.rules.range !== undefined ||
+            {(card.category === 'spell' ||
+              card.category === 'focus-spell' ||
+              card.rules.range !== undefined ||
               card.rules.area !== undefined ||
               card.rules.targets !== undefined ||
               card.rules.defense !== undefined ||

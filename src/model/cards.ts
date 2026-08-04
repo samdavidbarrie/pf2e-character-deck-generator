@@ -2,10 +2,7 @@ export type CardCategory =
   | 'summary'
   | 'basic-action'
   | 'skill-action'
-  | 'feat-action'
-  | 'feat-passive'
-  | 'reaction'
-  | 'free-action'
+  | 'feat'
   | 'spell'
   | 'focus-spell'
   | 'weapon'
@@ -63,6 +60,8 @@ export interface CardModel {
 
   rules: {
     actionCost?: ActionCost;
+    /** Free-text description of variable action cost, e.g. "◆ to ◆◆◆". Shown on the card when actionCost is 'variable'. */
+    variableActionCost?: string;
     traits: string[];
     level?: number;
     rank?: number;
@@ -165,10 +164,7 @@ export const CATEGORY_LABEL: Record<CardCategory, string> = {
   summary: 'Summary',
   'basic-action': 'Basic',
   'skill-action': 'Skill',
-  'feat-action': 'Feat',
-  'feat-passive': 'Passive',
-  reaction: 'Reaction',
-  'free-action': 'Free',
+  feat: 'Feat',
   spell: 'Spell',
   'focus-spell': 'Focus',
   weapon: 'Weapon',
@@ -187,10 +183,7 @@ export const CATEGORY_COLOR: Record<CardCategory, string> = {
   summary: '#efefef',
   'basic-action': '#f5e8cc',
   'skill-action': '#d6edda',
-  reaction: '#fbe3c8',
-  'free-action': '#fdf5c8',
-  'feat-action': '#e8d6f0',
-  'feat-passive': '#f0e4f8',
+  feat: '#e8d6f0',
   spell: '#d0def5',
   'focus-spell': '#c8ecf0',
   weapon: '#f5d8d8',

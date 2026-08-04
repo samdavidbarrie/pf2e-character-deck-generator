@@ -1,18 +1,9 @@
 import { parseActionCost } from '../../import/pathbuilderAdapter';
-import type { CardCategory, CardModel } from '../../model/cards';
+import type { CardModel } from '../../model/cards';
 import type { CharacterFeat, CharacterModel } from '../../model/character';
 import { aonSearchUrl } from '../../rules/aonUrlResolver';
 import { buildStableKey } from '../../rules/nameNormalization';
 import { defaultCard, notesField, skillBonusFor } from './_helpers';
-
-function featCategory(feat: CharacterFeat): CardCategory {
-  // All feats stay in feat categories regardless of action cost so the rank
-  // label always shows "Feat N" rather than the generic "Reaction" / "Free".
-  if (feat.actionCost) {
-    return 'feat-action';
-  }
-  return 'feat-passive';
-}
 
 function defaultInclude(feat: CharacterFeat): boolean {
   // Include if it has an action cost, trigger, frequency, or is class/ancestry
@@ -28,7 +19,6 @@ function defaultInclude(feat: CharacterFeat): boolean {
 export function generateFeatCards(char: CharacterModel): CardModel[] {
   return char.feats.map((feat) => {
     const cost = parseActionCost(feat.actionCost);
-    const category = featCategory(feat);
     const stableKey = buildStableKey(`feat:${feat.type}`, feat.name);
 
     return defaultCard({
@@ -37,7 +27,7 @@ export function generateFeatCards(char: CharacterModel): CardModel[] {
       // Level is intentionally omitted here: feat.level is the *character* level
       // at which the feat slot was filled, not the feat's own minimum level.
       // AoN enrichment fills in the correct feat level via rules.level.
-      category,
+      category: 'feat',
       stableKey,
       source: {
         system: 'generated',

@@ -157,12 +157,7 @@ export function generateBasicActionCards(char: CharacterModel): CardModel[] {
     cards.push(
       defaultCard({
         title: action.name,
-        category:
-          action.actionCost === 'reaction'
-            ? 'reaction'
-            : action.actionCost === 'free'
-              ? 'free-action'
-              : 'basic-action',
+        category: 'basic-action',
         stableKey: buildStableKey('basic-action', action.name),
         rules: {
           actionCost: action.actionCost,

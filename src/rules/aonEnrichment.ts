@@ -14,6 +14,7 @@ import type {
   ProficiencyRank,
 } from '../model/character';
 import { buildEquipmentDescription, filterEquipmentDescription } from './equipmentVariantMatcher';
+import { formatVariableActionCost } from './nameNormalization';
 import {
   ARMOR_RUNE_PRICES,
   computeMaterialPriceGp,
@@ -41,6 +42,8 @@ export interface AonData {
   description?: string;
   traits: string[];
   actionCost?: ActionCost;
+  /** Raw AoN 'actions' string (e.g. "Single Action to Three Actions") — used to populate variableActionCost. */
+  rawActions?: string;
   range?: string;
   area?: string;
   targets?: string;
@@ -325,10 +328,7 @@ function preferredTypesFor(category: CardCategory): string[] {
       return ['Spell', 'Cantrip'];
     case 'focus-spell':
       return ['Focus', 'Spell'];
-    case 'feat-action':
-    case 'feat-passive':
-    case 'reaction':
-    case 'free-action':
+    case 'feat':
       return ['Feat', 'Action'];
     case 'basic-action':
     case 'skill-action':
@@ -462,6 +462,7 @@ async function fetchBatch(names: string[]): Promise<AonData[]> {
       heightened: parsed.heightened,
       traits: (s['trait'] as string[]) ?? [],
       actionCost: mapActionCost(s['actions'] as string | undefined),
+      rawActions: (s['actions'] as string | undefined) || undefined,
       range: s['range'] as string | undefined,
       area: s['area'] as string | undefined,
       targets: s['target'] as string | undefined,
@@ -860,6 +861,9 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
   if (data.actionCost && !rules.actionCost) {
     rules.actionCost = data.actionCost;
   }
+  if (data.actionCost === 'variable' && !rules.variableActionCost) {
+    rules.variableActionCost = formatVariableActionCost(data.rawActions);
+  }
 
   if (data.trigger && !rules.trigger) rules.trigger = data.trigger;
   if (data.requirements && !rules.requirements) rules.requirements = data.requirements;
@@ -941,7 +945,7 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
   // For weapons: take the max of the pre-set rune/material level and the AoN
   // base weapon level so neither is ever lost.
   // For all other non-equipment cards only fill in if not already set.
-  const isFeat = card.category === 'feat-action' || card.category === 'feat-passive';
+  const isFeat = card.category === 'feat';
   if (data.level !== undefined) {
     if (rules.level === undefined || isFeat) {
       rules.level = data.level;
@@ -1407,7 +1411,7 @@ export function detectFeatMerges(
   const merges: FeatMerge[] = [];
 
   for (const card of cards) {
-    if (card.category !== 'feat-passive') continue;
+    if (card.category !== 'feat') continue;
     const aon = aonDataMap.get(`${card.category}:${card.title}`);
     if (!aon?.prerequisite) continue;
 

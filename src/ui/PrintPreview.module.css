@@ -1,9 +1,12 @@
 /* Screen layout */
+/* Force light mode: print preview must always appear on a light background
+   so cards render the same as they will on paper. */
 .wrapper {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
   background: #e0e0e0;
+  color-scheme: light;
 }
 
 .controls {
