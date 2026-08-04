@@ -60,6 +60,8 @@ export interface CardModel {
 
   rules: {
     actionCost?: ActionCost;
+    /** Free-text description of variable action cost, e.g. "◆ to ◆◆◆". Shown on the card when actionCost is 'variable'. */
+    variableActionCost?: string;
     traits: string[];
     level?: number;
     rank?: number;

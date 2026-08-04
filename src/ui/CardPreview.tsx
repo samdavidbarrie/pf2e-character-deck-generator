@@ -220,7 +220,7 @@ const ACTION_RANGE_PARTS: Partial<Record<ActionCost, [ActionCost, ActionCost]>> 
   '2-3': ['2', '3'],
 };
 
-function ActionCostDisplay({ cost }: { cost: ActionCost }) {
+function ActionCostDisplay({ cost, variableText }: { cost: ActionCost; variableText?: string }) {
   if (cost === 'passive') return null;
   const icon = ACTION_ICON[cost];
   if (icon) {
@@ -246,7 +246,21 @@ function ActionCostDisplay({ cost }: { cost: ActionCost }) {
       </span>
     );
   }
-  // fallback (variable)
+  // variable — parse variableText for action symbols and render as icons
+  if (cost === 'variable' && variableText) {
+    const parts = variableText.split(INLINE_ACTION_SPLIT_RE);
+    return (
+      <span className={styles.actionCost}>
+        {parts.map((part, i) => {
+          const iconEntry = INLINE_ACTION_ICONS.find(([s]) => s === part);
+          if (iconEntry) {
+            return <img key={i} src={iconEntry[1]} className={styles.actionIcon} alt={part} />;
+          }
+          return part || null;
+        })}
+      </span>
+    );
+  }
   return <span className={styles.actionCost}>{ACTION_COST_LABEL[cost]}</span>;
 }
 
@@ -375,7 +389,10 @@ export function CardPreview({ card, selected, onClick, onModifierClick, forPrint
             </span>
             {showActionCostInTitle && (
               <span className={styles.titleActionCost}>
-                <ActionCostDisplay cost={card.rules.actionCost!} />
+                <ActionCostDisplay
+                  cost={card.rules.actionCost!}
+                  variableText={card.rules.variableActionCost}
+                />
               </span>
             )}
           </div>
@@ -545,7 +562,11 @@ export function CardPreview({ card, selected, onClick, onModifierClick, forPrint
         {card.rules.activateTag && card.rules.actionCost && (
           <div className={styles.field}>
             <span className={styles.fieldLabel}>Activate</span>{' '}
-            <ActionCostDisplay cost={card.rules.actionCost} /> {card.rules.activateTag}
+            <ActionCostDisplay
+              cost={card.rules.actionCost}
+              variableText={card.rules.variableActionCost}
+            />{' '}
+            {card.rules.activateTag}
           </div>
         )}
 

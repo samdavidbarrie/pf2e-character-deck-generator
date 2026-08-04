@@ -14,6 +14,7 @@ import type {
   ProficiencyRank,
 } from '../model/character';
 import { buildEquipmentDescription, filterEquipmentDescription } from './equipmentVariantMatcher';
+import { formatVariableActionCost } from './nameNormalization';
 import {
   ARMOR_RUNE_PRICES,
   computeMaterialPriceGp,
@@ -41,6 +42,8 @@ export interface AonData {
   description?: string;
   traits: string[];
   actionCost?: ActionCost;
+  /** Raw AoN 'actions' string (e.g. "Single Action to Three Actions") — used to populate variableActionCost. */
+  rawActions?: string;
   range?: string;
   area?: string;
   targets?: string;
@@ -459,6 +462,7 @@ async function fetchBatch(names: string[]): Promise<AonData[]> {
       heightened: parsed.heightened,
       traits: (s['trait'] as string[]) ?? [],
       actionCost: mapActionCost(s['actions'] as string | undefined),
+      rawActions: (s['actions'] as string | undefined) || undefined,
       range: s['range'] as string | undefined,
       area: s['area'] as string | undefined,
       targets: s['target'] as string | undefined,
@@ -856,6 +860,9 @@ export function applyAonDataToCard(card: CardModel, data: AonData): CardModel {
 
   if (data.actionCost && !rules.actionCost) {
     rules.actionCost = data.actionCost;
+  }
+  if (data.actionCost === 'variable' && !rules.variableActionCost) {
+    rules.variableActionCost = formatVariableActionCost(data.rawActions);
   }
 
   if (data.trigger && !rules.trigger) rules.trigger = data.trigger;

@@ -229,6 +229,7 @@ export function CardEditor({ card }: Props) {
   }
 
   const summaryRef = useRef<HTMLTextAreaElement>(null);
+  const variableCostRef = useRef<HTMLInputElement>(null);
 
   // Traits are edited as a local comma-separated string to avoid cursor-reset
   // on every keystroke. We sync from the card when the selected card changes
@@ -267,6 +268,19 @@ export function CardEditor({ card }: Props) {
     const end = el?.selectionEnd ?? current.length;
     const next = current.slice(0, start) + text + current.slice(end);
     patchRules(parseEditorSummary(next));
+    requestAnimationFrame(() => {
+      el?.focus();
+      el?.setSelectionRange(start + text.length, start + text.length);
+    });
+  }
+
+  function insertIntoVariableCost(text: string) {
+    const el = variableCostRef.current;
+    const current = el?.value ?? card.rules.variableActionCost ?? '';
+    const start = el?.selectionStart ?? current.length;
+    const end = el?.selectionEnd ?? current.length;
+    const next = current.slice(0, start) + text + current.slice(end);
+    patchRules({ variableActionCost: next || undefined });
     requestAnimationFrame(() => {
       el?.focus();
       el?.setSelectionRange(start + text.length, start + text.length);
@@ -416,6 +430,40 @@ export function CardEditor({ card }: Props) {
               ))}
             </select>
           </label>
+        )}
+
+        {!hideMeta && card.rules.actionCost === 'variable' && (
+          <div className={styles.fieldGroup}>
+            <div className={styles.fieldLabelRow}>
+              <span>
+                Variable cost detail <span className={styles.hint}>(e.g. ◆ to ◆◆◆)</span>
+              </span>
+            </div>
+            <div className={styles.insertToolbar} role="toolbar" aria-label="Insert action symbol">
+              {INSERT_ITEMS.slice(0, 5).map(({ label, title, insert, icon }) => (
+                <button
+                  key={label}
+                  type="button"
+                  className={styles.insertBtn}
+                  title={title}
+                  aria-label={`Insert ${title}`}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    insertIntoVariableCost(insert);
+                  }}
+                >
+                  {icon ? <img src={icon} alt={title} className={styles.insertBtnIcon} /> : label}
+                </button>
+              ))}
+            </div>
+            <input
+              ref={variableCostRef}
+              type="text"
+              value={card.rules.variableActionCost ?? ''}
+              placeholder="e.g. ◆ to ◆◆◆"
+              onChange={(e) => patchRules({ variableActionCost: e.target.value || undefined })}
+            />
+          </div>
         )}
 
         {showTraits && (
